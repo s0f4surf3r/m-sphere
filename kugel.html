@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kugel</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0a0a0f;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+}
+canvas {
+  display: block;
+  cursor: none;
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+// --- State ---
+let state = 'idle'; // idle | shaking | meditating | done
+let thoughtCounter = 0; // 0–100
+let shakeIntensity = 0; // aktuelle Schüttel-Stärke (0–1)
+let doneTime = 0; // Zeitpunkt des done-States
+let relapseFlash = 0; // Rückfall-Blitz (0–1, decays)
+
+// --- Timer ---
+const DURATION_OPTIONS = [
+  { label: '1', seconds: 60 },
+  { label: '5', seconds: 300 },
+  { label: '10', seconds: 600 },
+  { label: '20', seconds: 1200 },
+  { label: '30', seconds: 1800 }
+];
+let selectedDurationIdx = 0; // default: 1 Min
+let meditationDuration = DURATION_OPTIONS[0].seconds;
+let meditationTimeLeft = 0;
+let meditationStartTime = 0;
+
+// Hit-Bereiche für die Buttons (werden in drawTimerSelect berechnet)
+let timerButtons = [];
+
+// --- Shake Detection ---
+let lastMouseX = 0, lastMouseY = 0;
+let shakeAccum = 0; // akkumulierte Bewegung
+
+function onMouseMove(e) {
+  const dx = e.clientX - lastMouseX;
+  const dy = e.clientY - lastMouseY;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  shakeAccum += dist;
+  lastMouseX = e.clientX;
+  lastMouseY = e.clientY;
+}
+
+let lastTouchX = 0, lastTouchY = 0;
+function onTouchMove(e) {
+  e.preventDefault();
+  const t = e.touches[0];
+  const dx = t.clientX - lastTouchX;
+  const dy = t.clientY - lastTouchY;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  shakeAccum += dist;
+  lastTouchX = t.clientX;
+  lastTouchY = t.clientY;
+}
+function onTouchStart(e) {
+  const t = e.touches[0];
+  lastTouchX = t.clientX;
+  lastTouchY = t.clientY;
+}
+
+// Device Motion (Handy schütteln)
+function onDeviceMotion(e) {
+  const a = e.accelerationIncludingGravity;
+  if (!a) return;
+  const mag = Math.sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
+  const shake = Math.max(0, mag - 12); // Schwelle: normales Halten ≈ 9.8
+  shakeAccum += shake * 3;
+}
+
+canvas.addEventListener('mousemove', onMouseMove);
+canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+window.addEventListener('devicemotion', onDeviceMotion);
+
+// Shake-Verarbeitung pro Frame
+function updateShake() {
+  // shakeAccum → shakeIntensity (0–1), mit Decay
+  shakeIntensity = Math.min(1, shakeAccum / 80);
+  shakeAccum *= 0.3; // schneller Abfall
+
+  if (shakeIntensity > 0.05) {
+    // Schütteln erkannt → Counter hoch
+    thoughtCounter = Math.min(100, thoughtCounter + shakeIntensity * 0.8);
+    if (state === 'meditating') {
+      relapseFlash = 1;
+      // Rückfall-Sound: dissonanter Burst
+      if (soundInitialized) {
+        const t = audioCtx.currentTime;
+        for (let i = 0; i < 3; i++) {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.value = 200 + Math.random() * 400;
+          gain.gain.value = 0.08;
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(t);
+          osc.stop(t + 0.4);
+        }
+      }
+    }
+    if (state === 'idle' || state === 'meditating') {
+      state = 'shaking';
+      // Rückfall: Timer reset
+      meditationTimeLeft = 0;
+      meditationStartTime = 0;
+    }
+  } else {
+    // Kein Schütteln
+    if (state === 'shaking' && thoughtCounter >= 100) {
+      // Meditation beginnt
+      state = 'meditating';
+      meditationTimeLeft = meditationDuration;
+      meditationStartTime = Date.now();
+    }
+    if (state === 'meditating') {
+      // Timer runterzählen
+      const elapsed = (Date.now() - meditationStartTime) / 1000;
+      meditationTimeLeft = Math.max(0, meditationDuration - elapsed);
+
+      // Gedanken verblassen linear über die gesamte Dauer
+      const progress = 1 - meditationTimeLeft / meditationDuration; // 0→1
+      thoughtCounter = 100 * (1 - progress);
+
+      if (meditationTimeLeft <= 0) {
+        state = 'done';
+        thoughtCounter = 0;
+        doneTime = Date.now();
+        // Glockenklang
+        if (soundInitialized) {
+          const t = audioCtx.currentTime;
+          [528, 660, 792].forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.value = 0;
+            gain.gain.linearRampToValueAtTime(0.04, t + 0.1 + i * 0.3);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 3 + i * 0.5);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(t + i * 0.3);
+            osc.stop(t + 4 + i * 0.5);
+          });
+        }
+      }
+    }
+  }
+}
+
+// --- Verführungs-Trigger ---
+let lastTemptation = 0;
+let temptationActive = null; // { type, startTime, duration }
+
+function updateTemptations() {
+  if (state !== 'meditating') { temptationActive = null; return; }
+
+  const now = Date.now();
+  const progress = 1 - meditationTimeLeft / meditationDuration;
+
+  // Intervall: anfangs alle 8s, später alle 20–40s (seltener aber wirksamer)
+  const interval = 8000 + progress * 30000 + Math.random() * 5000;
+
+  if (now - lastTemptation > interval && !temptationActive) {
+    lastTemptation = now;
+
+    // Zufälligen Trigger wählen (gewichtet: spätere Trigger sind subtiler)
+    const triggers = progress < 0.4
+      ? ['badge', 'flash', 'twitch', 'sound']
+      : ['shimmer', 'sound', 'twitch'];
+    const type = triggers[Math.floor(Math.random() * triggers.length)];
+
+    temptationActive = { type, startTime: now, duration: 600 + Math.random() * 800 };
+
+    // Sound-Trigger: kurzer Ping
+    if (type === 'sound' && soundInitialized) {
+      const ping = audioCtx.createOscillator();
+      const pingGain = audioCtx.createGain();
+      ping.type = 'sine';
+      ping.frequency.value = 800 + Math.random() * 600;
+      pingGain.gain.value = 0.04 * (1 - progress);
+      ping.connect(pingGain);
+      pingGain.connect(audioCtx.destination);
+      ping.start();
+      pingGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+      ping.stop(audioCtx.currentTime + 0.3);
+    }
+  }
+
+  // Trigger ablaufen lassen
+  if (temptationActive && now - temptationActive.startTime > temptationActive.duration) {
+    temptationActive = null;
+  }
+}
+
+function drawTemptations(cx, cy, r) {
+  if (!temptationActive) return;
+
+  const t = (Date.now() - temptationActive.startTime) / temptationActive.duration; // 0→1
+  const fade = t < 0.3 ? t / 0.3 : (1 - t) / 0.7; // fade in/out
+
+  switch (temptationActive.type) {
+    case 'badge': {
+      // Rotes Notification-Badge
+      const bx = cx + r * 0.6;
+      const by = cy - r * 0.5;
+      ctx.globalAlpha = fade * 0.7;
+      ctx.beginPath();
+      ctx.arc(bx, by, 8, 0, Math.PI * 2);
+      ctx.fillStyle = '#ff2d55';
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('1', bx, by);
+      ctx.textAlign = 'start';
+      ctx.textBaseline = 'alphabetic';
+      ctx.globalAlpha = 1;
+      break;
+    }
+    case 'flash': {
+      // Neon-Blitz quer durch die Kugel
+      const angle = Math.random() * Math.PI * 2;
+      ctx.globalAlpha = fade * 0.4;
+      ctx.strokeStyle = NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)];
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(angle) * r * 0.8, cy + Math.sin(angle) * r * 0.8);
+      ctx.lineTo(cx - Math.cos(angle) * r * 0.5, cy - Math.sin(angle) * r * 0.5);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      break;
+    }
+    case 'twitch': {
+      // Kugel zuckt — wird über Canvas-Translate im Frame gemacht
+      break;
+    }
+    case 'shimmer': {
+      // Subtiles Schimmern am Kugelrand
+      const shimAngle = Date.now() * 0.003;
+      const sx = cx + Math.cos(shimAngle) * r * 0.95;
+      const sy = cy + Math.sin(shimAngle) * r * 0.95;
+      const sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, 15);
+      sg.addColorStop(0, `rgba(255, 255, 255, ${fade * 0.25})`);
+      sg.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.beginPath();
+      ctx.arc(sx, sy, 15, 0, Math.PI * 2);
+      ctx.fillStyle = sg;
+      ctx.fill();
+      break;
+    }
+  }
+}
+
+// --- Partikel (Gedanken) ---
+const particles = [];
+const NEON_COLORS = [
+  '#ff006e', '#ff5400', '#ffbe0b', '#00f5d4', '#00bbf9',
+  '#9b5de5', '#f15bb5', '#fee440', '#00cffd', '#ff4d6d'
+];
+
+function spawnParticle(cx, cy, r) {
+  const s = r * 0.28;
+  const headY = cy + r * 0.15 - s * 0.55;
+  const baseY = cy + r * 0.15;
+  const angle = Math.random() * Math.PI * 2;
+  const speed = 1 + Math.random() * 3 * shakeIntensity;
+
+  // Bei hohem Counter: Partikel aus dem ganzen Körper, nicht nur dem Kopf
+  const fromBody = thoughtCounter > 60 && Math.random() < (thoughtCounter - 60) / 80;
+  const spawnX = fromBody ? cx + (Math.random() - 0.5) * s * 0.6 : cx + (Math.random() - 0.5) * s * 0.3;
+  const spawnY = fromBody ? baseY - Math.random() * s * 0.8 : headY;
+
+  particles.push({
+    x: spawnX,
+    y: spawnY,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed - 1.5, // tendenz nach oben
+    life: 1,
+    decay: 0.0008 + Math.random() * 0.0015,
+    size: Math.random() < 0.15 ? 5 + Math.random() * 3 : (Math.random() < 0.3 ? 1 + Math.random() * 1.5 : 2 + Math.random() * 3),
+    color: NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)],
+    age: 0 // für Spawn-Blitz
+  });
+}
+
+function updateParticles(cx, cy, r) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+
+    if (state === 'meditating') {
+      // Meditation: sanftes Abbremsen, KEIN Fallen
+      // Partikel bleiben wo sie sind und verblassen mit dem Timer
+      p.vx *= 0.995;
+      p.vy *= 0.995;
+      p.x += p.vx;
+      p.y += p.vy;
+      // Kein individueller Decay — Leben wird vom Timer gesteuert
+    } else {
+      // Normal: Bewegung + leichte Gravitation
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.02;
+      p.life -= p.decay;
+    }
+    p.age++;
+
+    // In der Kugel halten
+    const dx = p.x - cx;
+    const dy = p.y - cy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > r * 0.92) {
+      // Am Rand reflektieren
+      const nx = dx / dist;
+      const ny = dy / dist;
+      p.vx -= 2 * (p.vx * nx + p.vy * ny) * nx;
+      p.vy -= 2 * (p.vx * nx + p.vy * ny) * ny;
+      p.x = cx + nx * r * 0.91;
+      p.y = cy + ny * r * 0.91;
+      p.vx *= 0.7;
+      p.vy *= 0.7;
+    }
+
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+    }
+  }
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return [r, g, b];
+}
+
+function desaturate(hex, amount) {
+  // amount: 0 = original, 1 = komplett grau/aschig
+  // gibt [r,g,b] Array zurück
+  const [r, g, b] = hexToRgb(hex);
+  const gray = 80;
+  return [
+    Math.round(r + (gray - r) * amount),
+    Math.round(g + (gray - g) * amount),
+    Math.round(b + (gray - b) * amount)
+  ];
+}
+
+function drawParticles() {
+  // Entsättigungs-Faktor: 0 beim Schütteln, steigt während Meditation
+  let desat = 0;
+  let medAlpha = 1; // Meditations-Verblassen (1 = voll, 0 = weg)
+  if (state === 'meditating') {
+    const progress = 1 - meditationTimeLeft / meditationDuration; // 0→1
+    desat = progress;
+    medAlpha = 1 - progress; // linear verblassen über die gesamte Dauer
+  }
+
+  // Schrumpf-Faktor: nur sanft während Meditation (nicht aggressiv)
+  const shrink = state === 'meditating' ? 1 - (1 - meditationTimeLeft / meditationDuration) * 0.3 : 1;
+
+  for (const p of particles) {
+    const [cr, cg, cb] = desat > 0 ? desaturate(p.color, desat) : hexToRgb(p.color);
+    const sz = p.size * shrink;
+    // Alpha: individuelles Life ODER Meditations-Timer (der niedrigere Wert)
+    const baseAlpha = state === 'meditating' ? Math.min(p.life, medAlpha) : p.life;
+    ctx.globalAlpha = baseAlpha * 0.8;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, sz, 0, Math.PI * 2);
+    ctx.fillStyle = `rgb(${cr},${cg},${cb})`;
+    ctx.fill();
+    // Spawn-Blitz: heller weißer Kern in den ersten Frames
+    if (p.age < 4) {
+      const sparkAlpha = (1 - p.age / 4) * 0.6;
+      ctx.globalAlpha = sparkAlpha;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, sz * 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.globalAlpha = p.life * 0.8;
+    }
+    // Glow (wird mit Entsättigung schwächer)
+    const glowAlpha = (1 - desat * 0.8) * 0.25;
+    const glowR = sz * 2.5;
+    if (glowR > 0.5) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
+      const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
+      glow.addColorStop(0, `rgba(${cr},${cg},${cb},${glowAlpha})`);
+      glow.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
+      ctx.fillStyle = glow;
+      ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+// --- Timer-Auswahl ---
+function drawTimerSelect(cx, cy, r) {
+  const btnW = Math.min(canvas.width, canvas.height) * 0.07;
+  const btnH = btnW * 0.55;
+  const gap = btnW * 0.4;
+  const totalW = DURATION_OPTIONS.length * btnW + (DURATION_OPTIONS.length - 1) * gap;
+  const startX = cx - totalW / 2;
+  const btnY = cy + r + 30;
+  const fontSize = btnH * 0.5;
+
+  timerButtons = [];
+
+  for (let i = 0; i < DURATION_OPTIONS.length; i++) {
+    const x = startX + i * (btnW + gap);
+    const selected = i === selectedDurationIdx;
+
+    timerButtons.push({ x, y: btnY, w: btnW, h: btnH, idx: i });
+
+    // Button-Hintergrund
+    ctx.beginPath();
+    ctx.roundRect(x, btnY, btnW, btnH, btnH * 0.2);
+    ctx.fillStyle = selected
+      ? 'rgba(255, 255, 255, 0.15)'
+      : 'rgba(255, 255, 255, 0.04)';
+    ctx.fill();
+    ctx.strokeStyle = selected
+      ? 'rgba(255, 255, 255, 0.4)'
+      : 'rgba(255, 255, 255, 0.1)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Label
+    ctx.fillStyle = selected
+      ? 'rgba(255, 255, 255, 0.8)'
+      : 'rgba(255, 255, 255, 0.3)';
+    ctx.font = `${fontSize}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(DURATION_OPTIONS[i].label, x + btnW / 2, btnY + btnH / 2);
+  }
+
+  // "min" Label
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+  ctx.font = `${fontSize * 0.6}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.fillText('min', cx, btnY + btnH + fontSize * 0.7);
+
+  ctx.textAlign = 'start';
+  ctx.textBaseline = 'alphabetic';
+}
+
+function handleTimerClick(x, y) {
+  for (const btn of timerButtons) {
+    if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+      selectedDurationIdx = btn.idx;
+      meditationDuration = DURATION_OPTIONS[btn.idx].seconds;
+      return true;
+    }
+  }
+  return false;
+}
+
+canvas.addEventListener('click', (e) => {
+  if (state === 'idle') {
+    handleTimerClick(e.clientX, e.clientY);
+  } else if (state === 'done') {
+    state = 'idle';
+    thoughtCounter = 0;
+    particles.length = 0;
+    doneTime = 0;
+  }
+});
+
+canvas.addEventListener('touchend', (e) => {
+  if (state === 'idle' && e.changedTouches.length > 0) {
+    const t = e.changedTouches[0];
+    handleTimerClick(t.clientX, t.clientY);
+  } else if (state === 'done') {
+    state = 'idle';
+    thoughtCounter = 0;
+    particles.length = 0;
+    doneTime = 0;
+  }
+});
+
+// --- Sound (Web Audio API) ---
+let audioCtx = null;
+let noiseNode = null;
+let noiseGain = null;
+let droneOsc = null;
+let droneGain = null;
+let droneOsc2 = null;
+let droneGain2 = null;
+let filterNode = null;
+let soundInitialized = false;
+
+function initSound() {
+  if (soundInitialized) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  // --- Noise (Gedankenrauschen) ---
+  const bufferSize = audioCtx.sampleRate * 2;
+  const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = Math.random() * 2 - 1;
+  }
+  noiseNode = audioCtx.createBufferSource();
+  noiseNode.buffer = noiseBuffer;
+  noiseNode.loop = true;
+
+  filterNode = audioCtx.createBiquadFilter();
+  filterNode.type = 'bandpass';
+  filterNode.frequency.value = 1500;
+  filterNode.Q.value = 0.5;
+
+  noiseGain = audioCtx.createGain();
+  noiseGain.gain.value = 0;
+
+  noiseNode.connect(filterNode);
+  filterNode.connect(noiseGain);
+  noiseGain.connect(audioCtx.destination);
+  noiseNode.start();
+
+  // --- Drone (tiefer Meditationston) ---
+  droneOsc = audioCtx.createOscillator();
+  droneOsc.type = 'sine';
+  droneOsc.frequency.value = 72; // Grundton
+  droneGain = audioCtx.createGain();
+  droneGain.gain.value = 0;
+  droneOsc.connect(droneGain);
+  droneGain.connect(audioCtx.destination);
+  droneOsc.start();
+
+  // --- Drone Oberton (Quinte, wärmer) ---
+  droneOsc2 = audioCtx.createOscillator();
+  droneOsc2.type = 'sine';
+  droneOsc2.frequency.value = 108; // Quinte über 72 Hz
+  droneGain2 = audioCtx.createGain();
+  droneGain2.gain.value = 0;
+  droneOsc2.connect(droneGain2);
+  droneGain2.connect(audioCtx.destination);
+  droneOsc2.start();
+
+  soundInitialized = true;
+}
+
+function updateSound() {
+  if (!soundInitialized) return;
+  const t = audioCtx.currentTime;
+
+  if (state === 'shaking') {
+    // Chaotisches Rauschen, Lautstärke = shakeIntensity
+    noiseGain.gain.linearRampToValueAtTime(shakeIntensity * 0.3, t + 0.05);
+    // Filter wird höher/offener je mehr Chaos
+    filterNode.frequency.linearRampToValueAtTime(800 + thoughtCounter * 40, t + 0.05);
+    filterNode.Q.linearRampToValueAtTime(0.3 + shakeIntensity * 2, t + 0.05);
+    // Drone aus
+    droneGain.gain.linearRampToValueAtTime(0, t + 0.1);
+    droneGain2.gain.linearRampToValueAtTime(0, t + 0.1);
+  } else if (state === 'meditating') {
+    const progress = 1 - meditationTimeLeft / meditationDuration; // 0→1
+    // Rauschen wird leiser und dumpfer
+    noiseGain.gain.linearRampToValueAtTime(0.15 * (1 - progress), t + 0.1);
+    filterNode.frequency.linearRampToValueAtTime(400 * (1 - progress) + 80, t + 0.1);
+    // Drone: Grundton und Quinte, Kurve über die Meditation
+    const droneCurve = progress < 0.5
+      ? progress * 2 * 0.08
+      : (1 - progress) * 2 * 0.08;
+    droneGain.gain.linearRampToValueAtTime(droneCurve, t + 0.2);
+    // Oberton kommt etwas später und leiser
+    const drone2Curve = progress < 0.3 ? 0
+      : progress < 0.6 ? (progress - 0.3) / 0.3 * 0.04
+      : (1 - progress) / 0.4 * 0.04;
+    droneGain2.gain.linearRampToValueAtTime(drone2Curve, t + 0.2);
+  } else {
+    // idle / done: alles leise
+    noiseGain.gain.linearRampToValueAtTime(0, t + 0.3);
+    droneGain.gain.linearRampToValueAtTime(0, t + 0.3);
+    droneGain2.gain.linearRampToValueAtTime(0, t + 0.3);
+  }
+}
+
+// Sound starten bei erster Interaktion (Browser-Policy)
+function ensureSound() {
+  if (!soundInitialized) {
+    initSound();
+  } else if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+canvas.addEventListener('mousedown', ensureSound, { once: false });
+canvas.addEventListener('touchstart', ensureSound, { once: false });
+
+// --- Hintergrund-Sterne ---
+let stars = [];
+function generateStars() {
+  stars = [];
+  for (let i = 0; i < 60; i++) {
+    stars.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: 0.3 + Math.random() * 1.2,
+      twinkleSpeed: 0.5 + Math.random() * 2,
+      twinkleOffset: Math.random() * Math.PI * 2
+    });
+  }
+}
+
+function drawStars() {
+  const now = Date.now() * 0.001;
+  // Sterne reagieren auf State: gedimmt beim Schütteln, heller im done
+  let starBright = 1;
+  if (state === 'shaking') {
+    starBright = Math.max(0.1, 1 - shakeIntensity * 1.5);
+  } else if (state === 'done') {
+    const elapsed = (Date.now() - doneTime) / 1000;
+    starBright = 1 + Math.min(0.8, elapsed / 10); // langsam heller
+  }
+  for (const s of stars) {
+    const twinkle = Math.sin(now * s.twinkleSpeed + s.twinkleOffset) * 0.5 + 0.5;
+    ctx.globalAlpha = (twinkle * 0.15 + 0.03) * starBright;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+    ctx.fillStyle = '#c8d8f0';
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// --- Sizing ---
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  generateStars();
+}
+window.addEventListener('resize', resize);
+resize();
+
+// --- Draw ---
+function drawKugel() {
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const r = Math.min(canvas.width, canvas.height) * 0.35;
+
+  // Wasser-Füllung — wird klarer während Meditation / done
+  let clarity = 0; // 0 = normal, 1 = maximal klar
+  if (state === 'meditating') {
+    clarity = 1 - meditationTimeLeft / meditationDuration;
+  } else if (state === 'done') {
+    clarity = 1;
+  }
+
+  const baseAlpha = 0.08 + clarity * 0.04;
+  const midAlpha = 0.05 + clarity * 0.03;
+  const edgeAlpha = 0.12 + clarity * 0.05;
+
+  const waterGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  waterGrad.addColorStop(0, `rgba(${180 + clarity * 30}, ${210 + clarity * 20}, ${235 + clarity * 15}, ${baseAlpha})`);
+  waterGrad.addColorStop(0.7, `rgba(${120 + clarity * 40}, ${160 + clarity * 30}, ${200 + clarity * 25}, ${midAlpha})`);
+  waterGrad.addColorStop(1, `rgba(${60 + clarity * 40}, ${90 + clarity * 30}, ${130 + clarity * 30}, ${edgeAlpha})`);
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = waterGrad;
+  ctx.fill();
+
+  // Glas-Rand (subtiler Ring)
+  const rimGrad = ctx.createRadialGradient(cx, cy, r - 2, cx, cy, r + 1);
+  rimGrad.addColorStop(0, 'rgba(150, 180, 210, 0.0)');
+  rimGrad.addColorStop(0.5, 'rgba(150, 180, 210, 0.25)');
+  rimGrad.addColorStop(1, 'rgba(150, 180, 210, 0.0)');
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = rimGrad;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Innere Glasreflexion (zweiter, weicherer Ring innen)
+  const innerRimGrad = ctx.createRadialGradient(cx, cy, r * 0.88, cx, cy, r * 0.95);
+  innerRimGrad.addColorStop(0, 'rgba(180, 210, 240, 0)');
+  innerRimGrad.addColorStop(0.5, 'rgba(180, 210, 240, 0.04)');
+  innerRimGrad.addColorStop(1, 'rgba(180, 210, 240, 0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.92, 0, Math.PI * 2);
+  ctx.strokeStyle = innerRimGrad;
+  ctx.lineWidth = r * 0.07;
+  ctx.stroke();
+
+  // Glas-Glanz (Lichtreflex oben links, wandert langsam)
+  const glareAngle = Date.now() * 0.0001; // sehr langsame Rotation
+  const glareDrift = Math.sin(glareAngle) * 0.05;
+  const glareX = cx + r * (-0.3 + glareDrift);
+  const glareY = cy + r * (-0.3 + Math.cos(glareAngle) * 0.03);
+  const glareR = r * 0.4;
+  const glareGrad = ctx.createRadialGradient(glareX, glareY, 0, glareX, glareY, glareR);
+  glareGrad.addColorStop(0, 'rgba(255, 255, 255, 0.12)');
+  glareGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.04)');
+  glareGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+
+  ctx.beginPath();
+  ctx.arc(glareX, glareY, glareR, 0, Math.PI * 2);
+  ctx.fillStyle = glareGrad;
+  ctx.fill();
+
+  // Kleiner scharfer Glanzpunkt (wandert mit)
+  const dotX = cx + r * (-0.22 + glareDrift * 0.7);
+  const dotY = cy + r * (-0.35 + Math.cos(glareAngle) * 0.02);
+  const dotGrad = ctx.createRadialGradient(dotX, dotY, 0, dotX, dotY, r * 0.05);
+  dotGrad.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+  dotGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+
+  ctx.beginPath();
+  ctx.arc(dotX, dotY, r * 0.05, 0, Math.PI * 2);
+  ctx.fillStyle = dotGrad;
+  ctx.fill();
+}
+
+function drawStatue(cx, cy, r) {
+  const s = r * 0.28; // Statue-Größe relativ zur Kugel
+  const baseY = cy + r * 0.15; // Etwas unterhalb der Mitte
+
+  ctx.save();
+
+  // Gold-Farben
+  const goldLight = '#ffd700';
+  const goldMid = '#daa520';
+  const goldDark = '#b8860b';
+  const goldShine = '#fff4c2';
+
+  // --- Lotussitz-Basis ---
+  ctx.beginPath();
+  ctx.ellipse(cx, baseY + s * 0.35, s * 0.45, s * 0.12, 0, 0, Math.PI * 2);
+  const baseGrad = ctx.createLinearGradient(cx - s * 0.4, baseY, cx + s * 0.4, baseY);
+  baseGrad.addColorStop(0, goldDark);
+  baseGrad.addColorStop(0.5, goldLight);
+  baseGrad.addColorStop(1, goldDark);
+  ctx.fillStyle = baseGrad;
+  ctx.fill();
+
+  // --- Körper (Dreieck nach oben, Meditationspose) ---
+  ctx.beginPath();
+  ctx.moveTo(cx - s * 0.38, baseY + s * 0.3);
+  ctx.quadraticCurveTo(cx - s * 0.4, baseY - s * 0.1, cx - s * 0.18, baseY - s * 0.35);
+  ctx.quadraticCurveTo(cx, baseY - s * 0.25, cx + s * 0.18, baseY - s * 0.35);
+  ctx.quadraticCurveTo(cx + s * 0.4, baseY - s * 0.1, cx + s * 0.38, baseY + s * 0.3);
+  ctx.closePath();
+  const bodyGrad = ctx.createLinearGradient(cx - s * 0.3, baseY, cx + s * 0.3, baseY);
+  bodyGrad.addColorStop(0, goldDark);
+  bodyGrad.addColorStop(0.3, goldLight);
+  bodyGrad.addColorStop(0.5, goldShine);
+  bodyGrad.addColorStop(0.7, goldLight);
+  bodyGrad.addColorStop(1, goldDark);
+  ctx.fillStyle = bodyGrad;
+  ctx.fill();
+
+  // --- Kopf (Kreis) ---
+  const headY = baseY - s * 0.55;
+  const headR = s * 0.18;
+  ctx.beginPath();
+  ctx.arc(cx, headY, headR, 0, Math.PI * 2);
+  const headGrad = ctx.createRadialGradient(cx - headR * 0.3, headY - headR * 0.3, 0, cx, headY, headR);
+  headGrad.addColorStop(0, goldShine);
+  headGrad.addColorStop(0.5, goldLight);
+  headGrad.addColorStop(1, goldMid);
+  ctx.fillStyle = headGrad;
+  ctx.fill();
+
+  // --- Hände (zwei kleine Ovale in der Mitte, übereinander) ---
+  ctx.beginPath();
+  ctx.ellipse(cx, baseY + s * 0.05, s * 0.12, s * 0.07, 0, 0, Math.PI * 2);
+  ctx.fillStyle = goldMid;
+  ctx.fill();
+
+  // --- Glanz-Highlight auf dem Körper ---
+  const shineGrad = ctx.createRadialGradient(cx - s * 0.05, baseY - s * 0.15, 0, cx, baseY - s * 0.1, s * 0.2);
+  shineGrad.addColorStop(0, 'rgba(255, 255, 220, 0.25)');
+  shineGrad.addColorStop(1, 'rgba(255, 255, 220, 0.0)');
+  ctx.beginPath();
+  ctx.arc(cx, baseY - s * 0.15, s * 0.2, 0, Math.PI * 2);
+  ctx.fillStyle = shineGrad;
+  ctx.fill();
+
+  // --- Goldener Schein / Aura ---
+  const auraGrad = ctx.createRadialGradient(cx, baseY - s * 0.1, s * 0.1, cx, baseY - s * 0.1, s * 0.7);
+  auraGrad.addColorStop(0, 'rgba(255, 215, 0, 0.08)');
+  auraGrad.addColorStop(0.5, 'rgba(255, 215, 0, 0.03)');
+  auraGrad.addColorStop(1, 'rgba(255, 215, 0, 0.0)');
+  ctx.beginPath();
+  ctx.arc(cx, baseY - s * 0.1, s * 0.7, 0, Math.PI * 2);
+  ctx.fillStyle = auraGrad;
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function frame() {
+  updateShake();
+  updateSound();
+  updateTemptations();
+
+  // Hintergrund-Farbshift je nach State
+  let bgR = 10, bgG = 10, bgB = 15;
+  if (state === 'shaking') {
+    // Warm/rötlich beim Schütteln
+    bgR = 10 + shakeIntensity * 15;
+    bgG = 8;
+    bgB = 10;
+  } else if (state === 'meditating') {
+    // Kühl/bläulich während Meditation
+    const mp = 1 - meditationTimeLeft / meditationDuration;
+    bgR = 8 - mp * 3;
+    bgG = 10 + mp * 4;
+    bgB = 15 + mp * 8;
+  } else if (state === 'done') {
+    bgR = 5; bgG = 14; bgB = 23;
+  }
+
+  // Trail-Effekt: halbtransparenter Layer statt hartem Clear
+  if (state === 'shaking' && shakeIntensity > 0.2) {
+    ctx.fillStyle = `rgba(${Math.round(bgR)}, ${Math.round(bgG)}, ${Math.round(bgB)}, ${0.3 + (1 - shakeIntensity) * 0.6})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  } else {
+    ctx.fillStyle = `rgb(${Math.round(bgR)}, ${Math.round(bgG)}, ${Math.round(bgB)})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const r = Math.min(canvas.width, canvas.height) * 0.35;
+
+  // Schüttel-Wackeln + Twitch-Effekt
+  let offsetX = 0, offsetY = 0;
+
+  // Kugel wackelt beim Schütteln
+  if (shakeIntensity > 0.05) {
+    offsetX += (Math.random() - 0.5) * shakeIntensity * 6;
+    offsetY += (Math.random() - 0.5) * shakeIntensity * 4;
+  }
+
+  // Verführungs-Twitch
+  if (temptationActive && temptationActive.type === 'twitch') {
+    const t = (Date.now() - temptationActive.startTime) / temptationActive.duration;
+    const fade = t < 0.3 ? t / 0.3 : (1 - t) / 0.7;
+    offsetX += Math.sin(Date.now() * 0.05) * fade * 4;
+  }
+
+  drawStars();
+
+  ctx.save();
+  ctx.translate(offsetX, offsetY);
+
+  drawKugel();
+
+  // Wasser-Kaustiken (subtile Lichtmuster im Wasser)
+  if (state !== 'shaking' || shakeIntensity < 0.3) {
+    const now = Date.now() * 0.0005;
+    const causticAlpha = state === 'done' ? 0.025 :
+                         state === 'meditating' ? 0.012 + (1 - meditationTimeLeft / meditationDuration) * 0.015 : 0.008;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.92, 0, Math.PI * 2);
+    ctx.clip();
+    for (let i = 0; i < 5; i++) {
+      const ca = now + i * 1.3;
+      const csx = cx + Math.sin(ca * 1.1) * r * 0.4 + Math.cos(ca * 0.7 + i) * r * 0.2;
+      const csy = cy + Math.cos(ca * 0.9) * r * 0.3 + Math.sin(ca * 0.5 + i * 2) * r * 0.25;
+      const csz = r * (0.15 + Math.sin(ca * 0.6 + i * 0.8) * 0.08);
+      const cg = ctx.createRadialGradient(csx, csy, 0, csx, csy, csz);
+      cg.addColorStop(0, `rgba(200, 230, 255, ${causticAlpha})`);
+      cg.addColorStop(0.6, `rgba(180, 220, 250, ${causticAlpha * 0.4})`);
+      cg.addColorStop(1, 'rgba(180, 220, 250, 0)');
+      ctx.beginPath();
+      ctx.arc(csx, csy, csz, 0, Math.PI * 2);
+      ctx.fillStyle = cg;
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Partikel spawnen beim Schütteln — mehr bei hohem Counter
+  if (shakeIntensity > 0.05) {
+    const baseCount = Math.floor(shakeIntensity * 5);
+    const bonusCount = Math.floor(thoughtCounter / 25); // +1 pro 25%
+    const count = baseCount + bonusCount;
+    for (let i = 0; i < count; i++) {
+      spawnParticle(cx, cy, r);
+    }
+  }
+
+  updateParticles(cx, cy, r);
+
+  // Partikel nur innerhalb der Kugel zeichnen
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.95, 0, Math.PI * 2);
+  ctx.clip();
+  drawParticles();
+  ctx.restore();
+
+  // Statue: Verhalten abhängig von State
+  if (state === 'shaking' || state === 'idle') {
+    // Beim Schütteln: unsichtbarer je mehr Gedanken
+    const statueAlpha = Math.max(0, 1 - thoughtCounter / 80);
+    if (statueAlpha > 0) {
+      ctx.globalAlpha = statueAlpha;
+      drawStatue(cx, cy, r);
+
+      // Idle: subtile Atem-Animation (Aura pulsiert)
+      if (state === 'idle') {
+        const breath = Math.sin(Date.now() * 0.0015) * 0.5 + 0.5;
+        const s = r * 0.28;
+        const baseY = cy + r * 0.15;
+        const breathGrad = ctx.createRadialGradient(cx, baseY - s * 0.1, s * 0.05, cx, baseY - s * 0.1, s * (0.5 + breath * 0.25));
+        breathGrad.addColorStop(0, `rgba(255, 215, 0, ${0.04 + breath * 0.04})`);
+        breathGrad.addColorStop(0.6, `rgba(255, 215, 0, ${0.01 + breath * 0.02})`);
+        breathGrad.addColorStop(1, 'rgba(255, 215, 0, 0)');
+        ctx.beginPath();
+        ctx.arc(cx, baseY - s * 0.1, s * (0.5 + breath * 0.25), 0, Math.PI * 2);
+        ctx.fillStyle = breathGrad;
+        ctx.fill();
+      }
+
+      ctx.globalAlpha = 1;
+    }
+  } else if (state === 'meditating') {
+    // Meditation: Statue taucht auf, glitcht, löst sich auf
+    const progress = 1 - meditationTimeLeft / meditationDuration; // 0→1
+    if (progress < 0.7) {
+      // Phase 1 (0–70%): Statue wird sichtbar, aber rostig und glitchend
+      const visibility = Math.min(1, progress * 3); // schnell sichtbar werden
+      const glitchAmount = Math.max(0, progress - 0.2) * 2; // ab 20% glitchen
+
+      ctx.save();
+      ctx.globalAlpha = visibility * (1 - progress * 0.8);
+
+      // Glitch: zufälliger horizontaler Versatz
+      if (glitchAmount > 0 && Math.random() < glitchAmount * 0.3) {
+        ctx.translate((Math.random() - 0.5) * glitchAmount * 15, 0);
+      }
+
+      // Farb-Shift: Gold → Grau/Rost (via filter-Simulation durch Overlay)
+      drawStatue(cx, cy, r);
+
+      // Rost-Overlay
+      if (glitchAmount > 0) {
+        const s = r * 0.28;
+        const baseY = cy + r * 0.15;
+        ctx.globalAlpha = glitchAmount * 0.4;
+        ctx.fillStyle = `rgb(${100 + glitchAmount * 60}, ${60 + glitchAmount * 20}, ${30})`;
+        ctx.beginPath();
+        ctx.ellipse(cx, baseY, s * 0.4, s * 0.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+    // Phase 2 (70–100%): komplett weg
+  }
+
+  // Timer-Auswahl + Hinweis (nur im idle-State)
+  if (state === 'idle') {
+    // Pulsierender Hinweistext
+    const pulse = Math.sin(Date.now() * 0.002) * 0.5 + 0.5;
+    ctx.fillStyle = `rgba(255,255,255,${0.15 + pulse * 0.1})`;
+    ctx.font = `${Math.min(canvas.width, canvas.height) * 0.025}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText('shake', cx, cy - r - 15);
+    ctx.textAlign = 'start';
+
+    drawTimerSelect(cx, cy, r);
+  }
+
+  // Timer anzeigen (während Meditation)
+  if (state === 'meditating' || state === 'shaking') {
+    const minutes = Math.floor(meditationTimeLeft / 60);
+    const seconds = Math.floor(meditationTimeLeft % 60);
+    const timeStr = state === 'meditating'
+      ? `${minutes}:${seconds.toString().padStart(2, '0')}`
+      : '';
+
+    if (timeStr) {
+      ctx.fillStyle = `rgba(255,255,255,${0.15 + 0.1 * (1 - meditationTimeLeft / meditationDuration)})`;
+      ctx.font = `${Math.min(canvas.width, canvas.height) * 0.04}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(timeStr, cx, cy + r + 40);
+      ctx.textAlign = 'start';
+    }
+  }
+
+  // Verführungen zeichnen
+  drawTemptations(cx, cy, r);
+
+  // Done-State: klares Wasser, sanftes Leuchten
+  if (state === 'done') {
+    const elapsed = (Date.now() - doneTime) / 1000;
+    const fadeIn = Math.min(1, elapsed / 3); // 3 Sekunden einblenden
+
+    // Sanftes inneres Leuchten (klar, weit, still)
+    const clearGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 0.8);
+    clearGrad.addColorStop(0, `rgba(200, 230, 255, ${fadeIn * 0.06})`);
+    clearGrad.addColorStop(0.5, `rgba(180, 215, 245, ${fadeIn * 0.03})`);
+    clearGrad.addColorStop(1, 'rgba(150, 200, 240, 0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.8, 0, Math.PI * 2);
+    ctx.fillStyle = clearGrad;
+    ctx.fill();
+
+    // Hinweis zum Neustart (nach 5s einblenden)
+    if (elapsed > 5) {
+      const hintAlpha = Math.min(0.2, (elapsed - 5) / 3 * 0.2);
+      ctx.fillStyle = `rgba(255,255,255,${hintAlpha})`;
+      ctx.font = `${Math.min(canvas.width, canvas.height) * 0.025}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText('klick', cx, cy + r + 35);
+      ctx.textAlign = 'start';
+    }
+
+    // Langsame, atmende Lichtpulse
+    const pulse = Math.sin(elapsed * 0.5) * 0.5 + 0.5;
+    const pulseGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 0.3);
+    pulseGrad.addColorStop(0, `rgba(220, 240, 255, ${fadeIn * pulse * 0.04})`);
+    pulseGrad.addColorStop(1, 'rgba(220, 240, 255, 0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.3, 0, Math.PI * 2);
+    ctx.fillStyle = pulseGrad;
+    ctx.fill();
+  }
+
+  ctx.restore(); // Twitch-Translate aufheben
+
+  // Vignette (dunkle Ecken für Atmosphäre)
+  const vigR = Math.max(canvas.width, canvas.height) * 0.7;
+  const vigGrad = ctx.createRadialGradient(cx, cy, vigR * 0.4, cx, cy, vigR);
+  vigGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  vigGrad.addColorStop(0.7, 'rgba(0, 0, 0, 0)');
+  vigGrad.addColorStop(1, 'rgba(0, 0, 0, 0.4)');
+  ctx.fillStyle = vigGrad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Rückfall-Flash (rotes Aufleuchten des Kugelrands)
+  if (relapseFlash > 0.01) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255, 40, 40, ${relapseFlash * 0.6})`;
+    ctx.lineWidth = 4 + relapseFlash * 8;
+    ctx.stroke();
+    relapseFlash *= 0.92; // schneller Decay
+  }
+
+  // Counter-Ring um die Kugel (zeigt thoughtCounter %)
+  if (thoughtCounter > 0 && state !== 'done') {
+    const angle = (thoughtCounter / 100) * Math.PI * 2;
+    const ringPulse = Math.sin(Date.now() * 0.004) * 0.1 + 0.9;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 6, -Math.PI / 2, -Math.PI / 2 + angle);
+    ctx.strokeStyle = `rgba(255, 0, 110, ${(0.3 + thoughtCounter / 200) * ringPulse})`;
+    ctx.lineWidth = 1.5 + ringPulse;
+    ctx.stroke();
+    // Äußerer Glow des Rings
+    if (thoughtCounter > 50) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 6, -Math.PI / 2, -Math.PI / 2 + angle);
+      ctx.strokeStyle = `rgba(255, 0, 110, ${(thoughtCounter - 50) / 500 * ringPulse})`;
+      ctx.lineWidth = 6;
+      ctx.stroke();
+    }
+  }
+
+  requestAnimationFrame(frame);
+}
+
+frame();
+</script>
+</body>
+</html>
