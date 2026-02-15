@@ -56,8 +56,8 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 ## Sound-Design
 
 ### Wählbare Gedanken-Sounds (Schüttel-Phase)
-- **Rauschen**: Bandpass-gefiltertes White Noise (Lautstärke folgt shakeIntensity)
-- **Synapsen** (Default): 12 pooled Mikro-Ping-Oszillatoren (400–4000 Hz), rapid-fire
+- **Rauschen** (Default): Bandpass-gefiltertes White Noise (Lautstärke folgt shakeIntensity)
+- **Synapsen**: 12 pooled Mikro-Ping-Oszillatoren (400–4000 Hz), rapid-fire
 - **Stimmen**: 5 verstimmte Triangle-Oszillatoren im Sprachbereich (180–540 Hz) mit Vibrato
 - **Metallisch**: 4 inharmonische Teiltöne (Basis 280 Hz, Ratios 1/2.32/3.86/5.13) mit AM
 
@@ -150,7 +150,7 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Maus**: Nur bei `mouseDown=true` — Bewegung ohne Klick wird ignoriert
 - **Touch**: touchmove-Distanz
 - **Device Motion**: Accelerometer, Schwelle >12
-- `shakeAccum` → `shakeIntensity` (0–1), Decay 0.3/Frame, Counter-Rate 0.4
+- `shakeAccum` → `shakeIntensity` (0–1), Decay 0.3/Frame, Counter-Rate 0.6
 - **Meditationsstart**: shakeAccum + shakeIntensity werden auf 0 resetet
 
 ### Partikel (Gedanken)
@@ -179,8 +179,10 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 
 ### Timer-Anzeige
 - **Toggle**: Im Menü schaltbar (TIMER ANZEIGEN AN/AUS)
-- **Default**: An (`timerVisible = true`)
-- **Anzeige**: Roter Counter-Ring um die Kugel + Uhrzeitanzeige unter der Kugel
+- **Default**: Aus (`timerVisible = false`)
+- **Anzeige**: Uhrzeitanzeige unter der Kugel (optional)
+- **Counter-Ring**: Immer sichtbar, direkt auf Kugelrand (`rFixed`, kein Offset), doppelt dick (lineWidth 3+pulse*2 / Glow 12)
+- **rFixed**: Counter-Ring nutzt fixen Radius, bewegt sich nicht mit Atem-Animation
 
 ### Weitere Effekte
 - **Rückfall-Flash**: Roter Lichtring (alpha 0.6, decay 0.92)
