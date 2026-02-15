@@ -418,20 +418,22 @@ function updateParticles(cx, cy, r) {
     }
     p.age++;
 
-    // In der Kugel halten
-    const dx = p.x - cx;
-    const dy = p.y - cy;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist > r * 0.92) {
-      // Am Rand reflektieren
-      const nx = dx / dist;
-      const ny = dy / dist;
-      p.vx -= 2 * (p.vx * nx + p.vy * ny) * nx;
-      p.vy -= 2 * (p.vx * nx + p.vy * ny) * ny;
-      p.x = cx + nx * r * 0.91;
-      p.y = cy + ny * r * 0.91;
-      p.vx *= 0.7;
-      p.vy *= 0.7;
+    // In der Kugel halten (nur beim Schütteln — Meditation: Partikel bleiben wo sie sind)
+    if (state !== 'meditating') {
+      const dx = p.x - cx;
+      const dy = p.y - cy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > r * 0.92) {
+        // Am Rand reflektieren
+        const nx = dx / dist;
+        const ny = dy / dist;
+        p.vx -= 2 * (p.vx * nx + p.vy * ny) * nx;
+        p.vy -= 2 * (p.vx * nx + p.vy * ny) * ny;
+        p.x = cx + nx * r * 0.91;
+        p.y = cy + ny * r * 0.91;
+        p.vx *= 0.7;
+        p.vy *= 0.7;
+      }
     }
 
     if (p.life <= 0) {
