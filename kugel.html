@@ -242,6 +242,17 @@ function updateShake() {
       meditationTimeLeft = meditationDuration;
       meditationStartTime = Date.now();
       counterFullPlayed = false;
+      // Schweben-Modus: Partikel verdoppeln für dichtere Gedankenwolke
+      if (thoughtModeIdx === 0) {
+        const dupes = particles.map(p => ({
+          ...p,
+          x: p.x + (Math.random() - 0.5) * 10,
+          y: p.y + (Math.random() - 0.5) * 10,
+          vx: p.vx * (0.5 + Math.random() * 0.5),
+          vy: p.vy * (0.5 + Math.random() * 0.5),
+        }));
+        particles.push(...dupes);
+      }
       if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
       playEndBell();
     }
@@ -602,9 +613,9 @@ function drawMenu() {
   curY += sectionGap * 3;
 
   // --- Hilfsfunktion: Settings-Reihe (Label + Buttons) ---
-  function drawSettingsRow(label, options, selectedIdx, y) {
+  function drawSettingsRow(label, options, selectedIdx, y, labelColor) {
     const labelFont = rowFont * 0.85;
-    ctx.fillStyle = 'rgba(240, 236, 230, 0.95)';
+    ctx.fillStyle = labelColor || 'rgba(240, 236, 230, 0.95)';
     ctx.font = `${labelFont}px "Courier New", monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
@@ -653,7 +664,8 @@ function drawMenu() {
 
   // --- MEDITATIONSZEIT ---
   const timeLabels = DURATION_OPTIONS.map(d => d.label + ' min');
-  const timeRow = drawSettingsRow('MEDITATIONSZEIT', timeLabels, selectedDurationIdx, curY);
+  const timeLabelColor = selectedDurationIdx < 0 ? '#f4a842' : null;
+  const timeRow = drawSettingsRow('MEDITATIONSZEIT', timeLabels, selectedDurationIdx, curY, timeLabelColor);
   menuButtons.timer = timeRow.btns;
   curY = timeRow.bottomY + sectionGap;
 
