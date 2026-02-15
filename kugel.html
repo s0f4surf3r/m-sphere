@@ -217,7 +217,7 @@ function updateShake() {
   if (shakeIntensity > 0.05) {
     // Schütteln erkannt → Counter hoch
     const wasFull = thoughtCounter >= 100;
-    thoughtCounter = Math.min(100, thoughtCounter + shakeIntensity * 0.75);
+    thoughtCounter = Math.min(100, thoughtCounter + shakeIntensity * 0.55);
     if (!wasFull && thoughtCounter >= 100) {
       counterFullPlayed = true;
     }
