@@ -1218,8 +1218,10 @@ function updateMeditationSound(t, progress) {
   const mode = MEDITATION_SOUNDS[meditationSoundIdx];
 
   // Gedanken-Rauschen löst sich auf
-  // Bei Tanpura2: sofort stumm (kein Rauschen gewünscht)
-  if (mode === 'Tanpura2') {
+  // Bei Tanpura2: Noise wird als Atem-Geräusch wiederverwendet (gesteuert unten)
+  if (mode === 'Tanpura2' && BREATHING_TIMING[breathingMode]) {
+    // Noise-Steuerung passiert im Tanpura2-Block unten
+  } else if (mode === 'Tanpura2') {
     noiseGain.gain.linearRampToValueAtTime(0, t + 0.3);
   } else {
     noiseGain.gain.linearRampToValueAtTime(0.1 * (1 - progress), t + 0.1);
@@ -1273,10 +1275,37 @@ function updateMeditationSound(t, progress) {
       }
     });
   } else if (mode === 'Tanpura2') {
+    // Atem-Welle berechnen (gleiche Logik wie in frame())
+    let breathMod = 0.5; // ohne Atmen: neutral
+    const bt2 = BREATHING_TIMING[breathingMode];
+    if (bt2 && meditationStartTime > 0) {
+      const breathTime2 = (Date.now() - meditationStartTime) / 1000;
+      const breathCycle2 = bt2.in + bt2.out;
+      const phase2 = breathTime2 % breathCycle2;
+      let bw;
+      if (phase2 < bt2.in) {
+        bw = Math.sin((phase2 / bt2.in) * Math.PI - Math.PI / 2);
+      } else {
+        bw = Math.sin(Math.PI / 2 - ((phase2 - bt2.in) / bt2.out) * Math.PI);
+      }
+      breathMod = (bw + 1) / 2; // 0=Ausatmen, 1=Einatmen
+    }
+
+    // Drone-Lautstärke leicht mit Atem modulieren (lauter beim Einatmen)
     const tanp2Vols = [0.07, 0.05, 0.06, 0.03];
+    const breathDroneMod = 0.8 + breathMod * 0.4; // 0.8–1.2
     tanpura2Gains.forEach((g, i) => {
-      g.gain.linearRampToValueAtTime(tanp2Vols[i] * envelope, t + 0.2);
+      g.gain.linearRampToValueAtTime(tanp2Vols[i] * envelope * breathDroneMod, t + 0.2);
     });
+
+    // Nasen-Atem-Geräusch: gefiltertes Rauschen das mit dem Atem anschwillt
+    if (bt2) {
+      const breathNoiseVol = breathMod * 0.06 * envelope; // leise, organisch
+      noiseGain.gain.linearRampToValueAtTime(breathNoiseVol, t + 0.08);
+      // Bandpass ~400–800 Hz für nasalen Klang, verschiebt sich mit Atem
+      filterNode.frequency.linearRampToValueAtTime(350 + breathMod * 400, t + 0.08);
+      filterNode.Q.linearRampToValueAtTime(0.8 + breathMod * 0.5, t + 0.08);
+    }
   } else if (mode === 'Binaural') {
     binauralGains.forEach(g => {
       g.gain.linearRampToValueAtTime(0.07 * envelope, t + 0.2);
