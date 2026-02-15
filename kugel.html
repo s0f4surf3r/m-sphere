@@ -592,7 +592,7 @@ function drawMenu() {
   const linkW = ctx.measureText('jochenhornung.de').width;
   const linkH = subtitleSize;
   menuButtons.link = { x: cx - linkW / 2, y: curY, w: linkW, h: linkH };
-  curY += sectionGap * 1.5;
+  curY += sectionGap * 3;
 
   // --- Hilfsfunktion: Settings-Reihe (Label + Buttons) ---
   function drawSettingsRow(label, options, selectedIdx, y) {
