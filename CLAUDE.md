@@ -9,12 +9,14 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 
 ### 1. Overlay-Menü (idle)
 - Fullscreen-Overlay im ZPMA-Stil (dunkler Hintergrund, subtile Sterne)
-- **"M-SPHERE"** als Titel (Impact-Font, dreistufiger Teal-Glow)
+- **"M-SPHERE"** als Titel (SF Pro Display, dreistufiger Teal-Glow)
 - "INTERACTIVE MEDITATION" Untertitel
-- "by Jochen Hornung Dev Studios" + "jochenhornung.de"
-- Einstellungen: Zeit, Gedanken-Sound, Meditations-Sound, Kohärentes Atmen
-- **START**-Button (pulsierend, erst aktiv wenn Zeit gewählt)
+- "by Jochen Hornung Dev Studios" + klickbarer Link "jochenhornung.de"
+- Einstellungen: Meditationszeit, Gedanken-Sound, Meditations-Sound, Atmen, Timer-Anzeige
+- **"Click to Start"** in Accent-Farbe (pulsierend, erst aktiv wenn Zeit gewählt)
+- **"Wähle eine Meditationszeit"** in heller Systemschrift wenn keine Zeit gewählt
 - Tingsha-Sound bei jedem Button-Klick, Start-Chime bei Start
+- ESC-Taste kehrt aus jedem State zum Menü zurück
 
 ### 2. Schüttel-Phase (ready → shaking)
 - Hinweis: "Drücke, halte und schüttle mit der Maus die Kugel." (teal)
@@ -22,11 +24,11 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Gedanken-Counter** steigt von 0% → 100%
 - Neon-Partikel schießen aus dem **Oberkopf des Cyborg-Mönchs**
 - Je höher der Counter, desto chaotischer — Partikel pflastern den ganzen Raum zu
-- **Bei 100%**: Counter-Full-Akkord (A-C#-E), Mönch komplett verdeckt
-- Erst ab 100% + Maus loslassen → Meditation beginnt
+- **Bei 100%**: Mönch komplett verdeckt (kein Sound bei 100%)
+- Erst ab 100% + Maus loslassen → Tempel-Gong → Meditation beginnt
 
 ### 3. Meditations-Phase (loslassen)
-- Singing-Bowl-Anschlag beim Start
+- **Tempel-Gong** beim Start (tiefer 72 Hz Gong mit Shimmer)
 - Gedanken lösen sich langsam auf, Mönch wird wieder sichtbar
 - Mönch löst sich dann **mit den Gedanken zusammen auf** (glitchend, rostend)
 - Linear bis zum Ende: `alpha = 1 - progress`
@@ -46,7 +48,7 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 ### 5. Ende (Leere)
 - **0–5s**: Stille, leere Kugel
 - **5–10s**: "Du bist das Wasser" blendet ein (Georgia serif, mehrschichtiger blau-weißer Glow)
-- Verbesserte End-Glocke (6 Obertöne, 6s Nachhall)
+- **Tempel-Gong** auch am Ende (gleicher Sound wie bei Start)
 - **35s+**: Partikel kehren langsam aus der Mitte zurück (Symbol: ewiger Kreislauf)
 - **45s+**: Dezenter "klick"-Hinweis zum Neustart
 - Klick → zurück zum Overlay-Menü (`selectedDurationIdx` wird zurückgesetzt)
@@ -61,14 +63,13 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 
 ### Wählbare Meditations-Sounds
 - **Drone**: 72 Hz Grundton + 108 Hz Quinte (Sinus)
-- **Klangschale** (Default): Singing-Bowl-Partials (220 Hz, Ratios 1/2.71/5.41/8.56/12.24) mit Schwebung
-- **Tanpura**: Sa-Pa-Sa-Drone (60 Hz, Triangle+Sinus) mit Jivari-Buzz (Sawtooth durch Lowpass)
+- **Klangschale**: Singing-Bowl-Partials (220 Hz, Ratios 1/2.71/5.41/8.56/12.24) mit Schwebung
+- **Tanpura** (Default): Sa-Pa-Sa-Drone (60 Hz, Triangle+Sinus) mit Jivari-Buzz (Sawtooth durch Lowpass)
 - **Binaural**: 200 Hz links / 204 Hz rechts → 4 Hz Theta-Beat (StereoPanner)
 
 ### Interaction-Sounds
 - **Tingsha**: Zwei leicht verstimmte hohe Sinus-Töne (2637/2673 Hz, 1.8s Decay) — bei Menü-Klicks
 - **Start-Chime**: Aufsteigender Dreiklang G-C-E (392/523/659 Hz) — bei Start
-- **Counter-Full**: A-C#-E Akkord (440/554/659 Hz) — bei 100% Gedanken
 - **Tempel-Gong**: Tiefer Gong (72 Hz Basis, 5 inharmonische Partials mit Shimmer-Partnern, 12s Decay) — bei Meditationsstart UND -ende
 - **Rückfall**: 3x dissonante Sawtooth (200–600 Hz, 0.4s)
 
@@ -101,6 +102,8 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 ## Technische Umsetzung
 - **Name**: M-Sphere (ehemals "Kugel")
 - **Datei**: `kugel.html` (Single-File-Webapp, `<script type="module">`)
+- **Repo**: https://github.com/s0f4surf3r/m-sphere (public, GitHub Pages)
+- **Live**: https://s0f4surf3r.github.io/m-sphere/kugel.html
 - **Rendering**: 2D Canvas + Three.js Offscreen-Rendering für 3D-Modell
 - **Input**: Maus (nur bei gedrückter Taste), Touch, Device-Gyroscope
 - **States**: `idle` (Menü) → `ready` → `shaking` → `meditating` → `done`
@@ -109,12 +112,12 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 
 ### Overlay-Menü (idle-State)
 - **Stil**: ZPMA-inspiriert (Fullscreen Canvas-Overlay, nicht HTML)
-- **Font**: Impact / "Arial Black" für Titel, monospace für Rest
-- **Titel-Glow**: 3 Schichten — weicher Teal-Schein (blur 60) → mittlerer (blur 25) → heller Kern (blur 8)
-- **Farb-Palette**: bg=#0a1628, primary=#1a3a5c, secondary=#3a6080, teal=#2abfbf, light=#f0ece6
+- **Font**: `-apple-system, "SF Pro Display", "Helvetica Neue"` weight 900 für Titel, "Courier New" monospace für Settings
+- **Titel-Glow**: 3 Schichten — weicher Teal-Schein (blur 60) → mittlerer (blur 30) → heller Kern mit Drop-Shadow
+- **Farb-Palette**: bg=#0a1628, primary=#1a3a5c, secondary=#3a6080, teal=#2abfbf, accent=#e86a7a, light=#f0ece6
 - **Kein Default**: `selectedDurationIdx = -1`, erst klicken aktiviert START
-- **Reihenfolge**: Titel → Untertitel → Credits → MEDITATIONSZEIT → GEDANKEN-SOUND → MEDITATIONS-SOUND → KOHÄRENTES ATMEN → TIMER ANZEIGEN → START
-- **Hit-Detection**: `menuButtons`-Objekt mit timer/shake/meditation/breathing/timerToggle/start
+- **Reihenfolge**: Titel → Untertitel → Credits → MEDITATIONSZEIT → GEDANKEN-SOUND → MEDITATIONS-SOUND → ATMEN → TIMER ANZEIGEN → Click to Start
+- **Hit-Detection**: `menuButtons`-Objekt mit timer/shake/meditation/breathing/timerToggle/start/link
 - **Sterne**: 40 pseudozufällige Punkte mit Puls-Animation
 
 ### 3D-Modell-Integration
@@ -132,7 +135,7 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
   - Ambient: (#404050, 0.8)
 - **Rost-Lighting**: Intensitäten sinken mit rustAmount (warm→kalt/dunkel)
 - **Fallback**: Kein Statue-Fallback, nur teal Lade-Ring während GLB lädt
-- **HTTP-Server nötig**: `python3 -m http.server 8092` im Kugel-Ordner
+- **HTTP-Server nötig** (lokal): `python3 -m http.server 8092` im Kugel-Ordner
 
 ### Rendering-Reihenfolge in frame()
 1. Hintergrund (Farbshift je State)
@@ -142,7 +145,7 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 5. **Mönch** (3D-Modell, via drawModel3D) — nicht im idle-State
 6. **Partikel** (ÜBER dem Mönch — verdecken ihn bei vollem Counter)
 7. **Overlay-Menü** (nur idle) / Hint-Text (nur ready) / Timer / Done-Effekte
-8. Vignette, Rückfall-Flash, Counter-Ring
+8. Vignette, Rückfall-Flash, Counter-Ring, Atem-Nebel
 
 ### Shake Detection
 - **Maus**: Nur bei `mouseDown=true` — Bewegung ohne Klick wird ignoriert
@@ -166,13 +169,18 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **done**: Nicht sichtbar, "Du bist das Wasser" erscheint
 
 ### Atmen (Breathing)
-- **Zwei Modi**: Kohärent (5.5s ein / 5.5s aus) und Beruhigend (4s ein / 6s aus)
+- **Drei Optionen**: Aus / Kohärent (5.5s ein / 5.5s aus) / Beruhigend (4s ein / 6s aus)
 - **Asymmetrische Welle**: Piecewise Sine für glatte Übergänge bei unterschiedlichen Ein-/Ausatem-Dauern
 - **Auswahl**: Im Overlay-Menü als Settings-Row (Aus / Kohärent 5.5:5.5 / Beruhigend 4:6)
 - **Default**: Kohärent (`breathingMode = 1`)
 - **Kugel-Radius**: Oszilliert ±2.5% mit der Atem-Welle
-- **Nebel**: Nur Cyan (#2abfbf), nur außerhalb der Kugel (Clip-Mask), 3 Gradient-Schichten + 5 Strähnen
+- **Nebel**: Nur Cyan (#2abfbf), nur außerhalb der Kugel (Donut-Clip-Mask), 3 Gradient-Schichten + 5 Strähnen
 - **State**: `BREATHING_MODES[]`, `BREATHING_TIMING[]`, `breathingMode` (0/1/2)
+
+### Timer-Anzeige
+- **Toggle**: Im Menü schaltbar (TIMER ANZEIGEN AN/AUS)
+- **Default**: An (`timerVisible = true`)
+- **Anzeige**: Roter Counter-Ring um die Kugel + Uhrzeitanzeige unter der Kugel
 
 ### Weitere Effekte
 - **Rückfall-Flash**: Roter Lichtring (alpha 0.6, decay 0.92)
@@ -189,12 +197,16 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - Overlay-Menü statt Inline-UI — Fokus auf die Kugel nach dem Start
 - Schütteln nur bei gedrückter Maus — verhindert versehentliches Auslösen
 - Timer muss explizit im Menü gewählt werden bevor START möglich ist
+- Timer-Anzeige optional (Toggle im Menü)
 - Mönch verschwindet nicht durch Alpha-Reduktion, sondern wird von Partikeln **verdeckt**
 - Mönch löst sich in Meditation linear auf (kein Einblend-Delay)
 - Rost-Overlay-Alpha multipliziert mit Model-Alpha (verschwindet gemeinsam)
 - "Du bist das Wasser" als Schluss-Erkenntnis mit Glow-Effekt
-- Sound-Presets wählbar (4 Shake + 4 Meditation)
-- Interaction-Sounds für alle wichtigen Übergänge
+- Sound-Presets wählbar (4 Shake + 4 Meditation), Defaults: Synapsen + Tanpura
+- Tempel-Gong bei Start UND Ende der Meditation (kein Counter-Full-Sound mehr)
+- Atem-Nebel nur Cyan, kein Magenta — subtiler, meditativer
+- Zwei Atem-Modi für verschiedene Präferenzen (symmetrisch vs. beruhigend)
+- ESC-Taste als universeller Abbruch → zurück ins Menü
 
 ## Offene Fragen / Nächste Schritte
 - Partikel-Formen variieren (nicht nur Kreise — Icons, Symbole?)
