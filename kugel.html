@@ -1602,12 +1602,12 @@ function frame() {
     r *= 1 + breathWave * 0.025; // ±2.5% Radius
   }
 
-  // Schüttel-Wackeln: ganzer Bildschirm wackelt per CSS transform
+  // Schüttel-Wackeln: ganzer Inhalt wackelt (nach BG-Fill, vor allem Content)
   let offsetX = 0, offsetY = 0;
 
   if (shakeIntensity > 0.05) {
-    offsetX += (Math.random() - 0.5) * shakeIntensity * 20;
-    offsetY += (Math.random() - 0.5) * shakeIntensity * 14;
+    offsetX += (Math.random() - 0.5) * shakeIntensity * 30;
+    offsetY += (Math.random() - 0.5) * shakeIntensity * 20;
   }
 
   // Verführungs-Twitch
@@ -1617,11 +1617,10 @@ function frame() {
     offsetX += Math.sin(Date.now() * 0.05) * fade * 4;
   }
 
-  canvas.style.transform = (offsetX || offsetY) ? `translate(${offsetX}px, ${offsetY}px)` : '';
+  ctx.save();
+  if (offsetX || offsetY) ctx.translate(offsetX, offsetY);
 
   drawStars();
-
-  ctx.save();
 
   drawKugel();
 
@@ -1861,8 +1860,6 @@ function frame() {
     }
   }
 
-  ctx.restore();
-
   // Vignette (dunkle Ecken für Atmosphäre)
   const vigR = Math.max(canvas.width, canvas.height) * 0.7;
   const vigGrad = ctx.createRadialGradient(cx, cy, vigR * 0.4, cx, cy, vigR);
@@ -1953,6 +1950,8 @@ function frame() {
 
     ctx.restore();
   }
+
+  ctx.restore(); // Schüttel-Translate aufheben
 
   requestAnimationFrame(frame);
 }
