@@ -68,6 +68,10 @@ const MEDITATION_SOUNDS = ['Drone', 'Klangschale', 'Tanpura', 'Binaural'];
 let shakeSoundIdx = 0; // default: Rauschen
 let meditationSoundIdx = 2; // default: Tanpura
 
+// Gedankenmodus: 0=Schweben (bleiben wo sie sind), 1=Reflektieren (Rand-Reflexion)
+const THOUGHT_MODES = ['Schweben', 'Reflektieren'];
+let thoughtModeIdx = 0; // default: Schweben
+
 // Hit-Bereiche für die Menu-Buttons
 let menuButtons = {}; // { timer: [], breathing: null, shake: [], meditation: [], start: null }
 
@@ -418,13 +422,14 @@ function updateParticles(cx, cy, r) {
     }
     p.age++;
 
-    // In der Kugel halten (nur beim Schütteln — Meditation: Partikel bleiben wo sie sind)
-    if (state !== 'meditating') {
+    // In der Kugel halten
+    // Schweben (Modus 0): Reflexion nur beim Schütteln — Meditation: Partikel bleiben wo sie sind
+    // Reflektieren (Modus 1): Reflexion immer aktiv (auch während Meditation)
+    if (state !== 'meditating' || thoughtModeIdx === 1) {
       const dx = p.x - cx;
       const dy = p.y - cy;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist > r * 0.92) {
-        // Am Rand reflektieren
         const nx = dx / dist;
         const ny = dy / dist;
         p.vx -= 2 * (p.vx * nx + p.vy * ny) * nx;
@@ -662,6 +667,11 @@ function drawMenu() {
   menuButtons.meditation = medRow.btns;
   curY = medRow.bottomY + sectionGap;
 
+  // --- GEDANKENMODUS ---
+  const thoughtRow = drawSettingsRow('GEDANKENMODUS', THOUGHT_MODES, thoughtModeIdx, curY);
+  menuButtons.thoughtMode = thoughtRow.btns;
+  curY = thoughtRow.bottomY + sectionGap;
+
   // --- ATMEN ---
   const breathRow = drawSettingsRow('ATMEN', BREATHING_MODES, breathingMode, curY);
   menuButtons.breathing = breathRow.btns;
@@ -742,6 +752,14 @@ function handleMenuClick(x, y) {
   for (const btn of menuButtons.meditation || []) {
     if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
       meditationSoundIdx = btn.idx;
+      playTingsha();
+      return true;
+    }
+  }
+  // Gedankenmodus
+  for (const btn of menuButtons.thoughtMode || []) {
+    if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+      thoughtModeIdx = btn.idx;
       playTingsha();
       return true;
     }
