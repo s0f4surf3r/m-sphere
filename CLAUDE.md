@@ -9,22 +9,25 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 
 ### 1. Overlay-Menü (idle)
 - Fullscreen-Overlay im ZPMA-Stil (dunkler Hintergrund, subtile Sterne)
-- **"M-SPHERE"** als Titel (SF Pro Display, dreistufiger Teal-Glow)
+- **"M-SPHERE"** als Titel (SF Pro Display, dreistufiger Teal-Glow, verstärkte Opacities)
 - "INTERACTIVE MEDITATION" Untertitel
 - "by Jochen Hornung Dev Studios" + klickbarer Link "jochenhornung.de"
-- Einstellungen: Meditationszeit, Gedanken-Sound, Meditations-Sound, Atmen, Timer-Anzeige
+- Einstellungen: Meditationszeit, Gedanken-Sound, Meditations-Sound, Gedankenmodus, Atmen, Timer-Anzeige
 - **"Klicke hier um zu starten"** in Accent-Farbe (pulsierend, erst aktiv wenn Zeit gewählt)
 - **"Wähle eine Meditationszeit"** in #f4a842 (warm orange, font-weight 700) wenn keine Zeit gewählt
+- **MEDITATIONSZEIT-Label** wird ebenfalls #f4a842 wenn keine Zeit gewählt
 - Tingsha-Sound bei jedem Button-Klick (kein Sound bei Start-Klick)
 - ESC-Taste kehrt aus jedem State zum Menü zurück
 
 ### 2. Schüttel-Phase (ready → shaking)
 - Hinweis: "Drücke, halte und schüttle mit der Maus die Kugel." (teal)
 - Benutzer **hält Maustaste gedrückt und schüttelt** (oder Touch/Gyro)
-- **Gedanken-Counter** steigt von 0% → 100%
+- **Gedanken-Counter** steigt von 0% → 100% (Rate: 0.55)
 - Neon-Partikel schießen aus dem **Oberkopf des Cyborg-Mönchs**
 - Je höher der Counter, desto chaotischer — Partikel pflastern den ganzen Raum zu
-- **Bei 100%**: Mönch komplett verdeckt (kein Sound bei 100%)
+- **Ganzer Bildschirm wackelt** beim Schütteln (ctx.translate auf gesamten Canvas-Inhalt, Offset 45/30)
+- **Bei 100%**: Ring wechselt von Rot zu **Gold** mit Glow + **"Du darfst jetzt loslassen ..."** Text
+- Gold-Flash (weißer Blitz) beim Erreichen von 100%
 - Erst ab 100% + Maus loslassen → Tempel-Gong → Meditation beginnt
 
 ### 3. Meditations-Phase (loslassen)
@@ -64,7 +67,8 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 ### Wählbare Meditations-Sounds
 - **Drone**: 72 Hz Grundton + 108 Hz Quinte (Sinus)
 - **Klangschale**: Singing-Bowl-Partials (220 Hz, Ratios 1/2.71/5.41/8.56/12.24) mit Schwebung
-- **Tanpura** (Default): Sa-Pa-Sa-Drone (60 Hz, Triangle+Sinus) mit Jivari-Buzz (Sawtooth durch Lowpass)
+- **Tanpura**: Sa-Pa-Sa-Drone (60 Hz, Triangle+Sinus) mit Jivari-Buzz (Sawtooth durch Lowpass)
+- **Tanpura2** (Default): Gleicher Sa-Pa-Sa-Drone wie Tanpura, aber **ohne Buzz/Rauschen** — klarerer, ruhigerer Klang
 - **Binaural**: 200 Hz links / 204 Hz rechts → 4 Hz Theta-Beat (StereoPanner)
 
 ### Interaction-Sounds
@@ -112,12 +116,12 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 ### Overlay-Menü (idle-State)
 - **Stil**: ZPMA-inspiriert (Fullscreen Canvas-Overlay, nicht HTML)
 - **Font**: `-apple-system, "SF Pro Display", "Helvetica Neue"` weight 900 für Titel, "Courier New" monospace für Settings
-- **Titel-Glow**: 3 Schichten — weicher Teal-Schein (blur 60) → mittlerer (blur 30) → heller Kern mit Drop-Shadow
-- **Farb-Palette**: bg=#0a1628, primary=#1a3a5c, secondary=#3a6080, teal=#2abfbf, accent=#e86a7a, light=#f0ece6, hint=#f4a842
-- **Text-Opacities**: Labels 0.6, nicht-ausgewählte Buttons 0.55, Credits 0.45, jochenhornung.de 0.3(teal)
+- **Titel-Glow**: 3 Schichten — weicher Teal-Schein (blur 60, alpha 0.5/0.2) → mittlerer (blur 30, alpha 0.8/0.3) → heller Kern mit Drop-Shadow
+- **Farb-Palette**: bg=#0a1628, primary=#1a3a5c, secondary=#3a6080, teal=#2abfbf, accent=#e86a7a, light=#f0ece6, hint=#f4a842, gold=#ffd700
+- **Text-Opacities**: Labels 0.95, nicht-ausgewählte Buttons 0.9, Credits 0.9, jochenhornung.de 0.75(teal), Button-Borders 0.5
 - **Kein Default**: `selectedDurationIdx = -1`, erst klicken aktiviert START
-- **Reihenfolge**: Titel → Untertitel → Credits → MEDITATIONSZEIT → GEDANKEN-SOUND → MEDITATIONS-SOUND → ATMEN → TIMER ANZEIGEN → Klicke hier um zu starten
-- **Hit-Detection**: `menuButtons`-Objekt mit timer/shake/meditation/breathing/timerToggle/start/link
+- **Reihenfolge**: Titel → Untertitel → Credits → MEDITATIONSZEIT → GEDANKEN-SOUND → MEDITATIONS-SOUND → GEDANKENMODUS → ATMEN → TIMER ANZEIGEN → Klicke hier um zu starten
+- **Hit-Detection**: `menuButtons`-Objekt mit timer/shake/meditation/thoughtMode/breathing/timerToggle/start/link
 - **Sterne**: 40 pseudozufällige Punkte mit Puls-Animation
 
 ### 3D-Modell-Integration
@@ -139,27 +143,32 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 
 ### Rendering-Reihenfolge in frame()
 1. Hintergrund (Farbshift je State)
-2. Sterne
-3. Kugel (Wasser, Glasrand, Glanzpunkt)
-4. Kaustiken (geclippt)
-5. **Mönch** (3D-Modell, via drawModel3D) — nicht im idle-State
-6. **Partikel** (ÜBER dem Mönch — verdecken ihn bei vollem Counter)
-7. **Overlay-Menü** (nur idle) / Hint-Text (nur ready) / Timer / Done-Effekte
-8. Vignette, Rückfall-Flash, Counter-Ring, Atem-Nebel
+2. **ctx.translate(offsetX, offsetY)** — gesamter Inhalt wackelt beim Schütteln
+3. Sterne
+4. Kugel (Wasser, Glasrand, Glanzpunkt)
+5. Kaustiken (geclippt)
+6. **Mönch** (3D-Modell, via drawModel3D) — nicht im idle-State
+7. **Partikel** (ÜBER dem Mönch — verdecken ihn bei vollem Counter)
+8. **Overlay-Menü** (nur idle) / Hint-Text (nur ready) / Timer / Done-Effekte
+9. Vignette, Rückfall-Flash, Counter-Ring (rot→gold bei 100%), Gold-Flash, Atem-Nebel
+10. **ctx.restore()** — Schüttel-Translate aufheben
 
 ### Shake Detection
 - **Maus**: Nur bei `mouseDown=true` — Bewegung ohne Klick wird ignoriert
 - **Touch**: touchmove-Distanz
 - **Device Motion**: Accelerometer, Schwelle >12
-- `shakeAccum` → `shakeIntensity` (0–1), Decay 0.3/Frame, Counter-Rate 0.6
+- `shakeAccum` → `shakeIntensity` (0–1), Decay 0.3/Frame, Counter-Rate 0.55
 - **Meditationsstart**: shakeAccum + shakeIntensity werden auf 0 resetet
 
 ### Partikel (Gedanken)
 - **Spawn**: Aus dem Oberkopf des Mönchs (`cy - r * 0.28`), ab 60% Counter auch aus dem Körper
-- **Spawn-Rate**: `shakeIntensity * 15` + Bonus pro 10% Counter
-- **Decay**: Sehr langsam (0.0003–0.0011) — akkumulieren und pflastern den Raum zu
+- **Spawn-Rate**: `shakeIntensity * 30` + Bonus pro 5% Counter
+- **Decay**: Sehr langsam (0.0001–0.0005) — akkumulieren und pflastern den Raum zu
 - **10 Neon-Farben**, Glow per RadialGradient, Spawn-Blitz (weißer Kern, 4 Frames)
 - **Meditation**: Abbremsen (0.995/Frame), verblassen linear mit Timer, Farben → Aschgrau
+- **Gedankenmodus**:
+  - **Schweben** (Default): Rand-Reflexion nur beim Schütteln, Partikel bleiben bei Meditationsstart wo sie sind
+  - **Reflektieren**: Rand-Reflexion immer aktiv (Partikel ziehen sich zusammen)
 - **Physik**: Leichte Gravitation, Reflexion am Kugelrand (r*0.92)
 
 ### Mönch-Verhalten je State
@@ -175,19 +184,21 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Auswahl**: Im Overlay-Menü als Settings-Row (Aus / Kohärent 5.5:5.5 / Beruhigend 4:6)
 - **Default**: Kohärent (`breathingMode = 1`)
 - **Kugel-Radius**: Oszilliert ±2.5% mit der Atem-Welle
-- **Nebel**: Nur Cyan (#2abfbf), nur außerhalb der Kugel (Donut-Clip-Mask), 3 Gradient-Schichten + 5 Strähnen
+- **Nebel**: Nur Cyan (#2abfbf), direkt an Kugelrand (clipR=r+2), 3 Gradient-Schichten + 5 Strähnen
 - **State**: `BREATHING_MODES[]`, `BREATHING_TIMING[]`, `breathingMode` (0/1/2)
 
 ### Timer-Anzeige
 - **Toggle**: Im Menü schaltbar (TIMER ANZEIGEN AN/AUS)
 - **Default**: Aus (`timerVisible = false`)
 - **Anzeige**: Uhrzeitanzeige unter der Kugel (optional)
-- **Counter-Ring**: Immer sichtbar, direkt auf Kugelrand (`rFixed`, kein Offset), doppelt dick (lineWidth 3+pulse*2 / Glow 12)
+- **Counter-Ring**: Rot (255,70,90) bis 99%, bei 100% Gold (255,215,0) mit Glow + "Du darfst jetzt loslassen ..."
+- **Position**: `rFixed - 3` (leicht innerhalb der Glaskante)
 - **rFixed**: Counter-Ring nutzt fixen Radius, bewegt sich nicht mit Atem-Animation
 
 ### Weitere Effekte
+- **Gold-Flash**: Weißer Blitz beim Erreichen von 100% Counter (decay 0.9)
 - **Rückfall-Flash**: Roter Lichtring (alpha 0.6, decay 0.92)
-- **Kugel-Wackeln**: Random offset * shakeIntensity
+- **Bildschirm-Shake**: Ganzer Canvas-Inhalt wackelt (ctx.translate, Offset ±22.5/±15 bei voller Intensität)
 - **Trail-Effekt**: Halbtransparenter BG-Layer bei heftigem Schütteln
 - **Vignette**: Dunkle Ecken (40% schwarz am Rand)
 - **Hintergrund-Farbshift**: Warm/rötlich (shaking) → kühl/bläulich (meditating) → tiefblau (done)
@@ -205,17 +216,19 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - Mönch löst sich in Meditation linear auf (kein Einblend-Delay)
 - Rost-Overlay-Alpha multipliziert mit Model-Alpha (verschwindet gemeinsam)
 - "Du bist das Wasser" als Schluss-Erkenntnis mit Glow-Effekt
-- Sound-Presets wählbar (4 Shake + 4 Meditation), Defaults: Synapsen + Tanpura
+- Sound-Presets wählbar (4 Shake + 5 Meditation), Defaults: Rauschen + Tanpura2
 - Tempel-Gong bei Start UND Ende der Meditation (kein Counter-Full-Sound, kein Start-Chime, kein Rückfall-Sound)
 - Rückfall nur visuell (roter Flash), kein Sound — weniger störend
 - Atem-Nebel nur Cyan, kein Magenta — subtiler, meditativer
 - Zwei Atem-Modi für verschiedene Präferenzen (symmetrisch vs. beruhigend)
 - Mönch-Glitch sehr subtil (Offset *3 statt *15) — sanftes Zittern statt wildem Wackeln
-- Counter-Rate 0.4 (langsamer füllen, längeres Schütteln nötig)
+- Counter-Rate 0.55 (moderates Schütteln)
 - shakeAccum/shakeIntensity werden bei Meditationsstart auf 0 gesetzt (verhindert falsche Rückfall-Trigger)
 - Voice über AudioContext statt HTML Audio Element (umgeht Autoplay-Block)
 - AudioContext mit `latencyHint: 'interactive'` + `resume()` an kritischen Stellen
 - ESC-Taste als universeller Abbruch → zurück ins Menü
+- Ring wechselt bei 100% zu Gold + "Du darfst jetzt loslassen ..." als Feedback
+- Gedankenmodus wählbar: Schweben (Partikel bleiben) vs. Reflektieren (Partikel kontrahieren)
 
 ## Offene Fragen / Nächste Schritte
 - Partikel-Formen variieren (nicht nur Kreise — Icons, Symbole?)
