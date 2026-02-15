@@ -2019,9 +2019,9 @@ function frame() {
     const clipR = r + 2;
     const nebelBase = clipR;
     const breathIntensity = (breathWave + 1) / 2; // 0→1 einatmen, 1→0 ausatmen
-    const nebelExpand = (0.15 + breathIntensity * 0.85) * r * 0.25;
+    const nebelExpand = (0.35 + breathIntensity * 0.65) * r * 0.25;
     const nebelOuter = nebelBase + nebelExpand;
-    const nebelAlpha = 0.08 + breathIntensity * 0.1;
+    const nebelAlpha = 0.1 + breathIntensity * 0.08;
     const maxOuter = nebelOuter + r * 0.15;
 
     // Clip: nur Ring außerhalb der Kugel zeichnen
