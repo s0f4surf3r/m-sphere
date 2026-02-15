@@ -581,11 +581,11 @@ function drawMenu() {
   curY += subtitleSize * 2;
 
   // Credits
-  ctx.fillStyle = 'rgba(240, 236, 230, 0.45)';
+  ctx.fillStyle = 'rgba(240, 236, 230, 0.75)';
   ctx.font = `${subtitleSize * 0.8}px "Courier New", monospace`;
   ctx.fillText('by Jochen Hornung Dev Studios', cx, curY);
   curY += subtitleSize * 1.5;
-  ctx.fillStyle = 'rgba(42, 191, 191, 0.3)';
+  ctx.fillStyle = 'rgba(42, 191, 191, 0.55)';
   ctx.font = `${subtitleSize * 0.8}px "Courier New", monospace`;
   ctx.fillText('jochenhornung.de', cx, curY);
   // Hit-Area für Link speichern
@@ -597,7 +597,7 @@ function drawMenu() {
   // --- Hilfsfunktion: Settings-Reihe (Label + Buttons) ---
   function drawSettingsRow(label, options, selectedIdx, y) {
     const labelFont = rowFont * 0.85;
-    ctx.fillStyle = 'rgba(240, 236, 230, 0.6)';
+    ctx.fillStyle = 'rgba(240, 236, 230, 0.85)';
     ctx.font = `${labelFont}px "Courier New", monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
@@ -629,13 +629,13 @@ function drawMenu() {
         ctx.strokeStyle = 'rgba(42, 191, 191, 0.6)';
         ctx.lineWidth = 1.5;
       } else {
-        ctx.fillStyle = 'rgba(26, 58, 92, 0.3)';
+        ctx.fillStyle = 'rgba(26, 58, 92, 0.4)';
         ctx.fill();
-        ctx.strokeStyle = 'rgba(58, 96, 128, 0.3)';
+        ctx.strokeStyle = 'rgba(88, 130, 160, 0.5)';
         ctx.lineWidth = 1;
       }
       ctx.stroke();
-      ctx.fillStyle = sel ? '#2abfbf' : 'rgba(240, 236, 230, 0.55)';
+      ctx.fillStyle = sel ? '#2abfbf' : 'rgba(240, 236, 230, 0.8)';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(options[i], rx + w / 2, rowY + rBtnH / 2);
@@ -674,12 +674,12 @@ function drawMenu() {
   const tx = cx - tw / 2;
   ctx.beginPath();
   ctx.roundRect(tx, curY, tw, th, th * 0.25);
-  ctx.fillStyle = timerVisible ? 'rgba(42, 191, 191, 0.12)' : 'rgba(26, 58, 92, 0.3)';
+  ctx.fillStyle = timerVisible ? 'rgba(42, 191, 191, 0.12)' : 'rgba(26, 58, 92, 0.4)';
   ctx.fill();
-  ctx.strokeStyle = timerVisible ? 'rgba(42, 191, 191, 0.5)' : 'rgba(58, 96, 128, 0.3)';
+  ctx.strokeStyle = timerVisible ? 'rgba(42, 191, 191, 0.5)' : 'rgba(88, 130, 160, 0.5)';
   ctx.lineWidth = 1;
   ctx.stroke();
-  ctx.fillStyle = timerVisible ? '#2abfbf' : 'rgba(240, 236, 230, 0.55)';
+  ctx.fillStyle = timerVisible ? '#2abfbf' : 'rgba(240, 236, 230, 0.8)';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(tLabel, cx, curY + th / 2);

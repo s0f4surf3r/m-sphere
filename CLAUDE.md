@@ -114,6 +114,7 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Font**: `-apple-system, "SF Pro Display", "Helvetica Neue"` weight 900 für Titel, "Courier New" monospace für Settings
 - **Titel-Glow**: 3 Schichten — weicher Teal-Schein (blur 60) → mittlerer (blur 30) → heller Kern mit Drop-Shadow
 - **Farb-Palette**: bg=#0a1628, primary=#1a3a5c, secondary=#3a6080, teal=#2abfbf, accent=#e86a7a, light=#f0ece6, hint=#f4a842
+- **Text-Opacities**: Labels 0.6, nicht-ausgewählte Buttons 0.55, Credits 0.45, jochenhornung.de 0.3(teal)
 - **Kein Default**: `selectedDurationIdx = -1`, erst klicken aktiviert START
 - **Reihenfolge**: Titel → Untertitel → Credits → MEDITATIONSZEIT → GEDANKEN-SOUND → MEDITATIONS-SOUND → ATMEN → TIMER ANZEIGEN → Klicke hier um zu starten
 - **Hit-Detection**: `menuButtons`-Objekt mit timer/shake/meditation/breathing/timerToggle/start/link
