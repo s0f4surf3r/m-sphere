@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kugel</title>
+<title>M-Sphere</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -16,19 +16,30 @@ body {
 }
 canvas {
   display: block;
-  cursor: none;
 }
 </style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
 </head>
 <body>
 <canvas id="c"></canvas>
-<script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 
 // --- State ---
-let state = 'idle'; // idle | shaking | meditating | done
+let state = 'idle'; // idle | ready | shaking | meditating | done
 let thoughtCounter = 0; // 0–100
+let counterFullPlayed = false; // 100%-Sound nur einmal
 let shakeIntensity = 0; // aktuelle Schüttel-Stärke (0–1)
 let doneTime = 0; // Zeitpunkt des done-States
 let relapseFlash = 0; // Rückfall-Blitz (0–1, decays)
@@ -41,19 +52,110 @@ const DURATION_OPTIONS = [
   { label: '20', seconds: 1200 },
   { label: '30', seconds: 1800 }
 ];
-let selectedDurationIdx = 0; // default: 1 Min
-let meditationDuration = DURATION_OPTIONS[0].seconds;
+let selectedDurationIdx = -1; // nichts vorausgewählt
+// Atem-Modi: 0=Aus, 1=Kohärent (5.5s/5.5s), 2=Beruhigend (4s/6s)
+const BREATHING_MODES = ['Aus', 'Kohärent 5.5:5.5', 'Beruhigend 4:6'];
+const BREATHING_TIMING = [null, { in: 5.5, out: 5.5 }, { in: 4, out: 6 }];
+let breathingMode = 1; // default: Kohärent
+let timerVisible = true; // Timer unter Kugel an/aus
+let meditationDuration = 60;
 let meditationTimeLeft = 0;
 let meditationStartTime = 0;
 
-// Hit-Bereiche für die Buttons (werden in drawTimerSelect berechnet)
-let timerButtons = [];
+// Sound-Presets
+const SHAKE_SOUNDS = ['Rauschen', 'Synapsen', 'Stimmen', 'Metallisch'];
+const MEDITATION_SOUNDS = ['Drone', 'Klangschale', 'Tanpura', 'Binaural'];
+let shakeSoundIdx = 1; // default: Synapsen
+let meditationSoundIdx = 2; // default: Tanpura
+
+// Hit-Bereiche für die Menu-Buttons
+let menuButtons = {}; // { timer: [], breathing: null, shake: [], meditation: [], start: null }
+
+// --- Three.js Offscreen Setup ---
+const threeCanvas = document.createElement('canvas');
+const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, alpha: true, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.8;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+camera.position.set(0, 0.8, 5.0);
+camera.lookAt(0, 0.3, 0);
+
+// Lighting: Studio-Setup wie Sketchfab
+// Key Light: stark, warm, von oben-links-vorne
+const keyLight = new THREE.DirectionalLight(0xffeedd, 3.5);
+keyLight.position.set(-2, 4, 3);
+scene.add(keyLight);
+
+// Fill Light: weich, von rechts
+const fillLight = new THREE.DirectionalLight(0xddeeff, 1.5);
+fillLight.position.set(3, 1, 2);
+scene.add(fillLight);
+
+// Back/Rim Light: von hinten für Kontur-Kanten
+const rimLight = new THREE.DirectionalLight(0xaaccff, 2.0);
+rimLight.position.set(0, 2, -3);
+scene.add(rimLight);
+
+// Unterlicht: sanftes warmes Licht von unten (Aura)
+const auraLight = new THREE.PointLight(0xffc880, 1.0, 10);
+auraLight.position.set(0, -0.3, 2);
+scene.add(auraLight);
+
+// Hemisphere Light: Himmel/Boden-Farbe für natürliches Ambient
+const hemiLight = new THREE.HemisphereLight(0xc8d8f0, 0x443322, 1.2);
+scene.add(hemiLight);
+
+// Ambient: dezent, damit keine Fläche komplett schwarz ist
+const ambientLight = new THREE.AmbientLight(0x404050, 0.8);
+scene.add(ambientLight);
+
+// Modell laden
+let model3D = null;
+let modelLoaded = false;
+let modelLoadProgress = 0;
+
+const loader = new GLTFLoader();
+loader.load(
+  'japanese_monk_cyborg_sitting.glb',
+  (gltf) => {
+    model3D = gltf.scene;
+    // Modell zentrieren und skalieren
+    const box = new THREE.Box3().setFromObject(model3D);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const scale = 1.6 / maxDim;
+    model3D.scale.setScalar(scale);
+    model3D.position.sub(center.multiplyScalar(scale));
+    model3D.position.y -= size.y * scale * 0.05; // Kopf in Kugelmitte
+    scene.add(model3D);
+    modelLoaded = true;
+  },
+  (progress) => {
+    if (progress.total > 0) {
+      modelLoadProgress = progress.loaded / progress.total;
+    }
+  },
+  (error) => {
+    console.warn('3D-Modell konnte nicht geladen werden, nutze Fallback:', error);
+  }
+);
 
 // --- Shake Detection ---
 let lastMouseX = 0, lastMouseY = 0;
 let shakeAccum = 0; // akkumulierte Bewegung
+let mouseDown = false; // Nur bei gedrückter Maus schütteln
 
 function onMouseMove(e) {
+  if (!mouseDown) {
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+    return;
+  }
   const dx = e.clientX - lastMouseX;
   const dy = e.clientY - lastMouseY;
   const dist = Math.sqrt(dx * dx + dy * dy);
@@ -61,6 +163,15 @@ function onMouseMove(e) {
   lastMouseX = e.clientX;
   lastMouseY = e.clientY;
 }
+
+canvas.addEventListener('mousedown', (e) => {
+  // Im idle-State: Maus-Schütteln blockiert — erst Timer wählen
+  if (state === 'idle') return;
+  mouseDown = true;
+  lastMouseX = e.clientX;
+  lastMouseY = e.clientY;
+});
+window.addEventListener('mouseup', () => { mouseDown = false; });
 
 let lastTouchX = 0, lastTouchY = 0;
 function onTouchMove(e) {
@@ -101,7 +212,11 @@ function updateShake() {
 
   if (shakeIntensity > 0.05) {
     // Schütteln erkannt → Counter hoch
+    const wasFull = thoughtCounter >= 100;
     thoughtCounter = Math.min(100, thoughtCounter + shakeIntensity * 0.8);
+    if (!wasFull && thoughtCounter >= 100) {
+      counterFullPlayed = true;
+    }
     if (state === 'meditating') {
       relapseFlash = 1;
       // Rückfall-Sound: dissonanter Burst
@@ -121,7 +236,9 @@ function updateShake() {
         }
       }
     }
-    if (state === 'idle' || state === 'meditating') {
+    if (state === 'ready') {
+      state = 'shaking';
+    } else if (state === 'meditating') {
       state = 'shaking';
       // Rückfall: Timer reset
       meditationTimeLeft = 0;
@@ -134,6 +251,8 @@ function updateShake() {
       state = 'meditating';
       meditationTimeLeft = meditationDuration;
       meditationStartTime = Date.now();
+      counterFullPlayed = false;
+      playEndBell();
     }
     if (state === 'meditating') {
       // Timer runterzählen
@@ -147,24 +266,9 @@ function updateShake() {
       if (meditationTimeLeft <= 0) {
         state = 'done';
         thoughtCounter = 0;
+        particles.length = 0; // Alle Gedanken weg — Stille
         doneTime = Date.now();
-        // Glockenklang
-        if (soundInitialized) {
-          const t = audioCtx.currentTime;
-          [528, 660, 792].forEach((freq, i) => {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.value = freq;
-            gain.gain.value = 0;
-            gain.gain.linearRampToValueAtTime(0.04, t + 0.1 + i * 0.3);
-            gain.gain.exponentialRampToValueAtTime(0.001, t + 3 + i * 0.5);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(t + i * 0.3);
-            osc.stop(t + 4 + i * 0.5);
-          });
-        }
+        playEndBell();
       }
     }
   }
@@ -283,16 +387,15 @@ const NEON_COLORS = [
 ];
 
 function spawnParticle(cx, cy, r) {
-  const s = r * 0.28;
-  const headY = cy + r * 0.15 - s * 0.55;
-  const baseY = cy + r * 0.15;
+  const headY = cy - r * 0.28; // Oberkopf / Scheitel des Mönchs
+  const bodyY = cy + r * 0.05; // Körpermitte
   const angle = Math.random() * Math.PI * 2;
   const speed = 1 + Math.random() * 3 * shakeIntensity;
 
   // Bei hohem Counter: Partikel aus dem ganzen Körper, nicht nur dem Kopf
   const fromBody = thoughtCounter > 60 && Math.random() < (thoughtCounter - 60) / 80;
-  const spawnX = fromBody ? cx + (Math.random() - 0.5) * s * 0.6 : cx + (Math.random() - 0.5) * s * 0.3;
-  const spawnY = fromBody ? baseY - Math.random() * s * 0.8 : headY;
+  const spawnX = fromBody ? cx + (Math.random() - 0.5) * r * 0.2 : cx + (Math.random() - 0.5) * r * 0.08;
+  const spawnY = fromBody ? bodyY - Math.random() * r * 0.25 : headY;
 
   particles.push({
     x: spawnX,
@@ -300,7 +403,7 @@ function spawnParticle(cx, cy, r) {
     vx: Math.cos(angle) * speed,
     vy: Math.sin(angle) * speed - 1.5, // tendenz nach oben
     life: 1,
-    decay: 0.0008 + Math.random() * 0.0015,
+    decay: 0.0003 + Math.random() * 0.0008,
     size: Math.random() < 0.15 ? 5 + Math.random() * 3 : (Math.random() < 0.3 ? 1 + Math.random() * 1.5 : 2 + Math.random() * 3),
     color: NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)],
     age: 0 // für Spawn-Blitz
@@ -418,151 +521,719 @@ function drawParticles() {
   ctx.globalAlpha = 1;
 }
 
-// --- Timer-Auswahl ---
-function drawTimerSelect(cx, cy, r) {
-  const btnW = Math.min(canvas.width, canvas.height) * 0.07;
-  const btnH = btnW * 0.55;
-  const gap = btnW * 0.4;
-  const totalW = DURATION_OPTIONS.length * btnW + (DURATION_OPTIONS.length - 1) * gap;
-  const startX = cx - totalW / 2;
-  const btnY = cy + r + 30;
-  const fontSize = btnH * 0.5;
+// --- Overlay-Menü (ZPMA-Stil) ---
+function drawMenu() {
+  const W = canvas.width, H = canvas.height;
+  const unit = Math.min(W, H);
+  const cx = W / 2;
 
-  timerButtons = [];
+  // Dunkler Overlay-Hintergrund
+  ctx.fillStyle = 'rgba(10, 22, 40, 0.97)';
+  ctx.fillRect(0, 0, W, H);
 
-  for (let i = 0; i < DURATION_OPTIONS.length; i++) {
-    const x = startX + i * (btnW + gap);
-    const selected = i === selectedDurationIdx;
-
-    timerButtons.push({ x, y: btnY, w: btnW, h: btnH, idx: i });
-
-    // Button-Hintergrund
-    ctx.beginPath();
-    ctx.roundRect(x, btnY, btnW, btnH, btnH * 0.2);
-    ctx.fillStyle = selected
-      ? 'rgba(255, 255, 255, 0.15)'
-      : 'rgba(255, 255, 255, 0.04)';
-    ctx.fill();
-    ctx.strokeStyle = selected
-      ? 'rgba(255, 255, 255, 0.4)'
-      : 'rgba(255, 255, 255, 0.1)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Label
-    ctx.fillStyle = selected
-      ? 'rgba(255, 255, 255, 0.8)'
-      : 'rgba(255, 255, 255, 0.3)';
-    ctx.font = `${fontSize}px monospace`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(DURATION_OPTIONS[i].label, x + btnW / 2, btnY + btnH / 2);
+  // Subtile Sterne im Hintergrund
+  const starSeed = 42;
+  for (let i = 0; i < 40; i++) {
+    const sx = ((starSeed * (i + 1) * 7.3) % W);
+    const sy = ((starSeed * (i + 1) * 13.7) % H);
+    const pulse = Math.sin(Date.now() * 0.001 + i) * 0.3 + 0.7;
+    ctx.fillStyle = `rgba(200, 220, 255, ${0.1 * pulse})`;
+    ctx.fillRect(sx, sy, 1.5, 1.5);
   }
 
-  // "min" Label
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-  ctx.font = `${fontSize * 0.6}px monospace`;
+  menuButtons = { timer: [], breathing: [], timerToggle: null, shake: [], meditation: [], start: null };
+
+  // Vertikales Layout berechnen
+  const titleSize = unit * 0.12;
+  const subtitleSize = unit * 0.02;
+  const rowFont = unit * 0.02;
+  const btnH = unit * 0.04;
+  const btnGap = unit * 0.012;
+  const sectionGap = unit * 0.04;
+
+  let curY = H * 0.07;
+
+  // --- Titel: M-SPHERE mit ZPMA-Glow ---
   ctx.textAlign = 'center';
-  ctx.fillText('min', cx, btnY + btnH + fontSize * 0.7);
+  ctx.textBaseline = 'top';
+  ctx.font = `900 ${titleSize}px -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif`;
+  ctx.letterSpacing = `${-titleSize * 0.02}px`;
+
+  // Glow Layer 1: breiter Teal-Schein (wie ZPMA text-shadow 60px)
+  ctx.shadowColor = 'rgba(42, 191, 191, 0.35)';
+  ctx.shadowBlur = 60;
+  ctx.fillStyle = 'rgba(42, 191, 191, 0.1)';
+  ctx.fillText('M-SPHERE', cx, curY);
+
+  // Glow Layer 2: mittlerer Teal-Schein (wie ZPMA text-shadow 30px)
+  ctx.shadowColor = 'rgba(42, 191, 191, 0.7)';
+  ctx.shadowBlur = 30;
+  ctx.fillStyle = 'rgba(42, 191, 191, 0.15)';
+  ctx.fillText('M-SPHERE', cx, curY);
+
+  // Layer 3: Haupttext mit kleinem Drop-Shadow
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 2;
+  ctx.fillStyle = '#f0ece6';
+  ctx.fillText('M-SPHERE', cx, curY);
+  ctx.shadowOffsetY = 0;
+  ctx.shadowBlur = 0;
+  ctx.letterSpacing = '0px';
+  curY += titleSize + unit * 0.025;
+
+  // Untertitel
+  ctx.fillStyle = 'rgba(42, 191, 191, 0.55)';
+  ctx.font = `400 ${subtitleSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+  ctx.shadowColor = 'rgba(42, 191, 191, 0.4)';
+  ctx.shadowBlur = 12;
+  ctx.letterSpacing = '8px';
+  ctx.fillText('INTERACTIVE MEDITATION', cx, curY);
+  ctx.letterSpacing = '0px';
+  ctx.shadowBlur = 0;
+  curY += subtitleSize * 2;
+
+  // Credits
+  ctx.fillStyle = 'rgba(240, 236, 230, 0.25)';
+  ctx.font = `${subtitleSize * 0.8}px "Courier New", monospace`;
+  ctx.fillText('by Jochen Hornung Dev Studios', cx, curY);
+  curY += subtitleSize * 1.5;
+  ctx.fillStyle = 'rgba(42, 191, 191, 0.3)';
+  ctx.font = `${subtitleSize * 0.8}px "Courier New", monospace`;
+  ctx.fillText('jochenhornung.de', cx, curY);
+  // Hit-Area für Link speichern
+  const linkW = ctx.measureText('jochenhornung.de').width;
+  const linkH = subtitleSize;
+  menuButtons.link = { x: cx - linkW / 2, y: curY, w: linkW, h: linkH };
+  curY += sectionGap * 1.5;
+
+  // --- Hilfsfunktion: Settings-Reihe (Label + Buttons) ---
+  function drawSettingsRow(label, options, selectedIdx, y) {
+    const labelFont = rowFont * 0.85;
+    ctx.fillStyle = 'rgba(240, 236, 230, 0.35)';
+    ctx.font = `${labelFont}px "Courier New", monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(label, cx, y);
+
+    const rowY = y + labelFont + btnGap * 1.2;
+    const rBtnH = btnH * 0.9;
+    ctx.font = `${rowFont * 0.85}px "Courier New", monospace`;
+
+    let totalW = 0;
+    const widths = options.map(l => {
+      const w = ctx.measureText(l).width + rowFont * 1.4;
+      totalW += w;
+      return w;
+    });
+    totalW += (options.length - 1) * btnGap;
+
+    const btns = [];
+    let rx = cx - totalW / 2;
+    for (let i = 0; i < options.length; i++) {
+      const sel = i === selectedIdx;
+      const w = widths[i];
+      btns.push({ x: rx, y: rowY, w, h: rBtnH, idx: i });
+      ctx.beginPath();
+      ctx.roundRect(rx, rowY, w, rBtnH, rBtnH * 0.25);
+      if (sel) {
+        ctx.fillStyle = 'rgba(42, 191, 191, 0.15)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(42, 191, 191, 0.6)';
+        ctx.lineWidth = 1.5;
+      } else {
+        ctx.fillStyle = 'rgba(26, 58, 92, 0.3)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(58, 96, 128, 0.3)';
+        ctx.lineWidth = 1;
+      }
+      ctx.stroke();
+      ctx.fillStyle = sel ? '#2abfbf' : 'rgba(240, 236, 230, 0.35)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(options[i], rx + w / 2, rowY + rBtnH / 2);
+      rx += w + btnGap;
+    }
+    return { btns, bottomY: rowY + rBtnH };
+  }
+
+  // --- MEDITATIONSZEIT ---
+  const timeLabels = DURATION_OPTIONS.map(d => d.label + ' min');
+  const timeRow = drawSettingsRow('MEDITATIONSZEIT', timeLabels, selectedDurationIdx, curY);
+  menuButtons.timer = timeRow.btns;
+  curY = timeRow.bottomY + sectionGap;
+
+  // --- GEDANKEN-SOUND ---
+  const shakeRow = drawSettingsRow('GEDANKEN-SOUND', SHAKE_SOUNDS, shakeSoundIdx, curY);
+  menuButtons.shake = shakeRow.btns;
+  curY = shakeRow.bottomY + sectionGap;
+
+  // --- MEDITATIONS-SOUND ---
+  const medRow = drawSettingsRow('MEDITATIONS-SOUND', MEDITATION_SOUNDS, meditationSoundIdx, curY);
+  menuButtons.meditation = medRow.btns;
+  curY = medRow.bottomY + sectionGap;
+
+  // --- ATMEN ---
+  const breathRow = drawSettingsRow('ATMEN', BREATHING_MODES, breathingMode, curY);
+  menuButtons.breathing = breathRow.btns;
+  curY = breathRow.bottomY + sectionGap * 0.6;
+
+  // --- TIMER ANZEIGEN Toggle ---
+  const tLabel = timerVisible ? 'TIMER ANZEIGEN  AN' : 'TIMER ANZEIGEN  AUS';
+  const toggleFont = rowFont * 0.85;
+  ctx.font = `${toggleFont}px "Courier New", monospace`;
+  const tw = ctx.measureText(tLabel).width + toggleFont * 2;
+  const th = btnH * 0.9;
+  const tx = cx - tw / 2;
+  ctx.beginPath();
+  ctx.roundRect(tx, curY, tw, th, th * 0.25);
+  ctx.fillStyle = timerVisible ? 'rgba(42, 191, 191, 0.12)' : 'rgba(26, 58, 92, 0.3)';
+  ctx.fill();
+  ctx.strokeStyle = timerVisible ? 'rgba(42, 191, 191, 0.5)' : 'rgba(58, 96, 128, 0.3)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.fillStyle = timerVisible ? '#2abfbf' : 'rgba(240, 236, 230, 0.3)';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(tLabel, cx, curY + th / 2);
+  menuButtons.timerToggle = { x: tx, y: curY, w: tw, h: th };
+  curY += th + sectionGap * 1.2;
+
+  // --- START Button ---
+  const canStart = selectedDurationIdx >= 0;
+  const startW = unit * 0.25;
+  const startH = btnH * 1.3;
+  const startX = cx - startW / 2;
+  const pulse = Math.sin(Date.now() * 0.003) * 0.15 + 0.85;
+
+  // START als Text (ZPMA-Stil: "Click to Play" in accent)
+  if (canStart) {
+    ctx.shadowColor = 'rgba(232, 106, 122, 0.5)';
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = `rgba(232, 106, 122, ${pulse})`;
+  } else {
+    ctx.fillStyle = 'rgba(240, 236, 230, 0.5)';
+  }
+  ctx.font = `600 ${rowFont * 1.3}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(canStart ? 'Click to Start' : 'Wähle eine Meditationszeit', cx, curY + startH / 2);
+  ctx.shadowBlur = 0;
+  menuButtons.start = canStart ? { x: startX, y: curY, w: startW, h: startH } : null;
 
   ctx.textAlign = 'start';
   ctx.textBaseline = 'alphabetic';
 }
 
-function handleTimerClick(x, y) {
-  for (const btn of timerButtons) {
+function handleMenuClick(x, y) {
+  // Link
+  const lnk = menuButtons.link;
+  if (lnk && x >= lnk.x && x <= lnk.x + lnk.w && y >= lnk.y && y <= lnk.y + lnk.h) {
+    window.open('https://jochenhornung.de', '_blank');
+    return true;
+  }
+  // Timer-Buttons
+  for (const btn of menuButtons.timer || []) {
     if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
       selectedDurationIdx = btn.idx;
       meditationDuration = DURATION_OPTIONS[btn.idx].seconds;
+      playTingsha();
       return true;
     }
+  }
+  // Shake-Sound
+  for (const btn of menuButtons.shake || []) {
+    if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+      shakeSoundIdx = btn.idx;
+      playTingsha();
+      return true;
+    }
+  }
+  // Meditation-Sound
+  for (const btn of menuButtons.meditation || []) {
+    if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+      meditationSoundIdx = btn.idx;
+      playTingsha();
+      return true;
+    }
+  }
+  // Breathing-Modus
+  for (const btn of menuButtons.breathing || []) {
+    if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+      breathingMode = btn.idx;
+      playTingsha();
+      return true;
+    }
+  }
+  // Timer-Toggle
+  const t = menuButtons.timerToggle;
+  if (t && x >= t.x && x <= t.x + t.w && y >= t.y && y <= t.y + t.h) {
+    timerVisible = !timerVisible;
+    playTingsha();
+    return true;
+  }
+  // Start-Button
+  const s = menuButtons.start;
+  if (s && x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) {
+    state = 'ready';
+    playStartChime();
+    return true;
   }
   return false;
 }
 
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && state !== 'idle') {
+    state = 'idle';
+    thoughtCounter = 0;
+    counterFullPlayed = false;
+    particles.length = 0;
+    doneTime = 0;
+    shakeIntensity = 0;
+    mouseDown = false;
+    selectedDurationIdx = -1;
+  }
+});
+
 canvas.addEventListener('click', (e) => {
+  ensureSound();
   if (state === 'idle') {
-    handleTimerClick(e.clientX, e.clientY);
+    handleMenuClick(e.clientX, e.clientY);
   } else if (state === 'done') {
     state = 'idle';
     thoughtCounter = 0;
+    counterFullPlayed = false;
     particles.length = 0;
     doneTime = 0;
+    selectedDurationIdx = -1;
   }
 });
 
 canvas.addEventListener('touchend', (e) => {
+  ensureSound();
   if (state === 'idle' && e.changedTouches.length > 0) {
     const t = e.changedTouches[0];
-    handleTimerClick(t.clientX, t.clientY);
+    handleMenuClick(t.clientX, t.clientY);
   } else if (state === 'done') {
     state = 'idle';
     thoughtCounter = 0;
+    counterFullPlayed = false;
     particles.length = 0;
     doneTime = 0;
+    selectedDurationIdx = -1;
   }
 });
 
 // --- Sound (Web Audio API) ---
 let audioCtx = null;
-let noiseNode = null;
-let noiseGain = null;
-let droneOsc = null;
-let droneGain = null;
-let droneOsc2 = null;
-let droneGain2 = null;
-let filterNode = null;
 let soundInitialized = false;
+
+// Noise (Rauschen-Modus + Meditations-Fade)
+let noiseNode = null, noiseGain = null, filterNode = null;
+
+// Synapsen (Shake): Pool aus Mikro-Ping-Oszillatoren
+let synapsenOscs = [], synapsenGains = [];
+let synapsenNext = 0, lastSynapseTime = 0;
+
+// Stimmen (Shake): Verstimmte Oszillatoren im Sprachbereich
+let stimmenOscs = [], stimmenGains = [];
+
+// Metallisch (Shake): Inharmonische Teiltöne
+let metallOscs = [], metallGains = [];
+
+// Drone (Meditation): Grundton + Quinte
+let droneOscs = [], droneGains = [];
+
+// Klangschale (Meditation): Singing-Bowl-Partials
+let bowlOscs = [], bowlGains = [];
+
+// Tanpura (Meditation): Harmonischer Drone mit Jivari-Buzz
+let tanpuraOscs = [], tanpuraGains = [];
+
+// Binaural (Meditation): Stereo-gepannte Theta-Beats
+let binauralOscs = [], binauralGains = [], binauralPans = [];
 
 function initSound() {
   if (soundInitialized) return;
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-  // --- Noise (Gedankenrauschen) ---
+  // === SHAKE-SOUNDS ===
+
+  // --- Rauschen: Bandpass-gefiltertes White Noise ---
   const bufferSize = audioCtx.sampleRate * 2;
   const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
   const data = noiseBuffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) {
-    data[i] = Math.random() * 2 - 1;
-  }
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
   noiseNode = audioCtx.createBufferSource();
   noiseNode.buffer = noiseBuffer;
   noiseNode.loop = true;
-
   filterNode = audioCtx.createBiquadFilter();
   filterNode.type = 'bandpass';
   filterNode.frequency.value = 1500;
   filterNode.Q.value = 0.5;
-
   noiseGain = audioCtx.createGain();
   noiseGain.gain.value = 0;
-
   noiseNode.connect(filterNode);
   filterNode.connect(noiseGain);
   noiseGain.connect(audioCtx.destination);
   noiseNode.start();
 
-  // --- Drone (tiefer Meditationston) ---
-  droneOsc = audioCtx.createOscillator();
-  droneOsc.type = 'sine';
-  droneOsc.frequency.value = 72; // Grundton
-  droneGain = audioCtx.createGain();
-  droneGain.gain.value = 0;
-  droneOsc.connect(droneGain);
-  droneGain.connect(audioCtx.destination);
-  droneOsc.start();
+  // --- Synapsen: 12 pooled Mikro-Ping-Oszillatoren ---
+  for (let i = 0; i < 12; i++) {
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = 440;
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    synapsenOscs.push(osc);
+    synapsenGains.push(gain);
+  }
 
-  // --- Drone Oberton (Quinte, wärmer) ---
-  droneOsc2 = audioCtx.createOscillator();
-  droneOsc2.type = 'sine';
-  droneOsc2.frequency.value = 108; // Quinte über 72 Hz
-  droneGain2 = audioCtx.createGain();
-  droneGain2.gain.value = 0;
-  droneOsc2.connect(droneGain2);
-  droneGain2.connect(audioCtx.destination);
-  droneOsc2.start();
+  // --- Stimmen: 5 verstimmte Triangle-Oszillatoren (Sprachbereich) ---
+  [180, 230, 310, 420, 540].forEach(freq => {
+    const osc = audioCtx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    stimmenOscs.push(osc);
+    stimmenGains.push(gain);
+  });
+
+  // --- Metallisch: 4 inharmonische Teiltöne ---
+  const metallBase = 280;
+  [1.0, 2.32, 3.86, 5.13].forEach(ratio => {
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = metallBase * ratio;
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    metallOscs.push(osc);
+    metallGains.push(gain);
+  });
+
+  // === MEDITATIONS-SOUNDS ===
+
+  // --- Drone: 72 Hz Grundton + 108 Hz Quinte ---
+  [72, 108].forEach(freq => {
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    droneOscs.push(osc);
+    droneGains.push(gain);
+  });
+
+  // --- Klangschale: Singing-Bowl-Partials (220 Hz Basis) ---
+  const bowlBase = 220;
+  [1.0, 2.71, 5.41, 8.56, 12.24].forEach((ratio, i) => {
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = bowlBase * ratio;
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    bowlOscs.push(osc);
+    bowlGains.push(gain);
+  });
+
+  // --- Tanpura: Sa-Pa-Sa Drone (60 Hz) mit Jivari-Buzz ---
+  const tanpBase = 60;
+  [1, 1.5, 2, 3].forEach((ratio, i) => {
+    const osc = audioCtx.createOscillator();
+    osc.type = i === 0 ? 'triangle' : 'sine';
+    osc.frequency.value = tanpBase * ratio;
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    tanpuraOscs.push(osc);
+    tanpuraGains.push(gain);
+  });
+  // Buzz-Oszillator: leicht verstimmter Sawtooth durch Lowpass
+  const tanpBuzz = audioCtx.createOscillator();
+  tanpBuzz.type = 'sawtooth';
+  tanpBuzz.frequency.value = tanpBase * 1.003;
+  const tanpFilter = audioCtx.createBiquadFilter();
+  tanpFilter.type = 'lowpass';
+  tanpFilter.frequency.value = 200;
+  const tanpBuzzGain = audioCtx.createGain();
+  tanpBuzzGain.gain.value = 0;
+  tanpBuzz.connect(tanpFilter);
+  tanpFilter.connect(tanpBuzzGain);
+  tanpBuzzGain.connect(audioCtx.destination);
+  tanpBuzz.start();
+  tanpuraOscs.push(tanpBuzz);
+  tanpuraGains.push(tanpBuzzGain);
+
+  // --- Binaural: 200 Hz links / 204 Hz rechts → 4 Hz Theta-Beat ---
+  [200, 204].forEach((freq, i) => {
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0;
+    const pan = audioCtx.createStereoPanner();
+    pan.pan.value = i === 0 ? -1 : 1;
+    osc.connect(gain);
+    gain.connect(pan);
+    pan.connect(audioCtx.destination);
+    osc.start();
+    binauralOscs.push(osc);
+    binauralGains.push(gain);
+    binauralPans.push(pan);
+  });
 
   soundInitialized = true;
+}
+
+// --- Interaction-Sounds ---
+function playTingsha() {
+  if (!soundInitialized) return;
+  const t = audioCtx.currentTime;
+  [2637, 2673].forEach((freq, i) => {
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.025, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 1.8);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 2);
+  });
+}
+
+function playBowlStrike() {
+  if (!soundInitialized) return;
+  const t = audioCtx.currentTime;
+  const base = 220;
+  [1, 2.71, 5.41, 8.56].forEach((ratio, i) => {
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = base * ratio;
+    const vol = 0.05 / (i + 1);
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(vol, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 5);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 5.5);
+  });
+}
+
+function playCounterFull() {
+  if (!soundInitialized) return;
+  const t = audioCtx.currentTime;
+  [440, 554, 659].forEach((freq, i) => {
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0, t + i * 0.12);
+    gain.gain.linearRampToValueAtTime(0.04, t + i * 0.12 + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 1.5 + i * 0.2);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 2);
+  });
+}
+
+function playEndBell() {
+  if (!soundInitialized) return;
+  const t = audioCtx.currentTime;
+  // Tempel-Gong: tiefe Grundfrequenz, inharmonische Teiltöne, langes Ausschwingen
+  // Wie eine große Tempelschale — jeder Teilton hat einen leicht verstimmten Partner (Schwebung)
+  const base = 72;
+  const partials = [
+    { ratio: 1.0,   vol: 0.06,  decay: 12, detune: 0.3  },
+    { ratio: 2.24,  vol: 0.04,  decay: 10, detune: 0.5  },
+    { ratio: 3.65,  vol: 0.025, decay: 8,  detune: 0.7  },
+    { ratio: 5.12,  vol: 0.015, decay: 6,  detune: 1.0  },
+    { ratio: 7.8,   vol: 0.008, decay: 4,  detune: 1.5  },
+  ];
+  partials.forEach(p => {
+    // Haupt-Oszillator
+    const osc1 = audioCtx.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.value = base * p.ratio;
+    const gain1 = audioCtx.createGain();
+    // Sanfter Anschlag: kurzes Anschwellen, dann langer Decay
+    gain1.gain.setValueAtTime(0, t);
+    gain1.gain.linearRampToValueAtTime(p.vol, t + 0.08);
+    gain1.gain.exponentialRampToValueAtTime(0.0001, t + p.decay);
+    osc1.connect(gain1);
+    gain1.connect(audioCtx.destination);
+    osc1.start(t);
+    osc1.stop(t + p.decay + 0.5);
+
+    // Leicht verstimmter Partner (erzeugt Schwebung / Shimmer)
+    const osc2 = audioCtx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.value = base * p.ratio + p.detune;
+    const gain2 = audioCtx.createGain();
+    gain2.gain.setValueAtTime(0, t);
+    gain2.gain.linearRampToValueAtTime(p.vol * 0.7, t + 0.08);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, t + p.decay);
+    osc2.connect(gain2);
+    gain2.connect(audioCtx.destination);
+    osc2.start(t);
+    osc2.stop(t + p.decay + 0.5);
+  });
+}
+
+function playStartChime() {
+  if (!soundInitialized) return;
+  const t = audioCtx.currentTime;
+  [392, 523, 659].forEach((freq, i) => {
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0, t + i * 0.15);
+    gain.gain.linearRampToValueAtTime(0.03, t + i * 0.15 + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 2);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 2.5);
+  });
+}
+
+function muteGroup(gains, t, dur) {
+  const d = dur || 0.3;
+  gains.forEach(g => g.gain.linearRampToValueAtTime(0, t + d));
+}
+
+function updateShakeSound(t) {
+  const mode = SHAKE_SOUNDS[shakeSoundIdx];
+
+  // Alle nicht-aktiven Shake-Sounds stumm schalten
+  if (mode !== 'Rauschen') muteGroup([noiseGain], t, 0.1);
+  if (mode !== 'Synapsen') muteGroup(synapsenGains, t, 0.1);
+  if (mode !== 'Stimmen') muteGroup(stimmenGains, t, 0.1);
+  if (mode !== 'Metallisch') muteGroup(metallGains, t, 0.1);
+
+  if (mode === 'Rauschen') {
+    noiseGain.gain.linearRampToValueAtTime(shakeIntensity * 0.3, t + 0.05);
+    filterNode.frequency.linearRampToValueAtTime(800 + thoughtCounter * 40, t + 0.05);
+    filterNode.Q.linearRampToValueAtTime(0.3 + shakeIntensity * 2, t + 0.05);
+  } else if (mode === 'Synapsen') {
+    if (shakeIntensity > 0.05) {
+      const now = Date.now();
+      const interval = Math.max(15, 120 - shakeIntensity * 110);
+      if (now - lastSynapseTime > interval) {
+        const count = Math.ceil(shakeIntensity * 3);
+        for (let i = 0; i < count; i++) {
+          const idx = synapsenNext % synapsenOscs.length;
+          synapsenNext++;
+          const freq = 400 + Math.random() * 3600;
+          synapsenOscs[idx].frequency.setValueAtTime(freq, t);
+          const vol = shakeIntensity * (0.03 + Math.random() * 0.04);
+          synapsenGains[idx].gain.cancelScheduledValues(t);
+          synapsenGains[idx].gain.setValueAtTime(vol, t);
+          synapsenGains[idx].gain.exponentialRampToValueAtTime(0.001, t + 0.02 + Math.random() * 0.06);
+        }
+        lastSynapseTime = now;
+      }
+    }
+  } else if (mode === 'Stimmen') {
+    const baseFreqs = [180, 230, 310, 420, 540];
+    stimmenOscs.forEach((osc, i) => {
+      const mod = Math.sin(t * (0.3 + i * 0.17) + i * 2.1) * 25;
+      osc.frequency.linearRampToValueAtTime(baseFreqs[i] + mod, t + 0.05);
+      stimmenGains[i].gain.linearRampToValueAtTime(shakeIntensity * 0.04, t + 0.05);
+    });
+  } else if (mode === 'Metallisch') {
+    const metallBase = 280;
+    const ratios = [1.0, 2.32, 3.86, 5.13];
+    metallOscs.forEach((osc, i) => {
+      const amMod = 0.5 + 0.5 * Math.sin(t * (1.5 + i * 0.7));
+      osc.frequency.linearRampToValueAtTime(
+        metallBase * ratios[i] * (1 + shakeIntensity * 0.02 * Math.sin(t * 3 + i)), t + 0.05);
+      metallGains[i].gain.linearRampToValueAtTime(shakeIntensity * 0.05 * amMod / (i + 1), t + 0.05);
+    });
+  }
+}
+
+function updateMeditationSound(t, progress) {
+  const mode = MEDITATION_SOUNDS[meditationSoundIdx];
+
+  // Gedanken-Rauschen löst sich auf (immer, unabhängig vom Modus)
+  noiseGain.gain.linearRampToValueAtTime(0.1 * (1 - progress), t + 0.1);
+  filterNode.frequency.linearRampToValueAtTime(300 * (1 - progress) + 60, t + 0.1);
+
+  // Shake-Sounds stumm
+  muteGroup(synapsenGains, t, 0.1);
+  muteGroup(stimmenGains, t, 0.1);
+  muteGroup(metallGains, t, 0.1);
+
+  // Nicht-aktive Meditations-Sounds stumm
+  if (mode !== 'Drone') muteGroup(droneGains, t);
+  if (mode !== 'Klangschale') muteGroup(bowlGains, t);
+  if (mode !== 'Tanpura') muteGroup(tanpuraGains, t);
+  if (mode !== 'Binaural') muteGroup(binauralGains, t);
+
+  // Envelope: sanftes Ein-/Ausblenden
+  const envelope = progress < 0.12 ? progress / 0.12
+    : progress > 0.88 ? (1 - progress) / 0.12
+    : 1.0;
+
+  if (mode === 'Drone') {
+    const droneCurve = progress < 0.5
+      ? progress * 2 * 0.08
+      : (1 - progress) * 2 * 0.08;
+    droneGains[0].gain.linearRampToValueAtTime(droneCurve, t + 0.2);
+    const drone2Curve = progress < 0.3 ? 0
+      : progress < 0.6 ? (progress - 0.3) / 0.3 * 0.04
+      : (1 - progress) / 0.4 * 0.04;
+    droneGains[1].gain.linearRampToValueAtTime(drone2Curve, t + 0.2);
+  } else if (mode === 'Klangschale') {
+    const bowlVols = [0.06, 0.03, 0.015, 0.008, 0.004];
+    const bowlBase = 220;
+    const ratios = [1.0, 2.71, 5.41, 8.56, 12.24];
+    bowlOscs.forEach((osc, i) => {
+      // Leichte Frequenz-Wobble für Schwebungs-Effekt
+      const wobble = Math.sin(t * (0.2 + i * 0.13)) * (1 + i * 0.5);
+      osc.frequency.linearRampToValueAtTime(bowlBase * ratios[i] + wobble, t + 0.1);
+      bowlGains[i].gain.linearRampToValueAtTime(bowlVols[i] * envelope, t + 0.2);
+    });
+  } else if (mode === 'Tanpura') {
+    const tanpVols = [0.06, 0.04, 0.05, 0.025, 0.02];
+    tanpuraGains.forEach((g, i) => {
+      const vol = (tanpVols[i] || 0.02) * envelope;
+      // Jivari-Buzz pulsiert langsam auf dem letzten Oszillator
+      if (i === tanpuraGains.length - 1) {
+        const buzzMod = 0.5 + 0.5 * Math.sin(t * 0.7);
+        g.gain.linearRampToValueAtTime(vol * buzzMod, t + 0.2);
+      } else {
+        g.gain.linearRampToValueAtTime(vol, t + 0.2);
+      }
+    });
+  } else if (mode === 'Binaural') {
+    binauralGains.forEach(g => {
+      g.gain.linearRampToValueAtTime(0.07 * envelope, t + 0.2);
+    });
+  }
 }
 
 function updateSound() {
@@ -570,34 +1241,25 @@ function updateSound() {
   const t = audioCtx.currentTime;
 
   if (state === 'shaking') {
-    // Chaotisches Rauschen, Lautstärke = shakeIntensity
-    noiseGain.gain.linearRampToValueAtTime(shakeIntensity * 0.3, t + 0.05);
-    // Filter wird höher/offener je mehr Chaos
-    filterNode.frequency.linearRampToValueAtTime(800 + thoughtCounter * 40, t + 0.05);
-    filterNode.Q.linearRampToValueAtTime(0.3 + shakeIntensity * 2, t + 0.05);
-    // Drone aus
-    droneGain.gain.linearRampToValueAtTime(0, t + 0.1);
-    droneGain2.gain.linearRampToValueAtTime(0, t + 0.1);
+    updateShakeSound(t);
+    // Alle Meditations-Sounds stumm
+    muteGroup(droneGains, t);
+    muteGroup(bowlGains, t);
+    muteGroup(tanpuraGains, t);
+    muteGroup(binauralGains, t);
   } else if (state === 'meditating') {
-    const progress = 1 - meditationTimeLeft / meditationDuration; // 0→1
-    // Rauschen wird leiser und dumpfer
-    noiseGain.gain.linearRampToValueAtTime(0.15 * (1 - progress), t + 0.1);
-    filterNode.frequency.linearRampToValueAtTime(400 * (1 - progress) + 80, t + 0.1);
-    // Drone: Grundton und Quinte, Kurve über die Meditation
-    const droneCurve = progress < 0.5
-      ? progress * 2 * 0.08
-      : (1 - progress) * 2 * 0.08;
-    droneGain.gain.linearRampToValueAtTime(droneCurve, t + 0.2);
-    // Oberton kommt etwas später und leiser
-    const drone2Curve = progress < 0.3 ? 0
-      : progress < 0.6 ? (progress - 0.3) / 0.3 * 0.04
-      : (1 - progress) / 0.4 * 0.04;
-    droneGain2.gain.linearRampToValueAtTime(drone2Curve, t + 0.2);
+    const progress = 1 - meditationTimeLeft / meditationDuration;
+    updateMeditationSound(t, progress);
   } else {
-    // idle / done: alles leise
-    noiseGain.gain.linearRampToValueAtTime(0, t + 0.3);
-    droneGain.gain.linearRampToValueAtTime(0, t + 0.3);
-    droneGain2.gain.linearRampToValueAtTime(0, t + 0.3);
+    // idle / ready / done: alles leise
+    muteGroup([noiseGain], t);
+    muteGroup(synapsenGains, t);
+    muteGroup(stimmenGains, t);
+    muteGroup(metallGains, t);
+    muteGroup(droneGains, t);
+    muteGroup(bowlGains, t);
+    muteGroup(tanpuraGains, t);
+    muteGroup(binauralGains, t);
   }
 }
 
@@ -653,6 +1315,13 @@ function resize() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   generateStars();
+
+  // Three.js Renderer an Statue-Bereich anpassen
+  const r = Math.min(canvas.width, canvas.height) * 0.35;
+  const renderSize = Math.round(r * 1.8); // hohe Auflösung für Details
+  renderer.setSize(renderSize, renderSize);
+  camera.aspect = 1;
+  camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', resize);
 resize();
@@ -663,77 +1332,83 @@ function drawKugel() {
   const cy = canvas.height / 2;
   const r = Math.min(canvas.width, canvas.height) * 0.35;
 
-  // Wasser-Füllung — wird klarer während Meditation / done
-  let clarity = 0; // 0 = normal, 1 = maximal klar
-  if (state === 'meditating') {
-    clarity = 1 - meditationTimeLeft / meditationDuration;
-  } else if (state === 'done') {
-    clarity = 1;
-  }
+  // --- Glaskugel: fast komplett transparent, nur Lichtbrechung am Rand ---
 
-  const baseAlpha = 0.08 + clarity * 0.04;
-  const midAlpha = 0.05 + clarity * 0.03;
-  const edgeAlpha = 0.12 + clarity * 0.05;
-
-  const waterGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-  waterGrad.addColorStop(0, `rgba(${180 + clarity * 30}, ${210 + clarity * 20}, ${235 + clarity * 15}, ${baseAlpha})`);
-  waterGrad.addColorStop(0.7, `rgba(${120 + clarity * 40}, ${160 + clarity * 30}, ${200 + clarity * 25}, ${midAlpha})`);
-  waterGrad.addColorStop(1, `rgba(${60 + clarity * 40}, ${90 + clarity * 30}, ${130 + clarity * 30}, ${edgeAlpha})`);
-
+  // Hauchdünne Tönung im Zentrum (kaum sichtbar)
+  const tintGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  tintGrad.addColorStop(0, 'rgba(160, 200, 230, 0.01)');
+  tintGrad.addColorStop(0.6, 'rgba(120, 170, 210, 0.01)');
+  tintGrad.addColorStop(0.85, 'rgba(80, 130, 180, 0.03)');
+  tintGrad.addColorStop(1, 'rgba(40, 80, 140, 0.06)');
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fillStyle = waterGrad;
+  ctx.fillStyle = tintGrad;
   ctx.fill();
 
-  // Glas-Rand (subtiler Ring)
-  const rimGrad = ctx.createRadialGradient(cx, cy, r - 2, cx, cy, r + 1);
-  rimGrad.addColorStop(0, 'rgba(150, 180, 210, 0.0)');
-  rimGrad.addColorStop(0.5, 'rgba(150, 180, 210, 0.25)');
-  rimGrad.addColorStop(1, 'rgba(150, 180, 210, 0.0)');
-
+  // Lichtbrechungs-Ring am Rand (Totalreflexion, wie echtes Glas)
+  const refrGrad = ctx.createRadialGradient(cx, cy, r * 0.82, cx, cy, r);
+  refrGrad.addColorStop(0, 'rgba(180, 220, 255, 0)');
+  refrGrad.addColorStop(0.5, 'rgba(180, 220, 255, 0.04)');
+  refrGrad.addColorStop(0.75, 'rgba(200, 230, 255, 0.1)');
+  refrGrad.addColorStop(0.9, 'rgba(220, 240, 255, 0.18)');
+  refrGrad.addColorStop(1, 'rgba(180, 210, 240, 0.05)');
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.strokeStyle = rimGrad;
-  ctx.lineWidth = 3;
-  ctx.stroke();
+  ctx.fillStyle = refrGrad;
+  ctx.fill();
 
-  // Innere Glasreflexion (zweiter, weicherer Ring innen)
-  const innerRimGrad = ctx.createRadialGradient(cx, cy, r * 0.88, cx, cy, r * 0.95);
-  innerRimGrad.addColorStop(0, 'rgba(180, 210, 240, 0)');
-  innerRimGrad.addColorStop(0.5, 'rgba(180, 210, 240, 0.04)');
-  innerRimGrad.addColorStop(1, 'rgba(180, 210, 240, 0)');
+  // Scharfer Glas-Rand (dünner, heller Ring)
   ctx.beginPath();
-  ctx.arc(cx, cy, r * 0.92, 0, Math.PI * 2);
-  ctx.strokeStyle = innerRimGrad;
-  ctx.lineWidth = r * 0.07;
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(200, 225, 255, 0.3)';
+  ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // Glas-Glanz (Lichtreflex oben links, wandert langsam)
-  const glareAngle = Date.now() * 0.0001; // sehr langsame Rotation
-  const glareDrift = Math.sin(glareAngle) * 0.05;
-  const glareX = cx + r * (-0.3 + glareDrift);
-  const glareY = cy + r * (-0.3 + Math.cos(glareAngle) * 0.03);
-  const glareR = r * 0.4;
-  const glareGrad = ctx.createRadialGradient(glareX, glareY, 0, glareX, glareY, glareR);
-  glareGrad.addColorStop(0, 'rgba(255, 255, 255, 0.12)');
-  glareGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.04)');
-  glareGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+  // Zweiter, weicherer Ring knapp innerhalb (Linsenwirkung)
+  ctx.beginPath();
+  ctx.arc(cx, cy, r - 3, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(180, 210, 240, 0.08)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
 
+  // Glas-Glanz oben links (wandert langsam — wie bei echtem Glas)
+  const glareAngle = Date.now() * 0.0001;
+  const glareDrift = Math.sin(glareAngle) * 0.05;
+
+  // Großer weicher Glare
+  const glareX = cx + r * (-0.28 + glareDrift);
+  const glareY = cy + r * (-0.32 + Math.cos(glareAngle) * 0.03);
+  const glareR = r * 0.3;
+  const glareGrad = ctx.createRadialGradient(glareX, glareY, 0, glareX, glareY, glareR);
+  glareGrad.addColorStop(0, 'rgba(255, 255, 255, 0.18)');
+  glareGrad.addColorStop(0.3, 'rgba(255, 255, 255, 0.08)');
+  glareGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
   ctx.beginPath();
   ctx.arc(glareX, glareY, glareR, 0, Math.PI * 2);
   ctx.fillStyle = glareGrad;
   ctx.fill();
 
-  // Kleiner scharfer Glanzpunkt (wandert mit)
-  const dotX = cx + r * (-0.22 + glareDrift * 0.7);
-  const dotY = cy + r * (-0.35 + Math.cos(glareAngle) * 0.02);
-  const dotGrad = ctx.createRadialGradient(dotX, dotY, 0, dotX, dotY, r * 0.05);
-  dotGrad.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+  // Scharfer Glanzpunkt (kleiner, heller)
+  const dotX = cx + r * (-0.2 + glareDrift * 0.7);
+  const dotY = cy + r * (-0.38 + Math.cos(glareAngle) * 0.02);
+  const dotGrad = ctx.createRadialGradient(dotX, dotY, 0, dotX, dotY, r * 0.03);
+  dotGrad.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
+  dotGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.15)');
   dotGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
-
   ctx.beginPath();
-  ctx.arc(dotX, dotY, r * 0.05, 0, Math.PI * 2);
+  ctx.arc(dotX, dotY, r * 0.03, 0, Math.PI * 2);
   ctx.fillStyle = dotGrad;
+  ctx.fill();
+
+  // Gegenglanz unten rechts (schwächer, wie bei echtem Glas)
+  const counterX = cx + r * 0.25;
+  const counterY = cy + r * 0.3;
+  const counterGrad = ctx.createRadialGradient(counterX, counterY, 0, counterX, counterY, r * 0.15);
+  counterGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
+  counterGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+  ctx.beginPath();
+  ctx.arc(counterX, counterY, r * 0.15, 0, Math.PI * 2);
+  ctx.fillStyle = counterGrad;
   ctx.fill();
 }
 
@@ -815,6 +1490,67 @@ function drawStatue(cx, cy, r) {
   ctx.restore();
 }
 
+function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount) {
+  if (!modelLoaded) {
+    // Nur Lade-Ring zeigen, kein Fallback-Modell
+    if (modelLoadProgress > 0 && modelLoadProgress < 1) {
+      ctx.save();
+      ctx.globalAlpha = 0.3;
+      ctx.strokeStyle = '#2abfbf';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.12, -Math.PI / 2, -Math.PI / 2 + modelLoadProgress * Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+    return;
+  }
+
+  // Lighting an Rost-Wert anpassen (warm → kalt/dunkel)
+  const warmth = 1 - rustAmount;
+  keyLight.intensity = 3.5 * warmth + 1.0 * (1 - warmth);
+  fillLight.intensity = 1.5 * warmth + 0.5 * (1 - warmth);
+  auraLight.intensity = 1.0 * warmth + 0.2 * (1 - warmth);
+  hemiLight.intensity = 1.2 * warmth + 0.4 * (1 - warmth);
+  ambientLight.intensity = 0.8 * warmth + 0.3 * (1 - warmth);
+
+  // Modell leicht rotieren (langsame Atmung)
+  if (model3D) {
+    model3D.rotation.y = Math.sin(Date.now() * 0.0003) * 0.05;
+  }
+
+  // Three.js rendern
+  renderer.render(scene, camera);
+
+  // Auf Haupt-Canvas zeichnen
+  const renderSize = threeCanvas.width / (Math.min(window.devicePixelRatio, 2));
+  const drawX = cx - renderSize / 2 + (glitchOffset || 0);
+  const drawY = cy - renderSize * 0.5;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  // Glitch: horizontaler Versatz
+  if (glitchOffset && Math.random() < 0.3) {
+    ctx.translate(glitchOffset, 0);
+  }
+
+  ctx.drawImage(threeCanvas, drawX, drawY, renderSize, renderSize);
+
+  // Rost-Overlay auf das 3D-Modell (Alpha mit Model-Alpha multipliziert)
+  if (rustAmount > 0) {
+    const s = r * 0.28;
+    const baseY = cy + r * 0.15;
+    ctx.globalAlpha = alpha * rustAmount * 0.35;
+    ctx.fillStyle = `rgb(${100 + rustAmount * 60}, ${60 + rustAmount * 20}, 30)`;
+    ctx.beginPath();
+    ctx.ellipse(cx, baseY, s * 0.5, s * 0.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
 function frame() {
   updateShake();
   updateSound();
@@ -848,7 +1584,25 @@ function frame() {
 
   const cx = canvas.width / 2;
   const cy = canvas.height / 2;
-  const r = Math.min(canvas.width, canvas.height) * 0.35;
+  let r = Math.min(canvas.width, canvas.height) * 0.35;
+
+  // Atem-Welle berechnen (asymmetrisch möglich)
+  let breathWave = 0;
+  let breathTime = 0;
+  const bt = BREATHING_TIMING[breathingMode];
+  if (bt && state === 'meditating') {
+    const breathCycle = bt.in + bt.out;
+    breathTime = (Date.now() - meditationStartTime) / 1000;
+    const phase = breathTime % breathCycle;
+    if (phase < bt.in) {
+      // Einatmen: -1 → 1
+      breathWave = Math.sin((phase / bt.in) * Math.PI - Math.PI / 2);
+    } else {
+      // Ausatmen: 1 → -1
+      breathWave = Math.sin(Math.PI / 2 - ((phase - bt.in) / bt.out) * Math.PI);
+    }
+    r *= 1 + breathWave * 0.025; // ±2.5% Radius
+  }
 
   // Schüttel-Wackeln + Twitch-Effekt
   let offsetX = 0, offsetY = 0;
@@ -876,24 +1630,39 @@ function frame() {
   // Wasser-Kaustiken (subtile Lichtmuster im Wasser)
   if (state !== 'shaking' || shakeIntensity < 0.3) {
     const now = Date.now() * 0.0005;
-    const causticAlpha = state === 'done' ? 0.025 :
-                         state === 'meditating' ? 0.012 + (1 - meditationTimeLeft / meditationDuration) * 0.015 : 0.008;
+    const causticAlpha = state === 'done' ? 0.06 :
+                         state === 'meditating' ? 0.025 + (1 - meditationTimeLeft / meditationDuration) * 0.035 : 0.02;
     ctx.save();
     ctx.beginPath();
-    ctx.arc(cx, cy, r * 0.92, 0, Math.PI * 2);
+    ctx.arc(cx, cy, r * 0.95, 0, Math.PI * 2);
     ctx.clip();
-    for (let i = 0; i < 5; i++) {
-      const ca = now + i * 1.3;
-      const csx = cx + Math.sin(ca * 1.1) * r * 0.4 + Math.cos(ca * 0.7 + i) * r * 0.2;
-      const csy = cy + Math.cos(ca * 0.9) * r * 0.3 + Math.sin(ca * 0.5 + i * 2) * r * 0.25;
-      const csz = r * (0.15 + Math.sin(ca * 0.6 + i * 0.8) * 0.08);
+    // Mehr Kaustiken, verschiedene Größen (Lichtbrechung durch Wasser)
+    for (let i = 0; i < 8; i++) {
+      const ca = now + i * 0.9;
+      const csx = cx + Math.sin(ca * 1.1 + i * 0.5) * r * 0.5 + Math.cos(ca * 0.7 + i) * r * 0.25;
+      const csy = cy + Math.cos(ca * 0.9 + i * 0.3) * r * 0.4 + Math.sin(ca * 0.5 + i * 2) * r * 0.3;
+      const csz = r * (0.08 + Math.sin(ca * 0.6 + i * 0.8) * 0.06);
       const cg = ctx.createRadialGradient(csx, csy, 0, csx, csy, csz);
-      cg.addColorStop(0, `rgba(200, 230, 255, ${causticAlpha})`);
-      cg.addColorStop(0.6, `rgba(180, 220, 250, ${causticAlpha * 0.4})`);
+      cg.addColorStop(0, `rgba(220, 240, 255, ${causticAlpha})`);
+      cg.addColorStop(0.4, `rgba(200, 230, 255, ${causticAlpha * 0.5})`);
       cg.addColorStop(1, 'rgba(180, 220, 250, 0)');
       ctx.beginPath();
       ctx.arc(csx, csy, csz, 0, Math.PI * 2);
       ctx.fillStyle = cg;
+      ctx.fill();
+    }
+    // Größere, langsamere Lichtflecken (Wasser-Linsen)
+    for (let i = 0; i < 3; i++) {
+      const ca = now * 0.6 + i * 2.1;
+      const lx = cx + Math.sin(ca * 0.4) * r * 0.3;
+      const ly = cy + Math.cos(ca * 0.3) * r * 0.25;
+      const lz = r * (0.2 + Math.sin(ca * 0.2) * 0.1);
+      const lg = ctx.createRadialGradient(lx, ly, 0, lx, ly, lz);
+      lg.addColorStop(0, `rgba(200, 230, 255, ${causticAlpha * 0.4})`);
+      lg.addColorStop(1, 'rgba(200, 230, 255, 0)');
+      ctx.beginPath();
+      ctx.arc(lx, ly, lz, 0, Math.PI * 2);
+      ctx.fillStyle = lg;
       ctx.fill();
     }
     ctx.restore();
@@ -901,8 +1670,8 @@ function frame() {
 
   // Partikel spawnen beim Schütteln — mehr bei hohem Counter
   if (shakeIntensity > 0.05) {
-    const baseCount = Math.floor(shakeIntensity * 5);
-    const bonusCount = Math.floor(thoughtCounter / 25); // +1 pro 25%
+    const baseCount = Math.floor(shakeIntensity * 15);
+    const bonusCount = Math.floor(thoughtCounter / 10); // +1 pro 10%
     const count = baseCount + bonusCount;
     for (let i = 0; i < count; i++) {
       spawnParticle(cx, cy, r);
@@ -911,7 +1680,39 @@ function frame() {
 
   updateParticles(cx, cy, r);
 
-  // Partikel nur innerhalb der Kugel zeichnen
+  // Mönch ZUERST zeichnen (Partikel kommen darüber und verdecken ihn)
+  if (state === 'ready' || state === 'shaking') {
+    // Immer voll sichtbar — Partikel verdecken ihn visuell
+    drawModel3D(cx, cy, r, 1, 0, 0);
+
+    // Ready: subtile Atem-Animation (Aura pulsiert)
+    if (state === 'ready') {
+      const breath = Math.sin(Date.now() * 0.0015) * 0.5 + 0.5;
+      const s = r * 0.28;
+      const baseY = cy + r * 0.15;
+      const breathGrad = ctx.createRadialGradient(cx, baseY - s * 0.1, s * 0.05, cx, baseY - s * 0.1, s * (0.5 + breath * 0.25));
+      breathGrad.addColorStop(0, `rgba(255, 215, 0, ${0.04 + breath * 0.04})`);
+      breathGrad.addColorStop(0.6, `rgba(255, 215, 0, ${0.01 + breath * 0.02})`);
+      breathGrad.addColorStop(1, 'rgba(255, 215, 0, 0)');
+      ctx.beginPath();
+      ctx.arc(cx, baseY - s * 0.1, s * (0.5 + breath * 0.25), 0, Math.PI * 2);
+      ctx.fillStyle = breathGrad;
+      ctx.fill();
+    }
+  } else if (state === 'meditating') {
+    // Meditation: Mönch ist da, glitcht zunehmend, löst sich bis zum Ende auf
+    const progress = 1 - meditationTimeLeft / meditationDuration; // 0→1
+    const glitchAmount = Math.max(0, progress - 0.3) * 1.2; // ab 30% glitchen
+    const alpha = 1 - progress; // startet voll sichtbar, linear bis 0
+    const glitchOffset = glitchAmount > 0 ? (Math.random() - 0.5) * glitchAmount * 15 : 0;
+
+    if (alpha > 0.01) {
+      drawModel3D(cx, cy, r, alpha, glitchOffset, Math.min(1, glitchAmount));
+    }
+  }
+  // done: kein Mönch
+
+  // Partikel ÜBER dem Mönch zeichnen (verdecken ihn bei vollem Counter)
   ctx.save();
   ctx.beginPath();
   ctx.arc(cx, cy, r * 0.95, 0, Math.PI * 2);
@@ -919,100 +1720,37 @@ function frame() {
   drawParticles();
   ctx.restore();
 
-  // Statue: Verhalten abhängig von State
-  if (state === 'shaking' || state === 'idle') {
-    // Beim Schütteln: unsichtbarer je mehr Gedanken
-    const statueAlpha = Math.max(0, 1 - thoughtCounter / 80);
-    if (statueAlpha > 0) {
-      ctx.globalAlpha = statueAlpha;
-      drawStatue(cx, cy, r);
-
-      // Idle: subtile Atem-Animation (Aura pulsiert)
-      if (state === 'idle') {
-        const breath = Math.sin(Date.now() * 0.0015) * 0.5 + 0.5;
-        const s = r * 0.28;
-        const baseY = cy + r * 0.15;
-        const breathGrad = ctx.createRadialGradient(cx, baseY - s * 0.1, s * 0.05, cx, baseY - s * 0.1, s * (0.5 + breath * 0.25));
-        breathGrad.addColorStop(0, `rgba(255, 215, 0, ${0.04 + breath * 0.04})`);
-        breathGrad.addColorStop(0.6, `rgba(255, 215, 0, ${0.01 + breath * 0.02})`);
-        breathGrad.addColorStop(1, 'rgba(255, 215, 0, 0)');
-        ctx.beginPath();
-        ctx.arc(cx, baseY - s * 0.1, s * (0.5 + breath * 0.25), 0, Math.PI * 2);
-        ctx.fillStyle = breathGrad;
-        ctx.fill();
-      }
-
-      ctx.globalAlpha = 1;
-    }
-  } else if (state === 'meditating') {
-    // Meditation: Statue taucht auf, glitcht, löst sich auf
-    const progress = 1 - meditationTimeLeft / meditationDuration; // 0→1
-    if (progress < 0.7) {
-      // Phase 1 (0–70%): Statue wird sichtbar, aber rostig und glitchend
-      const visibility = Math.min(1, progress * 3); // schnell sichtbar werden
-      const glitchAmount = Math.max(0, progress - 0.2) * 2; // ab 20% glitchen
-
-      ctx.save();
-      ctx.globalAlpha = visibility * (1 - progress * 0.8);
-
-      // Glitch: zufälliger horizontaler Versatz
-      if (glitchAmount > 0 && Math.random() < glitchAmount * 0.3) {
-        ctx.translate((Math.random() - 0.5) * glitchAmount * 15, 0);
-      }
-
-      // Farb-Shift: Gold → Grau/Rost (via filter-Simulation durch Overlay)
-      drawStatue(cx, cy, r);
-
-      // Rost-Overlay
-      if (glitchAmount > 0) {
-        const s = r * 0.28;
-        const baseY = cy + r * 0.15;
-        ctx.globalAlpha = glitchAmount * 0.4;
-        ctx.fillStyle = `rgb(${100 + glitchAmount * 60}, ${60 + glitchAmount * 20}, ${30})`;
-        ctx.beginPath();
-        ctx.ellipse(cx, baseY, s * 0.4, s * 0.5, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      ctx.restore();
-    }
-    // Phase 2 (70–100%): komplett weg
-  }
-
-  // Timer-Auswahl + Hinweis (nur im idle-State)
+  // Overlay-Menü im idle-State
   if (state === 'idle') {
-    // Pulsierender Hinweistext
-    const pulse = Math.sin(Date.now() * 0.002) * 0.5 + 0.5;
-    ctx.fillStyle = `rgba(255,255,255,${0.15 + pulse * 0.1})`;
-    ctx.font = `${Math.min(canvas.width, canvas.height) * 0.025}px monospace`;
-    ctx.textAlign = 'center';
-    ctx.fillText('shake', cx, cy - r - 15);
-    ctx.textAlign = 'start';
-
-    drawTimerSelect(cx, cy, r);
+    drawMenu();
   }
 
-  // Timer anzeigen (während Meditation)
-  if (state === 'meditating' || state === 'shaking') {
+  // Hinweis im ready-State
+  if (state === 'ready') {
+    const pulse = Math.sin(Date.now() * 0.002) * 0.5 + 0.5;
+    ctx.font = `${Math.min(canvas.width, canvas.height) * 0.02}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = `rgba(42, 191, 191, ${0.2 + pulse * 0.15})`;
+    ctx.fillText('Drücke, halte und schüttle mit der Maus die Kugel.', cx, cy - r - 35);
+    ctx.textAlign = 'start';
+  }
+
+  // Timer anzeigen (während Meditation, wenn aktiviert)
+  if (timerVisible && state === 'meditating') {
     const minutes = Math.floor(meditationTimeLeft / 60);
     const seconds = Math.floor(meditationTimeLeft % 60);
-    const timeStr = state === 'meditating'
-      ? `${minutes}:${seconds.toString().padStart(2, '0')}`
-      : '';
-
-    if (timeStr) {
-      ctx.fillStyle = `rgba(255,255,255,${0.15 + 0.1 * (1 - meditationTimeLeft / meditationDuration)})`;
-      ctx.font = `${Math.min(canvas.width, canvas.height) * 0.04}px monospace`;
-      ctx.textAlign = 'center';
-      ctx.fillText(timeStr, cx, cy + r + 40);
-      ctx.textAlign = 'start';
-    }
+    const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    ctx.fillStyle = `rgba(240, 236, 230, ${0.12 + 0.08 * (1 - meditationTimeLeft / meditationDuration)})`;
+    ctx.font = `200 ${Math.min(canvas.width, canvas.height) * 0.035}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(timeStr, cx, cy + r + 55);
+    ctx.textAlign = 'start';
   }
 
   // Verführungen zeichnen
   drawTemptations(cx, cy, r);
 
-  // Done-State: klares Wasser, sanftes Leuchten
+  // Done-State: klares Wasser, sanftes Leuchten, magischer Satz
   if (state === 'done') {
     const elapsed = (Date.now() - doneTime) / 1000;
     const fadeIn = Math.min(1, elapsed / 3); // 3 Sekunden einblenden
@@ -1027,16 +1765,6 @@ function frame() {
     ctx.fillStyle = clearGrad;
     ctx.fill();
 
-    // Hinweis zum Neustart (nach 5s einblenden)
-    if (elapsed > 5) {
-      const hintAlpha = Math.min(0.2, (elapsed - 5) / 3 * 0.2);
-      ctx.fillStyle = `rgba(255,255,255,${hintAlpha})`;
-      ctx.font = `${Math.min(canvas.width, canvas.height) * 0.025}px monospace`;
-      ctx.textAlign = 'center';
-      ctx.fillText('klick', cx, cy + r + 35);
-      ctx.textAlign = 'start';
-    }
-
     // Langsame, atmende Lichtpulse
     const pulse = Math.sin(elapsed * 0.5) * 0.5 + 0.5;
     const pulseGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 0.3);
@@ -1046,6 +1774,75 @@ function frame() {
     ctx.arc(cx, cy, r * 0.3, 0, Math.PI * 2);
     ctx.fillStyle = pulseGrad;
     ctx.fill();
+
+    // "Du bist das Wasser" — magischer Satz mit Glow (nach 5s Stille)
+    if (elapsed > 5) {
+      const textFade = Math.min(1, (elapsed - 5) / 5); // 5s sehr langsam einblenden
+      const textPulse = Math.sin(elapsed * 0.8) * 0.15 + 0.85;
+      const fontSize = Math.min(canvas.width, canvas.height) * 0.04;
+
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `300 ${fontSize}px Georgia, serif`;
+
+      // Äußerer Glow (mehrere Schichten)
+      for (let i = 3; i >= 1; i--) {
+        ctx.shadowColor = `rgba(180, 220, 255, ${textFade * textPulse * 0.3})`;
+        ctx.shadowBlur = i * 15;
+        ctx.fillStyle = `rgba(180, 220, 255, ${textFade * textPulse * 0.05})`;
+        ctx.fillText('Du bist das Wasser', cx, cy);
+      }
+
+      // Haupttext
+      ctx.shadowColor = `rgba(200, 235, 255, ${textFade * textPulse * 0.8})`;
+      ctx.shadowBlur = 20;
+      ctx.fillStyle = `rgba(230, 245, 255, ${textFade * textPulse * 0.7})`;
+      ctx.fillText('Du bist das Wasser', cx, cy);
+
+      ctx.restore();
+    }
+
+    // Nach 35s: Gedanken kommen sanft zurück — der Kreislauf beginnt von vorn
+    if (elapsed > 35) {
+      const rebirth = Math.min(1, (elapsed - 35) / 20); // über 20s langsam aufbauen
+      // Sanftes Spawnen aus der Mitte — wie Gedanken die von allein entstehen
+      if (Math.random() < rebirth * 0.3) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * r * 0.3;
+        particles.push({
+          x: cx + Math.cos(angle) * dist,
+          y: cy + Math.sin(angle) * dist,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: (Math.random() - 0.5) * 0.5 - 0.3,
+          life: 1,
+          decay: 0.0004 + Math.random() * 0.0006,
+          size: 1.5 + Math.random() * 3,
+          color: NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)],
+          age: 0
+        });
+      }
+      // Partikel updaten und zeichnen
+      updateParticles(cx, cy, r);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.95, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.globalAlpha = rebirth * 0.6; // sanft einblenden
+      drawParticles();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    // Hinweis zum Neustart (nach 45s)
+    if (elapsed > 45) {
+      const hintAlpha = Math.min(0.15, (elapsed - 45) / 4 * 0.15);
+      ctx.fillStyle = `rgba(255,255,255,${hintAlpha})`;
+      ctx.font = `${Math.min(canvas.width, canvas.height) * 0.018}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText('klick', cx, cy + r + 35);
+      ctx.textAlign = 'start';
+    }
   }
 
   ctx.restore(); // Twitch-Translate aufheben
@@ -1075,17 +1872,69 @@ function frame() {
     const ringPulse = Math.sin(Date.now() * 0.004) * 0.1 + 0.9;
     ctx.beginPath();
     ctx.arc(cx, cy, r + 6, -Math.PI / 2, -Math.PI / 2 + angle);
-    ctx.strokeStyle = `rgba(255, 0, 110, ${(0.3 + thoughtCounter / 200) * ringPulse})`;
+    ctx.strokeStyle = `rgba(232, 106, 122, ${(0.3 + thoughtCounter / 200) * ringPulse})`;
     ctx.lineWidth = 1.5 + ringPulse;
     ctx.stroke();
-    // Äußerer Glow des Rings
     if (thoughtCounter > 50) {
       ctx.beginPath();
       ctx.arc(cx, cy, r + 6, -Math.PI / 2, -Math.PI / 2 + angle);
-      ctx.strokeStyle = `rgba(255, 0, 110, ${(thoughtCounter - 50) / 500 * ringPulse})`;
+      ctx.strokeStyle = `rgba(232, 106, 122, ${(thoughtCounter - 50) / 500 * ringPulse})`;
       ctx.lineWidth = 6;
       ctx.stroke();
     }
+  }
+
+  // Atem-Nebel NUR außerhalb der Kugel (Meditation)
+  // Atem-Nebel NUR außerhalb der Kugel — nur Cyan (#2abfbf)
+  if (bt && state === 'meditating') {
+    // Nebel-Ausdehnung: pulsiert mit dem Atem (breathWave von oben)
+    const clipR = r + 14;
+    const nebelBase = clipR + 4;
+    const nebelExpand = Math.abs(breathWave) * r * 0.25;
+    const nebelOuter = nebelBase + nebelExpand;
+    const nebelAlpha = 0.06 + Math.abs(breathWave) * 0.12;
+    const maxOuter = nebelOuter + r * 0.15;
+
+    // Clip: nur Ring außerhalb der Kugel zeichnen
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(cx - maxOuter - 10, cy - maxOuter - 10, maxOuter * 2 + 20, maxOuter * 2 + 20);
+    ctx.arc(cx, cy, clipR, 0, Math.PI * 2, true);
+    ctx.clip();
+
+    // Mehrere weiche Nebel-Schichten — nur Cyan
+    for (let layer = 0; layer < 3; layer++) {
+      const layerOffset = layer * r * 0.04;
+      const innerR = nebelBase + layerOffset;
+      const outerR = nebelOuter + layerOffset * 0.5;
+      const grad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
+      const a = nebelAlpha * (1 - layer * 0.3);
+      grad.addColorStop(0, `rgba(42, 191, 191, ${a})`);
+      grad.addColorStop(0.4, `rgba(42, 191, 191, ${a * 0.5})`);
+      grad.addColorStop(1, 'rgba(42, 191, 191, 0)');
+      ctx.beginPath();
+      ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+    }
+
+    // Subtile Nebel-Strähnen
+    for (let s = 0; s < 5; s++) {
+      const angle = (s / 5) * Math.PI * 2 + breathTime * 0.05;
+      const streakX = cx + Math.cos(angle) * r * 0.1;
+      const streakY = cy + Math.sin(angle) * r * 0.1;
+      const sOuter = nebelOuter + r * 0.05 * (0.5 + 0.5 * Math.sin(angle * 3 + breathTime));
+      const sGrad = ctx.createRadialGradient(streakX, streakY, nebelBase, streakX, streakY, sOuter);
+      sGrad.addColorStop(0, `rgba(42, 191, 191, ${nebelAlpha * 0.4})`);
+      sGrad.addColorStop(0.6, `rgba(42, 191, 191, ${nebelAlpha * 0.15})`);
+      sGrad.addColorStop(1, 'rgba(42, 191, 191, 0)');
+      ctx.beginPath();
+      ctx.arc(streakX, streakY, sOuter, 0, Math.PI * 2);
+      ctx.fillStyle = sGrad;
+      ctx.fill();
+    }
+
+    ctx.restore();
   }
 
   requestAnimationFrame(frame);

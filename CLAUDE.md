@@ -1,4 +1,4 @@
-# Projekt Kugel
+# M-Sphere
 
 ## Kernidee
 Interaktive Schneekugel als Meditations-Erfahrung.
@@ -7,67 +7,90 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 
 ## Ablauf / Gameplay
 
-### 1. Schüttel-Phase (aktiv)
-- Benutzer schüttelt: **Maus bewegen, Finger/Touch, oder ganzes Device (Gyro)**
+### 1. Overlay-Menü (idle)
+- Fullscreen-Overlay im ZPMA-Stil (dunkler Hintergrund, subtile Sterne)
+- **"M-SPHERE"** als Titel (Impact-Font, dreistufiger Teal-Glow)
+- "INTERACTIVE MEDITATION" Untertitel
+- "by Jochen Hornung Dev Studios" + "jochenhornung.de"
+- Einstellungen: Zeit, Gedanken-Sound, Meditations-Sound, Kohärentes Atmen
+- **START**-Button (pulsierend, erst aktiv wenn Zeit gewählt)
+- Tingsha-Sound bei jedem Button-Klick, Start-Chime bei Start
+
+### 2. Schüttel-Phase (ready → shaking)
+- Hinweis: "Drücke, halte und schüttle mit der Maus die Kugel." (teal)
+- Benutzer **hält Maustaste gedrückt und schüttelt** (oder Touch/Gyro)
 - **Gedanken-Counter** steigt von 0% → 100%
-- Neon-Partikel schießen vulkanartig aus dem Kopf der goldenen Statue
-- Je höher der Counter, desto chaotischer, lauter, greller
-- **Bei 100%**: Totales Chaos — die goldene Figur ist **gar nicht mehr sichtbar**
-- Erst ab 100% kann die Meditations-Phase beginnen
+- Neon-Partikel schießen aus dem **Oberkopf des Cyborg-Mönchs**
+- Je höher der Counter, desto chaotischer — Partikel pflastern den ganzen Raum zu
+- **Bei 100%**: Counter-Full-Akkord (A-C#-E), Mönch komplett verdeckt
+- Erst ab 100% + Maus loslassen → Meditation beginnt
 
-### 2. Meditations-Phase (loslassen)
-- Benutzer **hört auf** zu schütteln → Timer startet
-- **Dauer einstellbar**: 1, 5, 10, 20, 30 Minuten
-- Gedanken lösen sich langsam auf im Raum
-- Figur wird kurz wieder **sichtbar** (durch weniger Partikel)
-- Aber Figur löst sich dann **mit den Gedanken zusammen auf**
-- Rostend, glitchend, zerfallend → bis nichts mehr da ist
+### 3. Meditations-Phase (loslassen)
+- Singing-Bowl-Anschlag beim Start
+- Gedanken lösen sich langsam auf, Mönch wird wieder sichtbar
+- Mönch löst sich dann **mit den Gedanken zusammen auf** (glitchend, rostend)
+- Linear bis zum Ende: `alpha = 1 - progress`
 
-### 3. Verführung / Rückfall
+### 4. Verführung / Rückfall
 - Während der Meditation: **subtile Reize** versuchen den Benutzer zum Schütteln zu verleiten
-- Wenn der Benutzer nachgibt und wieder schüttelt → **Timer reset**, Counter steigt wieder
-- = Genau wie echte Meditation: der Geist will zurück ins Drama
+- Wenn der Benutzer nachgibt → **Timer reset**, Counter steigt wieder
+- Rückfall-Sound: 3x dissonante Sawtooth-Oszillatoren (200–600 Hz)
 - **Die Verführungen** (basierend auf Aufmerksamkeits-Forschung):
-  1. **Curiosity Gap** (stärkster Trigger): Ein kurzes Schimmern am Kugelrand, ein Schatten der sich bewegt — "was wäre, wenn du nochmal schüttelst?" Dopamin feuert bei Ungewissheit, nicht bei Belohnung
-  2. **Pseudo-Notification**: Rotes Badge blinkt kurz auf, wie eine ungelesene Nachricht. Rot aktiviert evolutionäre Dringlichkeits-Reaktion
-  3. **Die Kugel zuckt**: Subtile motorische Versuchung — die Kugel vibriert leicht, als ob sie geschüttelt werden *will*. Appelliert an motorisches Ritual (Pull-to-Refresh-Reflex)
-  4. **Zeigarnik-Stups**: Die goldene Statue schimmert kurz durch die Partikel — "unfinished business", das Ego zeigt sich nochmal. Der Drang, hinzuschauen
-  5. **Sound-Impuls**: Ein einzelner, fast unhörbarer Ton durchbricht die Stille — wie ein Gedanke, der sagt "schau mal". Unterbrechungs-basiertes Design
-  6. **Neon-Blitz**: Ein einzelner greller Partikel schießt quer durchs Bild — FOMO, als ob man etwas verpasst
-- **Timing**: Anfangs häufig (alle 20-30s), werden seltener aber **subtiler und wirksamer** je weiter die Meditation fortschreitet — genau wie echte Gedanken
+  1. **Curiosity Gap**: Schimmern am Kugelrand
+  2. **Pseudo-Notification**: Rotes Badge
+  3. **Kugel zuckt**: Motorische Versuchung
+  4. **Sound-Impuls**: Einzelner Ping-Ton
+  5. **Neon-Blitz**: Greller Partikel quer durchs Bild
+- **Timing**: Anfangs ~8s, später 20–40s (seltener aber subtiler)
 
-### 4. Ende (Leere)
-- Nach Ablauf der gewählten Zeit: **Kugel ist leer**
-- Klares, stilles Wasser
-- Keine Figur, keine Gedanken
-- Erkenntnis: Du warst nie die Figur. Du bist das Wasser.
+### 5. Ende (Leere)
+- **0–5s**: Stille, leere Kugel
+- **5–10s**: "Du bist das Wasser" blendet ein (Georgia serif, mehrschichtiger blau-weißer Glow)
+- Verbesserte End-Glocke (6 Obertöne, 6s Nachhall)
+- **35s+**: Partikel kehren langsam aus der Mitte zurück (Symbol: ewiger Kreislauf)
+- **45s+**: Dezenter "klick"-Hinweis zum Neustart
+- Klick → zurück zum Overlay-Menü (`selectedDurationIdx` wird zurückgesetzt)
 
 ## Sound-Design
-- **Schüttel-Phase**: Gedankenflut-Sound, chaotisch, laut, überwältigend
-- **Meditations-Beginn**: Dramatisch, unheimlich (der "Tod im Leben")
-- **Verlauf**: Wird immer weiter, leichter, offener
-- **Ende**: Stille oder ein sehr minimaler, weiter Klang
+
+### Wählbare Gedanken-Sounds (Schüttel-Phase)
+- **Rauschen**: Bandpass-gefiltertes White Noise (Lautstärke folgt shakeIntensity)
+- **Synapsen** (Default): 12 pooled Mikro-Ping-Oszillatoren (400–4000 Hz), rapid-fire
+- **Stimmen**: 5 verstimmte Triangle-Oszillatoren im Sprachbereich (180–540 Hz) mit Vibrato
+- **Metallisch**: 4 inharmonische Teiltöne (Basis 280 Hz, Ratios 1/2.32/3.86/5.13) mit AM
+
+### Wählbare Meditations-Sounds
+- **Drone**: 72 Hz Grundton + 108 Hz Quinte (Sinus)
+- **Klangschale** (Default): Singing-Bowl-Partials (220 Hz, Ratios 1/2.71/5.41/8.56/12.24) mit Schwebung
+- **Tanpura**: Sa-Pa-Sa-Drone (60 Hz, Triangle+Sinus) mit Jivari-Buzz (Sawtooth durch Lowpass)
+- **Binaural**: 200 Hz links / 204 Hz rechts → 4 Hz Theta-Beat (StereoPanner)
+
+### Interaction-Sounds
+- **Tingsha**: Zwei leicht verstimmte hohe Sinus-Töne (2637/2673 Hz, 1.8s Decay) — bei Menü-Klicks
+- **Start-Chime**: Aufsteigender Dreiklang G-C-E (392/523/659 Hz) — bei Start
+- **Counter-Full**: A-C#-E Akkord (440/554/659 Hz) — bei 100% Gedanken
+- **Tempel-Gong**: Tiefer Gong (72 Hz Basis, 5 inharmonische Partials mit Shimmer-Partnern, 12s Decay) — bei Meditationsstart UND -ende
+- **Rückfall**: 3x dissonante Sawtooth (200–600 Hz, 0.4s)
+
+### Gemeinsame Sounds
+- **Meditation**: Gedanken-Noise löst sich immer auf (unabhängig vom Shake-Modus)
+- **Meditations-Envelope**: Sanftes Ein-/Ausblenden (12% Ramp an Anfang/Ende)
 
 ## Die Vision — Drei innere Phasen
 
 ### Das goldene Ego
-- In der Mitte: kein bescheidener Mönch, sondern ein **goldener Götze**
-- Das westliche Ego, der "Mac-Meditierer", Spiritualität als Konsum
-- Narzissmus, Verliebtheit in die eigene Identität
-- Statt Schneeflocken: **Neon-Blitze, bunte Süßigkeiten, grelle Icons**
-- = Gedankensucht, Dopamin-Gier, "Craving" (buddhistisch)
+- In der Mitte: **Cyborg-Mönch** (3D-Modell) — das westliche Ego, Spiritualität als Konsum
+- Neon-Partikel = Gedankensucht, Dopamin-Gier, "Craving"
 
 ### Der Entzug
-- Loslassen fühlt sich anfangs an wie **Sterben**
-- Die goldene Statue **rostet, bekommt Risse, glitcht**
+- Mönch **glitcht, bekommt Rost-Overlay**, wird zunehmend unsichtbar
 - Neon-Gedanken werden **grau und aschig**
 - Eckhart Tolle: "Tod im Leben" — das Ego wehrt sich
 
 ### Die Auflösung
-- Statue löst sich **komplett auf** — Verschwinden, nicht Zerfall
-- Gedanken verlieren Härte, Farbe, Form — sie **schmelzen**
-- Alles wird eins: Gedanken waren nur **gefrorenes Wasser**
+- Mönch und Gedanken lösen sich **gemeinsam linear auf**
 - Was bleibt: **klares, weites, stilles Wasser**
+- Erkenntnis: "Du bist das Wasser"
 
 ## Philosophische Referenzen
 - **Thomas Metzinger**: Schneekugel-Metapher, Bewusstseinsforschung
@@ -76,74 +99,104 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Wu Wei** (Daoismus): Nicht-Tun als höchstes Handeln
 
 ## Technische Umsetzung
-- **Datei**: `kugel.html` (Single-File-Webapp)
-- **Rendering**: 2D Canvas (HTML5 Canvas API)
-- **Input**: Maus, Touch, Device-Gyroscope
-- **Timer**: Wählbar 1 / 5 / 10 / 20 / 30 Minuten
-- **States**: `idle` → `shaking` → `meditating` → `done`
-- **Kugel**: Radiale Gradienten für Wasser, Glasrand, Glanzpunkt (oben links)
+- **Name**: M-Sphere (ehemals "Kugel")
+- **Datei**: `kugel.html` (Single-File-Webapp, `<script type="module">`)
+- **Rendering**: 2D Canvas + Three.js Offscreen-Rendering für 3D-Modell
+- **Input**: Maus (nur bei gedrückter Taste), Touch, Device-Gyroscope
+- **States**: `idle` (Menü) → `ready` → `shaking` → `meditating` → `done`
+- **Kugel**: Radiale Gradienten für Wasser, Glasrand, Glanzpunkt, Kaustiken
 - **Responsive**: Füllt ganzen Viewport, Kugel = 70% der kleineren Achse
-- **Goldene Statue**: Stilisierte Meditationsfigur aus Gradienten (goldShine/goldLight/goldMid/goldDark), Lotussitz-Basis, Körper, Kopf, Hände, goldene Aura. Größe = 28% des Kugelradius, Position leicht unter Kugelmitte
-- **Shake Detection**: Maus (mousemove-Distanz), Touch (touchmove-Distanz), Device Motion (Accelerometer, Schwelle >12). `shakeAccum` sammelt Bewegung, `shakeIntensity` (0–1) wird pro Frame berechnet mit 0.3 Decay
-- **thoughtCounter**: 0–100%, steigt mit `shakeIntensity * 0.8` pro Frame. Bei 100% → State wechselt zu `meditating`
-- **Neon-Partikel**: Spawnen aus dem Kopf der Statue beim Schütteln. 10 Neon-Farben. Spawn-Rate steigt mit Counter (+1 pro 25%). Langsamer Decay (0.0008–0.0023) damit viele akkumulieren. Physik: leichte Gravitation beim Schütteln, Reflexion am Kugelrand. Glow-Effekt per RadialGradient
-- **Timer-Auswahl**: 5 Buttons unter der Kugel im `idle`-State: 1/5/10/20/30 Minuten. Klick/Touch wählt aus, ausgewählter Button heller. Responsive Größe (7% der kleineren Achse). Verschwindet beim Schütteln
-- **Timer**: `meditationTimeLeft` zählt runter. Anzeige unter der Kugel (MM:SS), dezent weiß, wird heller je näher am Ende. Timer reset bei Rückfall (erneutes Schütteln)
-- **Counter-Ring**: Pinker Bogen um die Kugel, zeigt thoughtCounter % als Kreissegment
-- **Meditations-Logik**: Counter sinkt linear über die gewählte Dauer, Partikel lösen sich mit auf
-- **Statue-Auflösung in Meditation**: Phase 1 (0–70%): Statue wird kurz sichtbar, beginnt zu glitchen (horizontaler Versatz, zufällig), Rost-Overlay wird stärker (Gold→Braun/Grau). Phase 2 (70–100%): komplett verschwunden. Kein sanftes Zurückkommen — die Statue zerfällt
-- **Sound (Web Audio API)**: Startet bei erster Nutzer-Interaktion (Browser-Policy). Zwei Schichten:
-  - *Noise*: Bandpass-gefiltertes White Noise = Gedankenrauschen. Lautstärke folgt shakeIntensity, Filter öffnet sich mit thoughtCounter (800–4800 Hz). Wird leiser und dumpfer während Meditation
-  - *Drone*: Tiefer Sinuston (72 Hz) = meditativer Grundton. Blendet während Meditation ein (Peak bei 50%), dann wieder aus zum Ende
-- **Verführungs-Trigger (implementiert)**: Nur aktiv während `meditating`. Intervall: anfangs ~8s, später 20–40s (seltener aber subtiler). 4 Typen:
-  - *badge*: Rotes Notification-Badge oben rechts in der Kugel (blinkt kurz auf)
-  - *flash*: Neon-Blitz quer durch die Kugel (FOMO)
-  - *twitch*: Kugel zuckt/vibriert horizontal (motorischer Reiz)
-  - *shimmer*: Subtiles weißes Schimmern am Kugelrand (Curiosity Gap)
-  - *sound*: Kurzer Ping-Ton (Gedanke der anklopft)
-  - Früh (0–40%): badge, flash, twitch, sound. Spät (40–100%): shimmer, sound, twitch
-- **Partikel-Entsättigung**: Während Meditation werden Neon-Farben zu Aschgrau (Zielwert RGB 80,80,80). Glow wird ebenfalls schwächer. Alle Farben via `rgba()` für sauberes Alpha-Blending
-- **Partikel-Meditation**: Kein Fallen, kein schnelles Verschwinden. Partikel bleiben wo sie sind (sanftes Abbremsen 0.995/Frame), verblassen LINEAR über die gesamte Meditationsdauer. Alpha = min(eigenes Life, meditations-Progress). Gedanken verströmen in den Raum und lösen sich dort auf
-- **Done-State**: Klick/Touch → zurück zu `idle`. Kugel ist leer. Sanftes bläulich-klares Leuchten blendet über 3s ein. Langsamer Lichtpuls (Atmung) im Zentrum. Keine Statue, keine Partikel, keine Verführungen. Nur klares Wasser
-- **Wasser-Klarheit**: Kugel-Inneres wird heller/klarer während Meditation (RGB-Werte + Alpha steigen). Im Done-State am klarsten
-- **UI-Texte**: "shake" (pulsierend, über Kugel, idle), "klick" (dezent, unter Kugel, done nach 5s)
+
+### Overlay-Menü (idle-State)
+- **Stil**: ZPMA-inspiriert (Fullscreen Canvas-Overlay, nicht HTML)
+- **Font**: Impact / "Arial Black" für Titel, monospace für Rest
+- **Titel-Glow**: 3 Schichten — weicher Teal-Schein (blur 60) → mittlerer (blur 25) → heller Kern (blur 8)
+- **Farb-Palette**: bg=#0a1628, primary=#1a3a5c, secondary=#3a6080, teal=#2abfbf, light=#f0ece6
+- **Kein Default**: `selectedDurationIdx = -1`, erst klicken aktiviert START
+- **Reihenfolge**: Titel → Untertitel → Credits → MEDITATIONSZEIT → GEDANKEN-SOUND → MEDITATIONS-SOUND → KOHÄRENTES ATMEN → TIMER ANZEIGEN → START
+- **Hit-Detection**: `menuButtons`-Objekt mit timer/shake/meditation/breathing/timerToggle/start
+- **Sterne**: 40 pseudozufällige Punkte mit Puls-Animation
+
+### 3D-Modell-Integration
+- **Three.js v0.170.0** via importmap (CDN jsdelivr)
+- **Modell**: `japanese_monk_cyborg_sitting.glb` — Cyborg-Mönch (Sketchfab, Romain Brunas)
+- **Offscreen Canvas**: WebGLRenderer (alpha:true, ACES tonemap, sRGB output, exposure 1.8), Render-Größe r*1.8
+- **drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount)**: Zentrale Funktion
+- **Kamera**: PerspectiveCamera(32°, 1:1), Position (0, 0.8, 5.0), Blick auf (0, 0.3, 0)
+- **Lighting** (Studio-Setup):
+  - Key: DirectionalLight (#ffeedd, 3.5) von oben-links-vorne
+  - Fill: DirectionalLight (#ddeeff, 1.5) von rechts
+  - Rim: DirectionalLight (#aaccff, 2.0) von hinten (Kontur-Kanten)
+  - Aura: PointLight (#ffc880, 1.0) von unten
+  - Hemisphere: (#c8d8f0 / #443322, 1.2) Himmel/Boden
+  - Ambient: (#404050, 0.8)
+- **Rost-Lighting**: Intensitäten sinken mit rustAmount (warm→kalt/dunkel)
+- **Fallback**: Kein Statue-Fallback, nur teal Lade-Ring während GLB lädt
+- **HTTP-Server nötig**: `python3 -m http.server 8092` im Kugel-Ordner
+
+### Rendering-Reihenfolge in frame()
+1. Hintergrund (Farbshift je State)
+2. Sterne
+3. Kugel (Wasser, Glasrand, Glanzpunkt)
+4. Kaustiken (geclippt)
+5. **Mönch** (3D-Modell, via drawModel3D) — nicht im idle-State
+6. **Partikel** (ÜBER dem Mönch — verdecken ihn bei vollem Counter)
+7. **Overlay-Menü** (nur idle) / Hint-Text (nur ready) / Timer / Done-Effekte
+8. Vignette, Rückfall-Flash, Counter-Ring
+
+### Shake Detection
+- **Maus**: Nur bei `mouseDown=true` — Bewegung ohne Klick wird ignoriert
+- **Touch**: touchmove-Distanz
+- **Device Motion**: Accelerometer, Schwelle >12
+- `shakeAccum` → `shakeIntensity` (0–1), Decay 0.3/Frame
+
+### Partikel (Gedanken)
+- **Spawn**: Aus dem Oberkopf des Mönchs (`cy - r * 0.28`), ab 60% Counter auch aus dem Körper
+- **Spawn-Rate**: `shakeIntensity * 15` + Bonus pro 10% Counter
+- **Decay**: Sehr langsam (0.0003–0.0011) — akkumulieren und pflastern den Raum zu
+- **10 Neon-Farben**, Glow per RadialGradient, Spawn-Blitz (weißer Kern, 4 Frames)
+- **Meditation**: Abbremsen (0.995/Frame), verblassen linear mit Timer, Farben → Aschgrau
+- **Physik**: Leichte Gravitation, Reflexion am Kugelrand (r*0.92)
+
+### Mönch-Verhalten je State
+- **idle**: Nicht sichtbar (Overlay-Menü verdeckt alles)
+- **ready**: Voll sichtbar (alpha=1), goldene Atem-Aura pulsiert
+- **shaking**: Voll sichtbar, aber Partikel stapeln sich darüber und verdecken ihn
+- **meditating**: Startet voll sichtbar, löst sich linear auf (`alpha = 1 - progress`). Ab 30% Glitch + Rost-Overlay (Alpha multipliziert mit Model-Alpha)
+- **done**: Nicht sichtbar, "Du bist das Wasser" erscheint
+
+### Atmen (Breathing)
+- **Zwei Modi**: Kohärent (5.5s ein / 5.5s aus) und Beruhigend (4s ein / 6s aus)
+- **Asymmetrische Welle**: Piecewise Sine für glatte Übergänge bei unterschiedlichen Ein-/Ausatem-Dauern
+- **Auswahl**: Im Overlay-Menü als Settings-Row (Aus / Kohärent 5.5:5.5 / Beruhigend 4:6)
+- **Default**: Kohärent (`breathingMode = 1`)
+- **Kugel-Radius**: Oszilliert ±2.5% mit der Atem-Welle
+- **Nebel**: Nur Cyan (#2abfbf), nur außerhalb der Kugel (Clip-Mask), 3 Gradient-Schichten + 5 Strähnen
+- **State**: `BREATHING_MODES[]`, `BREATHING_TIMING[]`, `breathingMode` (0/1/2)
+
+### Weitere Effekte
+- **Rückfall-Flash**: Roter Lichtring (alpha 0.6, decay 0.92)
+- **Kugel-Wackeln**: Random offset * shakeIntensity
+- **Trail-Effekt**: Halbtransparenter BG-Layer bei heftigem Schütteln
+- **Vignette**: Dunkle Ecken (40% schwarz am Rand)
+- **Hintergrund-Farbshift**: Warm/rötlich (shaking) → kühl/bläulich (meditating) → tiefblau (done)
+- **Glasreflex-Animation**: Wandert langsam über die Kugel
+- **Sterne**: 60 Punkte, dimmen beim Schütteln, heller im Done-State
+- **Kugel-Glas**: Fast transparent in der Mitte, Lichtbrechung am Rand, scharfe Glaskante
 
 ## Entscheidungen
-- Nicht linear, sondern interaktiv — der Benutzer muss es selbst erleben
-- 2D Canvas (nicht WebGL) — reicht für den Effekt, einfacher
-- Schütteln bis 100%, dann Meditation mit Timer
-- **Timer sichtbar** — MM:SS unter der Kugel, dezent
-- **Timer reset bei Rückfall** — wer wieder schüttelt, fängt von vorn an
-- **Counter-Ring** — pinker Bogen um die Kugel zeigt Fortschritt
-- Verführungs-Mechanik: 5 psychologisch fundierte Trigger
-- Erklärung/Intro kommt später
-
-### Feinschliff (implementiert)
-- **Rückfall-Flash**: Roter Lichtring um die Kugel bei Rückfall (alpha 0.6, decays mit 0.92)
-- **Rückfall-Sound**: 3x dissonante Sawtooth-Oszillatoren (200–600 Hz, 0.4s decay)
-- **Done-Sound**: Dreiklang-Glocke (528/660/792 Hz), gestaffelt, 3-4s decay
-- **Kugel-Wackeln**: Beim Schütteln wackelt die gesamte Kugel leicht (random offset * intensity)
-- **Trail-Effekt**: Beim heftigen Schütteln halbtransparenter schwarzer Layer statt hartem Clear → Partikel ziehen Spuren
-- **Partikel-Größenvariation**: 15% große (5–8px), 30% winzige (1–2.5px), Rest mittel (2–5px)
-- **Partikel-Schrumpfen**: Während Meditation schrumpfen Partikel sanft auf 70% (nicht aggressiv)
-- **Partikel-Spawn-Bereich**: Ab 60% Counter spawnen Partikel aus dem ganzen Körper, nicht nur dem Kopf
-- **Drone-Oberton**: Zweiter Sinus bei 108 Hz (Quinte), kommt ab 30% Meditation, Peak bei 60%, leiser als Grundton
-- **Hintergrund-Sterne**: 60 subtile Punkte außerhalb der Kugel, twinkeln langsam (Alpha 0.03–0.18)
-- **Counter-Ring-Puls**: Ring pulsiert leicht, ab 50% zusätzlicher äußerer Glow
-- **Partikel-Clipping**: Partikel werden per Canvas-Clip auf Kugelinneres begrenzt (r*0.95)
-- **Statue-Atem (idle)**: Goldene Aura pulsiert langsam (0.0015 Hz Sinus), Größe und Helligkeit atmen mit
-- **Vignette**: Dunkle Ecken/Ränder (radial gradient, 40% schwarz am Rand) für Tiefe und Fokus
-- **Lineares Verblassen**: Gedanken verblassen gleichmäßig über die gesamte Meditationsdauer — kein schneller Abbau, kein Fallen
-- **Hintergrund-Farbshift**: Warm/rötlich beim Schütteln, kühl/bläulich während Meditation, tiefblau im Done-State. Subtile RGB-Verschiebung, kein hartes Umschalten
-- **Glasreflex-Animation**: Glanzpunkt und Glare wandern langsam über die Kugel (0.0001 Hz Sinus), als ob sich das Licht dreht
-- **Wasser-Kaustiken**: 5 sich bewegende Lichtflecken im Kugelinneren (per Clip begrenzt). Stärker sichtbar in Meditation und Done. Verschwinden beim heftigen Schütteln
-- **Sterne reagieren auf State**: Dimmen beim Schütteln (Chaos überstrahlt), werden heller im Done-State (Klarheit). `starBright`-Multiplikator auf Alpha
-- **Partikel-Spawn-Blitz**: Neue Partikel haben in den ersten 4 Frames einen weißen Kern (60% Alpha, 1.5x Größe). Gibt dem Moment der Gedanken-Entstehung eine visuelle Schärfe
-- **Innere Glasreflexion**: Zweiter, weicher Lichtring innen am Kugelrand (r*0.92, 4% Alpha). Simuliert Lichtbrechung in echtem Glas, gibt Tiefe
-- **Cursor ausgeblendet**: `cursor: none` auf Canvas — keine Ablenkung
-- **Partikel-Akkumulation**: Langsamerer Decay (0.0008–0.0023) + höhere Spawn-Rate bei hohem Counter → Kugel füllt sich richtig voll bei 100%
+- 2D Canvas + Three.js Hybrid — alle 2D-Effekte bleiben, nur Mönch ist 3D
+- Overlay-Menü statt Inline-UI — Fokus auf die Kugel nach dem Start
+- Schütteln nur bei gedrückter Maus — verhindert versehentliches Auslösen
+- Timer muss explizit im Menü gewählt werden bevor START möglich ist
+- Mönch verschwindet nicht durch Alpha-Reduktion, sondern wird von Partikeln **verdeckt**
+- Mönch löst sich in Meditation linear auf (kein Einblend-Delay)
+- Rost-Overlay-Alpha multipliziert mit Model-Alpha (verschwindet gemeinsam)
+- "Du bist das Wasser" als Schluss-Erkenntnis mit Glow-Effekt
+- Sound-Presets wählbar (4 Shake + 4 Meditation)
+- Interaction-Sounds für alle wichtigen Übergänge
 
 ## Offene Fragen / Nächste Schritte
-- Intro/Erklärungsscreen
 - Partikel-Formen variieren (nicht nur Kreise — Icons, Symbole?)
 - Mobile-Optimierung testen (Gyro, Touch-Verhalten)
+- Wasser-Visualisierung im Done-State verbessern
