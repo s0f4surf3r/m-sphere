@@ -13,9 +13,9 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - "INTERACTIVE MEDITATION" Untertitel
 - "by Jochen Hornung Dev Studios" + klickbarer Link "jochenhornung.de"
 - Einstellungen: Meditationszeit, Gedanken-Sound, Meditations-Sound, Atmen, Timer-Anzeige
-- **"Click to Start"** in Accent-Farbe (pulsierend, erst aktiv wenn Zeit gewählt)
-- **"Wähle eine Meditationszeit"** in heller Systemschrift wenn keine Zeit gewählt
-- Tingsha-Sound bei jedem Button-Klick, Start-Chime bei Start
+- **"Klicke hier um zu starten"** in Accent-Farbe (pulsierend, erst aktiv wenn Zeit gewählt)
+- **"Wähle eine Meditationszeit"** in #f4a842 (warm orange, font-weight 700) wenn keine Zeit gewählt
+- Tingsha-Sound bei jedem Button-Klick (kein Sound bei Start-Klick)
 - ESC-Taste kehrt aus jedem State zum Menü zurück
 
 ### 2. Schüttel-Phase (ready → shaking)
@@ -35,8 +35,7 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 
 ### 4. Verführung / Rückfall
 - Während der Meditation: **subtile Reize** versuchen den Benutzer zum Schütteln zu verleiten
-- Wenn der Benutzer nachgibt → **Timer reset**, Counter steigt wieder
-- Rückfall-Sound: 3x dissonante Sawtooth-Oszillatoren (200–600 Hz)
+- Wenn der Benutzer nachgibt → **Timer reset**, Counter steigt wieder, roter Flash
 - **Die Verführungen** (basierend auf Aufmerksamkeits-Forschung):
   1. **Curiosity Gap**: Schimmern am Kugelrand
   2. **Pseudo-Notification**: Rotes Badge
@@ -47,8 +46,9 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 
 ### 5. Ende (Leere)
 - **0–5s**: Stille, leere Kugel
-- **5–10s**: "Du bist das Wasser" blendet ein (Georgia serif, mehrschichtiger blau-weißer Glow)
+- **5–10s**: "Du bist das Wasser" blendet ein (Georgia serif, mehrschichtiger blau-weißer Glow) + Voice-Audio (M4A via AudioContext)
 - **Tempel-Gong** auch am Ende (gleicher Sound wie bei Start)
+- **Voice**: `dubistdaswasser.m4a` — wird per fetch vorgeladen, via AudioContext decodiert und abgespielt
 - **35s+**: Partikel kehren langsam aus der Mitte zurück (Symbol: ewiger Kreislauf)
 - **45s+**: Dezenter "klick"-Hinweis zum Neustart
 - Klick → zurück zum Overlay-Menü (`selectedDurationIdx` wird zurückgesetzt)
@@ -69,9 +69,8 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 
 ### Interaction-Sounds
 - **Tingsha**: Zwei leicht verstimmte hohe Sinus-Töne (2637/2673 Hz, 1.8s Decay) — bei Menü-Klicks
-- **Start-Chime**: Aufsteigender Dreiklang G-C-E (392/523/659 Hz) — bei Start
 - **Tempel-Gong**: Tiefer Gong (72 Hz Basis, 5 inharmonische Partials mit Shimmer-Partnern, 12s Decay) — bei Meditationsstart UND -ende
-- **Rückfall**: 3x dissonante Sawtooth (200–600 Hz, 0.4s)
+- **Voice**: `dubistdaswasser.m4a` — bei "Du bist das Wasser" Einblendung (nach 5s Done)
 
 ### Gemeinsame Sounds
 - **Meditation**: Gedanken-Noise löst sich immer auf (unabhängig vom Shake-Modus)
@@ -114,9 +113,9 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Stil**: ZPMA-inspiriert (Fullscreen Canvas-Overlay, nicht HTML)
 - **Font**: `-apple-system, "SF Pro Display", "Helvetica Neue"` weight 900 für Titel, "Courier New" monospace für Settings
 - **Titel-Glow**: 3 Schichten — weicher Teal-Schein (blur 60) → mittlerer (blur 30) → heller Kern mit Drop-Shadow
-- **Farb-Palette**: bg=#0a1628, primary=#1a3a5c, secondary=#3a6080, teal=#2abfbf, accent=#e86a7a, light=#f0ece6
+- **Farb-Palette**: bg=#0a1628, primary=#1a3a5c, secondary=#3a6080, teal=#2abfbf, accent=#e86a7a, light=#f0ece6, hint=#f4a842
 - **Kein Default**: `selectedDurationIdx = -1`, erst klicken aktiviert START
-- **Reihenfolge**: Titel → Untertitel → Credits → MEDITATIONSZEIT → GEDANKEN-SOUND → MEDITATIONS-SOUND → ATMEN → TIMER ANZEIGEN → Click to Start
+- **Reihenfolge**: Titel → Untertitel → Credits → MEDITATIONSZEIT → GEDANKEN-SOUND → MEDITATIONS-SOUND → ATMEN → TIMER ANZEIGEN → Klicke hier um zu starten
 - **Hit-Detection**: `menuButtons`-Objekt mit timer/shake/meditation/breathing/timerToggle/start/link
 - **Sterne**: 40 pseudozufällige Punkte mit Puls-Animation
 
@@ -151,7 +150,8 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Maus**: Nur bei `mouseDown=true` — Bewegung ohne Klick wird ignoriert
 - **Touch**: touchmove-Distanz
 - **Device Motion**: Accelerometer, Schwelle >12
-- `shakeAccum` → `shakeIntensity` (0–1), Decay 0.3/Frame
+- `shakeAccum` → `shakeIntensity` (0–1), Decay 0.3/Frame, Counter-Rate 0.4
+- **Meditationsstart**: shakeAccum + shakeIntensity werden auf 0 resetet
 
 ### Partikel (Gedanken)
 - **Spawn**: Aus dem Oberkopf des Mönchs (`cy - r * 0.28`), ab 60% Counter auch aus dem Körper
@@ -165,7 +165,7 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **idle**: Nicht sichtbar (Overlay-Menü verdeckt alles)
 - **ready**: Voll sichtbar (alpha=1), goldene Atem-Aura pulsiert
 - **shaking**: Voll sichtbar, aber Partikel stapeln sich darüber und verdecken ihn
-- **meditating**: Startet voll sichtbar, löst sich linear auf (`alpha = 1 - progress`). Ab 30% Glitch + Rost-Overlay (Alpha multipliziert mit Model-Alpha)
+- **meditating**: Startet voll sichtbar, löst sich linear auf (`alpha = 1 - progress`). Ab 30% subtiler Glitch (Offset *3) + Rost-Overlay (Alpha multipliziert mit Model-Alpha)
 - **done**: Nicht sichtbar, "Du bist das Wasser" erscheint
 
 ### Atmen (Breathing)
@@ -203,9 +203,15 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - Rost-Overlay-Alpha multipliziert mit Model-Alpha (verschwindet gemeinsam)
 - "Du bist das Wasser" als Schluss-Erkenntnis mit Glow-Effekt
 - Sound-Presets wählbar (4 Shake + 4 Meditation), Defaults: Synapsen + Tanpura
-- Tempel-Gong bei Start UND Ende der Meditation (kein Counter-Full-Sound mehr)
+- Tempel-Gong bei Start UND Ende der Meditation (kein Counter-Full-Sound, kein Start-Chime, kein Rückfall-Sound)
+- Rückfall nur visuell (roter Flash), kein Sound — weniger störend
 - Atem-Nebel nur Cyan, kein Magenta — subtiler, meditativer
 - Zwei Atem-Modi für verschiedene Präferenzen (symmetrisch vs. beruhigend)
+- Mönch-Glitch sehr subtil (Offset *3 statt *15) — sanftes Zittern statt wildem Wackeln
+- Counter-Rate 0.4 (langsamer füllen, längeres Schütteln nötig)
+- shakeAccum/shakeIntensity werden bei Meditationsstart auf 0 gesetzt (verhindert falsche Rückfall-Trigger)
+- Voice über AudioContext statt HTML Audio Element (umgeht Autoplay-Block)
+- AudioContext mit `latencyHint: 'interactive'` + `resume()` an kritischen Stellen
 - ESC-Taste als universeller Abbruch → zurück ins Menü
 
 ## Offene Fragen / Nächste Schritte
