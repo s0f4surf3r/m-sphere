@@ -67,7 +67,7 @@ let meditationStartTime = 0;
 const SHAKE_SOUNDS = ['Rauschen', 'Synapsen', 'Stimmen', 'Metallisch'];
 const MEDITATION_SOUNDS = ['Drone', 'Klangschale', 'Tanpura', 'Tanpura2', 'Binaural'];
 let shakeSoundIdx = 0; // default: Rauschen
-let meditationSoundIdx = 2; // default: Tanpura
+let meditationSoundIdx = 3; // default: Tanpura2
 
 // Gedankenmodus: 0=Schweben (bleiben wo sie sind), 1=Reflektieren (Rand-Reflexion)
 const THOUGHT_MODES = ['Schweben', 'Reflektieren'];
@@ -555,16 +555,16 @@ function drawMenu() {
   ctx.font = `900 ${titleSize}px -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif`;
   ctx.letterSpacing = `${-titleSize * 0.02}px`;
 
-  // Glow Layer 1: breiter Teal-Schein (wie ZPMA text-shadow 60px)
-  ctx.shadowColor = 'rgba(42, 191, 191, 0.35)';
+  // Glow Layer 1: breiter Teal-Schein
+  ctx.shadowColor = 'rgba(42, 191, 191, 0.5)';
   ctx.shadowBlur = 60;
-  ctx.fillStyle = 'rgba(42, 191, 191, 0.1)';
+  ctx.fillStyle = 'rgba(42, 191, 191, 0.2)';
   ctx.fillText('M-SPHERE', cx, curY);
 
-  // Glow Layer 2: mittlerer Teal-Schein (wie ZPMA text-shadow 30px)
-  ctx.shadowColor = 'rgba(42, 191, 191, 0.7)';
+  // Glow Layer 2: mittlerer Teal-Schein
+  ctx.shadowColor = 'rgba(42, 191, 191, 0.8)';
   ctx.shadowBlur = 30;
-  ctx.fillStyle = 'rgba(42, 191, 191, 0.15)';
+  ctx.fillStyle = 'rgba(42, 191, 191, 0.3)';
   ctx.fillText('M-SPHERE', cx, curY);
 
   // Layer 3: Haupttext mit kleinem Drop-Shadow
@@ -576,7 +576,7 @@ function drawMenu() {
   ctx.shadowOffsetY = 0;
   ctx.shadowBlur = 0;
   ctx.letterSpacing = '0px';
-  curY += titleSize + unit * 0.025;
+  curY += titleSize - unit * 0.01;
 
   // Untertitel
   ctx.fillStyle = 'rgba(42, 191, 191, 0.55)';
