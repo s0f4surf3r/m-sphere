@@ -1217,9 +1217,14 @@ function updateShakeSound(t) {
 function updateMeditationSound(t, progress) {
   const mode = MEDITATION_SOUNDS[meditationSoundIdx];
 
-  // Gedanken-Rauschen löst sich auf (immer, unabhängig vom Modus)
-  noiseGain.gain.linearRampToValueAtTime(0.1 * (1 - progress), t + 0.1);
-  filterNode.frequency.linearRampToValueAtTime(300 * (1 - progress) + 60, t + 0.1);
+  // Gedanken-Rauschen löst sich auf
+  // Bei Tanpura2: sofort stumm (kein Rauschen gewünscht)
+  if (mode === 'Tanpura2') {
+    noiseGain.gain.linearRampToValueAtTime(0, t + 0.3);
+  } else {
+    noiseGain.gain.linearRampToValueAtTime(0.1 * (1 - progress), t + 0.1);
+    filterNode.frequency.linearRampToValueAtTime(300 * (1 - progress) + 60, t + 0.1);
+  }
 
   // Shake-Sounds stumm
   muteGroup(synapsenGains, t, 0.1);
