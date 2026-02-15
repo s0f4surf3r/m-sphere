@@ -213,7 +213,7 @@ function updateShake() {
   if (shakeIntensity > 0.05) {
     // Schütteln erkannt → Counter hoch
     const wasFull = thoughtCounter >= 100;
-    thoughtCounter = Math.min(100, thoughtCounter + shakeIntensity * 0.8);
+    thoughtCounter = Math.min(100, thoughtCounter + shakeIntensity * 0.4);
     if (!wasFull && thoughtCounter >= 100) {
       counterFullPlayed = true;
     }
@@ -247,8 +247,10 @@ function updateShake() {
   } else {
     // Kein Schütteln
     if (state === 'shaking' && thoughtCounter >= 100) {
-      // Meditation beginnt
+      // Meditation beginnt — shakeAccum resetten damit kein Rückfall-Sound triggert
       state = 'meditating';
+      shakeAccum = 0;
+      shakeIntensity = 0;
       meditationTimeLeft = meditationDuration;
       meditationStartTime = Date.now();
       counterFullPlayed = false;
