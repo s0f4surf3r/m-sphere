@@ -252,6 +252,7 @@ function updateShake() {
       meditationTimeLeft = meditationDuration;
       meditationStartTime = Date.now();
       counterFullPlayed = false;
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
       playEndBell();
     }
     if (state === 'meditating') {
@@ -549,7 +550,7 @@ function drawMenu() {
   const rowFont = unit * 0.02;
   const btnH = unit * 0.04;
   const btnGap = unit * 0.012;
-  const sectionGap = unit * 0.04;
+  const sectionGap = unit * 0.025;
 
   let curY = H * 0.07;
 
@@ -712,12 +713,12 @@ function drawMenu() {
     ctx.shadowBlur = 10;
     ctx.fillStyle = `rgba(232, 106, 122, ${pulse})`;
   } else {
-    ctx.fillStyle = 'rgba(240, 236, 230, 0.5)';
+    ctx.fillStyle = '#f4a842';
   }
-  ctx.font = `600 ${rowFont * 1.3}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+  ctx.font = `700 ${rowFont * 1.4}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(canStart ? 'Click to Start' : 'Wähle eine Meditationszeit', cx, curY + startH / 2);
+  ctx.fillText(canStart ? 'Klicke hier um zu starten' : 'Wähle eine Meditationszeit', cx, curY + startH / 2);
   ctx.shadowBlur = 0;
   menuButtons.start = canStart ? { x: startX, y: curY, w: startW, h: startH } : null;
 
@@ -776,7 +777,6 @@ function handleMenuClick(x, y) {
   const s = menuButtons.start;
   if (s && x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) {
     state = 'ready';
-    playStartChime();
     return true;
   }
   return false;
@@ -788,7 +788,7 @@ window.addEventListener('keydown', (e) => {
     thoughtCounter = 0;
     counterFullPlayed = false;
     particles.length = 0;
-    doneTime = 0;
+    doneTime = 0; voicePlayed = false;
     shakeIntensity = 0;
     mouseDown = false;
     selectedDurationIdx = -1;
@@ -804,7 +804,7 @@ canvas.addEventListener('click', (e) => {
     thoughtCounter = 0;
     counterFullPlayed = false;
     particles.length = 0;
-    doneTime = 0;
+    doneTime = 0; voicePlayed = false;
     selectedDurationIdx = -1;
   }
 });
@@ -819,10 +819,18 @@ canvas.addEventListener('touchend', (e) => {
     thoughtCounter = 0;
     counterFullPlayed = false;
     particles.length = 0;
-    doneTime = 0;
+    doneTime = 0; voicePlayed = false;
     selectedDurationIdx = -1;
   }
 });
+
+// --- Voice: "Du bist das Wasser" ---
+let voiceBuffer = null;
+let voicePlayed = false;
+fetch('dubistdaswasser.m4a')
+  .then(r => r.arrayBuffer())
+  .then(buf => { window._voiceRawBuffer = buf; })
+  .catch(() => {});
 
 // --- Sound (Web Audio API) ---
 let audioCtx = null;
@@ -855,7 +863,8 @@ let binauralOscs = [], binauralGains = [], binauralPans = [];
 
 function initSound() {
   if (soundInitialized) return;
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+  audioCtx.resume();
 
   // === SHAKE-SOUNDS ===
 
@@ -1121,7 +1130,10 @@ function playStartChime() {
 
 function muteGroup(gains, t, dur) {
   const d = dur || 0.3;
-  gains.forEach(g => g.gain.linearRampToValueAtTime(0, t + d));
+  gains.forEach(g => {
+    if (g.gain.value < 0.001) return;
+    g.gain.linearRampToValueAtTime(0, t + d);
+  });
 }
 
 function updateShakeSound(t) {
@@ -1212,7 +1224,6 @@ function updateMeditationSound(t, progress) {
     const bowlBase = 220;
     const ratios = [1.0, 2.71, 5.41, 8.56, 12.24];
     bowlOscs.forEach((osc, i) => {
-      // Leichte Frequenz-Wobble für Schwebungs-Effekt
       const wobble = Math.sin(t * (0.2 + i * 0.13)) * (1 + i * 0.5);
       osc.frequency.linearRampToValueAtTime(bowlBase * ratios[i] + wobble, t + 0.1);
       bowlGains[i].gain.linearRampToValueAtTime(bowlVols[i] * envelope, t + 0.2);
@@ -1221,7 +1232,6 @@ function updateMeditationSound(t, progress) {
     const tanpVols = [0.06, 0.04, 0.05, 0.025, 0.02];
     tanpuraGains.forEach((g, i) => {
       const vol = (tanpVols[i] || 0.02) * envelope;
-      // Jivari-Buzz pulsiert langsam auf dem letzten Oszillator
       if (i === tanpuraGains.length - 1) {
         const buzzMod = 0.5 + 0.5 * Math.sin(t * 0.7);
         g.gain.linearRampToValueAtTime(vol * buzzMod, t + 0.2);
@@ -1238,6 +1248,7 @@ function updateMeditationSound(t, progress) {
 
 function updateSound() {
   if (!soundInitialized) return;
+  if (audioCtx.state === 'suspended') audioCtx.resume();
   const t = audioCtx.currentTime;
 
   if (state === 'shaking') {
@@ -1776,6 +1787,24 @@ function frame() {
     ctx.fill();
 
     // "Du bist das Wasser" — magischer Satz mit Glow (nach 5s Stille)
+    if (elapsed > 5 && !voicePlayed && audioCtx && window._voiceRawBuffer) {
+      voicePlayed = true;
+      // Voice über AudioContext abspielen (kein Autoplay-Block)
+      if (!voiceBuffer) {
+        audioCtx.decodeAudioData(window._voiceRawBuffer.slice(0)).then(decoded => {
+          voiceBuffer = decoded;
+          const src = audioCtx.createBufferSource();
+          src.buffer = voiceBuffer;
+          src.connect(audioCtx.destination);
+          src.start();
+        }).catch(() => {});
+      } else {
+        const src = audioCtx.createBufferSource();
+        src.buffer = voiceBuffer;
+        src.connect(audioCtx.destination);
+        src.start();
+      }
+    }
     if (elapsed > 5) {
       const textFade = Math.min(1, (elapsed - 5) / 5); // 5s sehr langsam einblenden
       const textPulse = Math.sin(elapsed * 0.8) * 0.15 + 0.85;
@@ -1890,9 +1919,10 @@ function frame() {
     // Nebel-Ausdehnung: pulsiert mit dem Atem (breathWave von oben)
     const clipR = r + 14;
     const nebelBase = clipR + 4;
-    const nebelExpand = Math.abs(breathWave) * r * 0.25;
+    const breathIntensity = (breathWave + 1) / 2; // 0→1 einatmen, 1→0 ausatmen
+    const nebelExpand = breathIntensity * r * 0.25;
     const nebelOuter = nebelBase + nebelExpand;
-    const nebelAlpha = 0.06 + Math.abs(breathWave) * 0.12;
+    const nebelAlpha = 0.06 + breathIntensity * 0.12;
     const maxOuter = nebelOuter + r * 0.15;
 
     // Clip: nur Ring außerhalb der Kugel zeichnen
