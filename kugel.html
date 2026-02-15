@@ -581,7 +581,7 @@ function drawMenu() {
   curY += subtitleSize * 2;
 
   // Credits
-  ctx.fillStyle = 'rgba(240, 236, 230, 0.25)';
+  ctx.fillStyle = 'rgba(240, 236, 230, 0.45)';
   ctx.font = `${subtitleSize * 0.8}px "Courier New", monospace`;
   ctx.fillText('by Jochen Hornung Dev Studios', cx, curY);
   curY += subtitleSize * 1.5;
@@ -597,7 +597,7 @@ function drawMenu() {
   // --- Hilfsfunktion: Settings-Reihe (Label + Buttons) ---
   function drawSettingsRow(label, options, selectedIdx, y) {
     const labelFont = rowFont * 0.85;
-    ctx.fillStyle = 'rgba(240, 236, 230, 0.35)';
+    ctx.fillStyle = 'rgba(240, 236, 230, 0.6)';
     ctx.font = `${labelFont}px "Courier New", monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
@@ -635,7 +635,7 @@ function drawMenu() {
         ctx.lineWidth = 1;
       }
       ctx.stroke();
-      ctx.fillStyle = sel ? '#2abfbf' : 'rgba(240, 236, 230, 0.35)';
+      ctx.fillStyle = sel ? '#2abfbf' : 'rgba(240, 236, 230, 0.55)';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(options[i], rx + w / 2, rowY + rBtnH / 2);
@@ -679,7 +679,7 @@ function drawMenu() {
   ctx.strokeStyle = timerVisible ? 'rgba(42, 191, 191, 0.5)' : 'rgba(58, 96, 128, 0.3)';
   ctx.lineWidth = 1;
   ctx.stroke();
-  ctx.fillStyle = timerVisible ? '#2abfbf' : 'rgba(240, 236, 230, 0.3)';
+  ctx.fillStyle = timerVisible ? '#2abfbf' : 'rgba(240, 236, 230, 0.55)';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(tLabel, cx, curY + th / 2);
