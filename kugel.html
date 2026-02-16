@@ -1566,7 +1566,8 @@ function drawStatue(cx, cy, r) {
   ctx.restore();
 }
 
-function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount) {
+function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
+  scale = scale || 1;
   if (!modelLoaded) {
     // Nur Lade-Ring zeigen, kein Fallback-Modell
     if (modelLoadProgress > 0 && modelLoadProgress < 1) {
@@ -1598,10 +1599,11 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount) {
   // Three.js rendern
   renderer.render(scene, camera);
 
-  // Auf Haupt-Canvas zeichnen
-  const renderSize = threeCanvas.width / (Math.min(window.devicePixelRatio, 2));
-  const drawX = cx - renderSize / 2 + (glitchOffset || 0);
-  const drawY = cy - renderSize * 0.5;
+  // Auf Haupt-Canvas zeichnen (mit optionalem Schrumpf-Faktor)
+  const fullSize = threeCanvas.width / (Math.min(window.devicePixelRatio, 2));
+  const drawSize = fullSize * scale;
+  const drawX = cx - drawSize / 2 + (glitchOffset || 0);
+  const drawY = cy - drawSize * 0.5;
 
   ctx.save();
   ctx.globalAlpha = alpha;
@@ -1611,7 +1613,7 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount) {
     ctx.translate(glitchOffset, 0);
   }
 
-  ctx.drawImage(threeCanvas, drawX, drawY, renderSize, renderSize);
+  ctx.drawImage(threeCanvas, drawX, drawY, drawSize, drawSize);
 
   // Rost-Overlay auf das 3D-Modell (Alpha mit Model-Alpha multipliziert)
   if (rustAmount > 0) {
@@ -1783,8 +1785,8 @@ function frame() {
     const glitchOffset = glitchAmount > 0 ? (Math.random() - 0.5) * glitchAmount * 3 : 0;
 
     if (alpha > 0.01) {
-      const shrinkR = r * (1 - progress); // schrumpft linear bis 0
-      drawModel3D(cx, cy, shrinkR, alpha, glitchOffset, Math.min(1, glitchAmount));
+      const shrinkScale = 1 - progress; // schrumpft linear bis 0
+      drawModel3D(cx, cy, r, alpha, glitchOffset, Math.min(1, glitchAmount), shrinkScale);
     }
   }
   // done: kein Mönch
@@ -1979,13 +1981,7 @@ function frame() {
       ctx.strokeStyle = `rgba(255, 200, 50, ${0.3 * goldPulse})`;
       ctx.lineWidth = 14;
       ctx.stroke();
-      // "Loslassen..." Text
-      ctx.fillStyle = `rgba(255, 215, 0, ${0.7 * goldPulse})`;
-      ctx.font = `600 ${Math.min(canvas.width, canvas.height) * 0.022}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText('Du darfst jetzt loslassen ...', cx, cy + rFixed + 15);
-      ctx.textAlign = 'start';
+      // "Loslassen..." Text wird nach ctx.restore() gezeichnet (kein Shake)
     } else {
       // Normal: roter Ring
       ctx.beginPath();
@@ -2068,6 +2064,19 @@ function frame() {
   }
 
   ctx.restore(); // Schüttel-Translate aufheben
+
+  // "Du darfst jetzt loslassen ..." — außerhalb des Shake-Translates (wackelt nicht mit)
+  if (thoughtCounter >= 100 && state === 'shaking') {
+    const goldPulse = Math.sin(Date.now() * 0.006) * 0.15 + 0.85;
+    const lcx = canvas.width / 2;
+    const lcy = canvas.height / 2;
+    ctx.fillStyle = `rgba(255, 215, 0, ${0.7 * goldPulse})`;
+    ctx.font = `600 ${Math.min(canvas.width, canvas.height) * 0.022}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Du darfst jetzt loslassen ...', lcx, lcy + rFixed + 15);
+    ctx.textAlign = 'start';
+  }
 
   requestAnimationFrame(frame);
 }
