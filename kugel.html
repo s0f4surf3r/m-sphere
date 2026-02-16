@@ -73,6 +73,10 @@ let meditationSoundIdx = 3; // default: Tanpura2
 const THOUGHT_MODES = ['Schweben', 'Reflektieren'];
 let thoughtModeIdx = 0; // default: Schweben
 
+// Mönch-Schrumpfen: 0=Aus, 1=Ein
+const SHRINK_MODES = ['Aus', 'Ein'];
+let shrinkModeIdx = 1; // default: Ein
+
 // Hit-Bereiche für die Menu-Buttons
 let menuButtons = {}; // { timer: [], breathing: null, shake: [], meditation: [], start: null }
 
@@ -675,6 +679,11 @@ function drawMenu() {
   menuButtons.thoughtMode = thoughtRow.btns;
   curY = thoughtRow.bottomY + sectionGap;
 
+  // --- MÖNCH SCHRUMPFEN ---
+  const shrinkRow = drawSettingsRow('MÖNCH SCHRUMPFEN', SHRINK_MODES, shrinkModeIdx, curY);
+  menuButtons.shrinkMode = shrinkRow.btns;
+  curY = shrinkRow.bottomY + sectionGap;
+
   // --- ATMEN ---
   const breathRow = drawSettingsRow('ATMEN', BREATHING_MODES, breathingMode, curY);
   menuButtons.breathing = breathRow.btns;
@@ -763,6 +772,14 @@ function handleMenuClick(x, y) {
   for (const btn of menuButtons.thoughtMode || []) {
     if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
       thoughtModeIdx = btn.idx;
+      playTingsha();
+      return true;
+    }
+  }
+  // Schrumpf-Modus
+  for (const btn of menuButtons.shrinkMode || []) {
+    if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+      shrinkModeIdx = btn.idx;
       playTingsha();
       return true;
     }
@@ -1603,7 +1620,9 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
   const fullSize = threeCanvas.width / (Math.min(window.devicePixelRatio, 2));
   const drawSize = fullSize * scale;
   const drawX = cx - drawSize / 2 + (glitchOffset || 0);
-  const drawY = cy - drawSize * 0.5;
+  // Unterseite bleibt fix (Mönch schrumpft an Ort und Stelle, schwebt nicht)
+  const fullBottom = cy + fullSize * 0.5;
+  const drawY = fullBottom - drawSize;
 
   ctx.save();
   ctx.globalAlpha = alpha;
@@ -1785,7 +1804,7 @@ function frame() {
     const glitchOffset = glitchAmount > 0 ? (Math.random() - 0.5) * glitchAmount * 3 : 0;
 
     if (alpha > 0.01) {
-      const shrinkScale = 1 - progress; // schrumpft linear bis 0
+      const shrinkScale = shrinkModeIdx === 1 ? (1 - progress) : 1;
       drawModel3D(cx, cy, r, alpha, glitchOffset, Math.min(1, glitchAmount), shrinkScale);
     }
   }
