@@ -94,9 +94,9 @@ let meditationStartTime = 0;
 
 // Sound-Presets
 const SHAKE_SOUNDS = ['Rauschen', 'Synapsen', 'Stimmen', 'Metallisch'];
-const MEDITATION_SOUNDS = ['Drone', 'Klangschale', 'Tanpura', '528 Hz', '432 Hz', 'Stille', 'Binaural'];
+const MEDITATION_SOUNDS = ['Stille', 'Drone', 'Klangschale', 'Tanpura', '528 Hz', '432 Hz', 'Binaural'];
 let shakeSoundIdx = 0; // default: Rauschen
-let meditationSoundIdx = 5; // default: Stille
+let meditationSoundIdx = 0; // default: Stille
 
 // Gedankenmodus: 0=Schweben (bleiben wo sie sind), 1=Reflektieren (Rand-Reflexion)
 const THOUGHT_MODES = ['Schweben', 'Reflektieren'];
@@ -644,7 +644,7 @@ function drawMenu() {
   ctx.shadowOffsetY = 0;
   ctx.shadowBlur = 0;
   ctx.letterSpacing = '0px';
-  curY += titleSize - unit * 0.01;
+  curY += titleSize + unit * 0.015;
 
   // Untertitel
   ctx.fillStyle = 'rgba(42, 191, 191, 0.55)';
@@ -669,7 +669,11 @@ function drawMenu() {
   const linkW = ctx.measureText('jochenhornung.de').width;
   const linkH = subtitleSize;
   menuButtons.link = { x: cx - linkW / 2, y: curY, w: linkW, h: linkH };
-  curY += sectionGap * 3;
+  curY += subtitleSize * 1.2;
+  ctx.fillStyle = 'rgba(240, 236, 230, 0.35)';
+  ctx.font = `${subtitleSize * 0.6}px "Courier New", monospace`;
+  ctx.fillText('v1.1', cx, curY);
+  curY += sectionGap * 2.5;
 
   // --- Scrollbarer Bereich ab hier ---
   menuScrollAreaTop = curY;
@@ -790,7 +794,10 @@ function drawMenu() {
     ctx.shadowBlur = 10;
     ctx.fillStyle = `rgba(232, 106, 122, ${pulse})`;
   } else {
-    ctx.fillStyle = '#f4a842';
+    const waber = Math.sin(Date.now() * 0.003) * 0.3 + 0.7;
+    ctx.shadowColor = `rgba(244, 168, 66, ${waber * 0.4})`;
+    ctx.shadowBlur = 15;
+    ctx.fillStyle = `rgba(244, 168, 66, ${waber})`;
   }
   ctx.font = `700 ${rowFont * 1.4}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
   ctx.textAlign = 'center';
@@ -1869,7 +1876,7 @@ function frame() {
   if (bt && state === 'meditating') {
     breathTime = (Date.now() - meditationStartTime) / 1000;
     breathWave = calcBreathWave(bt, breathTime);
-    r *= 1 + breathWave * 0.025; // ±2.5% Radius
+    r *= 1 + breathWave * 0.032; // ±3.2% Radius
   }
 
   // Schüttel-Wackeln: ganzer Inhalt wackelt (nach BG-Fill, vor allem Content)
@@ -1995,11 +2002,14 @@ function frame() {
 
   // Hinweis im ready-State
   if (state === 'ready') {
-    const pulse = Math.sin(Date.now() * 0.002) * 0.5 + 0.5;
+    const pulse = Math.sin(Date.now() * 0.0015) * 0.15 + 0.85;
     ctx.font = `${Math.min(canvas.width, canvas.height) * 0.02}px monospace`;
     ctx.textAlign = 'center';
-    ctx.fillStyle = `rgba(42, 191, 191, ${0.7 + pulse * 0.2})`;
-    ctx.fillText('Drücke, halte und schüttle mit der Maus die Kugel.', cx, cy - r - 35);
+    ctx.shadowColor = `rgba(244, 168, 66, ${pulse * 0.3})`;
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = `rgba(244, 168, 66, ${pulse})`;
+    ctx.fillText('Drücke, halte und schüttle mit der Maus die Kugel, bis der Kreis geschlossen ist.', cx, cy - r - 35);
+    ctx.shadowBlur = 0;
     ctx.textAlign = 'start';
   }
 
