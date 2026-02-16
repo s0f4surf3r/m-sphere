@@ -46,6 +46,7 @@ let counterFullPlayed = false; // 100%-Sound nur einmal
 let shakeIntensity = 0; // aktuelle Schüttel-Stärke (0–1)
 let doneTime = 0; // Zeitpunkt des done-States
 let relapseFlash = 0; // Rückfall-Blitz (0–1, decays)
+let donateHitArea = null; // PayPal-Spenden-Link Hit-Area
 let counterFullFlash = 0; // Gold-Flash bei 100% Counter
 
 // --- Timer ---
@@ -121,6 +122,7 @@ let faceSwapError = null;
 let faceSwapPollTimer = null;
 let faceSwapPredictionId = null;
 let faceSwapShowSave = false; // Speichern-Overlay anzeigen
+let faceSwapMask = null; // Transparenz-Maske (Canvas) zum Hintergrund-Entfernen
 let webcamStream = null;
 let webcamReady = false;
 
@@ -672,7 +674,7 @@ function drawMenu() {
   ctx.shadowOffsetY = 0;
   ctx.shadowBlur = 0;
   ctx.letterSpacing = '0px';
-  curY += titleSize + unit * 0.015;
+  curY += titleSize - unit * 0.01;
 
   // Untertitel
   ctx.fillStyle = 'rgba(42, 191, 191, 0.55)';
@@ -701,7 +703,29 @@ function drawMenu() {
   ctx.fillStyle = 'rgba(240, 236, 230, 0.35)';
   ctx.font = `${subtitleSize * 0.6}px "Courier New", monospace`;
   ctx.fillText('v1.2', cx, curY);
-  curY += sectionGap * 2.5;
+  curY += subtitleSize * 1.2;
+  // Spenden-Button
+  const donLabel = '♡ Unterstützen ♡';
+  const donFont = subtitleSize * 0.85;
+  ctx.font = `${donFont}px "Courier New", monospace`;
+  const donTxtW = ctx.measureText(donLabel).width;
+  const donW = donTxtW + donFont * 2;
+  const donH = donFont * 2.2;
+  const donX = cx - donW / 2;
+  const donY = curY;
+  ctx.beginPath();
+  ctx.roundRect(donX, donY, donW, donH, donH * 0.25);
+  ctx.fillStyle = 'rgba(232, 106, 122, 0.12)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(232, 106, 122, 0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(232, 106, 122, 0.85)';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(donLabel, cx, donY + donH / 2);
+  menuButtons.donate = { x: donX, y: donY, w: donW, h: donH };
+  curY += donH + sectionGap * 2;
 
   // --- Scrollbarer Bereich ab hier ---
   menuScrollAreaTop = curY;
@@ -1041,6 +1065,12 @@ function handleMenuClick(x, y) {
     window.open('https://jochenhornung.de', '_blank');
     return true;
   }
+  // Spenden-Link (fixierter Header)
+  const don = menuButtons.donate;
+  if (don && x >= don.x && x <= don.x + don.w && y >= don.y && y <= don.y + don.h) {
+    window.open('https://www.paypal.com/donate/?hosted_button_id=9DZ3ENM66BEC8', '_blank');
+    return true;
+  }
   // Scrollbare Buttons: Y um Scroll-Offset korrigieren
   // Klick außerhalb des sichtbaren Scroll-Bereichs ignorieren
   if (y < menuScrollAreaTop) return false;
@@ -1163,6 +1193,14 @@ canvas.addEventListener('click', (e) => {
   if (state === 'idle') {
     handleMenuClick(e.clientX, e.clientY);
   } else if (state === 'done') {
+    // Spenden-Link prüfen
+    if (donateHitArea) {
+      const d = donateHitArea;
+      if (e.clientX >= d.x && e.clientX <= d.x + d.w && e.clientY >= d.y && e.clientY <= d.y + d.h) {
+        window.open('https://www.paypal.com/donate/?hosted_button_id=9DZ3ENM66BEC8', '_blank');
+        return;
+      }
+    }
     state = 'idle';
     thoughtCounter = 0;
     counterFullPlayed = false;
@@ -2008,6 +2046,22 @@ function drawStatue(cx, cy, r) {
 // --- Face Swap ---
 const FACESWAP_API = 'https://m-sphere-api.vercel.app/api/faceswap';
 
+function applyFaceSwapMask(img) {
+  // Face-Swap-Ergebnis mit Transparenz-Maske kombinieren → transparenter Hintergrund
+  const c = document.createElement('canvas');
+  c.width = img.width;
+  c.height = img.height;
+  const tCtx = c.getContext('2d');
+  // Face-Swap-Ergebnis zeichnen
+  tCtx.drawImage(img, 0, 0, c.width, c.height);
+  // Maske anwenden: nur dort sichtbar wo die Maske opak ist
+  if (faceSwapMask) {
+    tCtx.globalCompositeOperation = 'destination-in';
+    tCtx.drawImage(faceSwapMask, 0, 0, c.width, c.height);
+  }
+  return c;
+}
+
 function renderMonkForFaceSwap() {
   // Gleiche Kamera wie Gameplay, aber höhere Auflösung + Licht-Boost für Face-Detection
   const origIntensities = {
@@ -2040,6 +2094,15 @@ function renderMonkForFaceSwap() {
 
   renderer.render(scene, camera);
   const dataUrl = threeCanvas.toDataURL('image/jpeg', 0.92);
+
+  // Transparenten Render als Maske speichern (gleiche Kamera/Licht, ohne Hintergrund)
+  scene.background = null;
+  renderer.render(scene, camera);
+  const maskCanvas = document.createElement('canvas');
+  maskCanvas.width = 1024;
+  maskCanvas.height = 1024;
+  maskCanvas.getContext('2d').drawImage(threeCanvas, 0, 0);
+  faceSwapMask = maskCanvas;
 
   // Alles wiederherstellen
   if (model3D) model3D.rotation.y = origRotY;
@@ -2113,15 +2176,14 @@ function pollFaceSwap() {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
-        faceSwapImg = img;
+        // Maske anwenden: Hintergrund entfernen
+        const masked = applyFaceSwapMask(img);
+        faceSwapImg = masked;
         faceSwapStatus = 'done';
         faceSwapShowSave = true; // Speichern-Overlay zeigen
-        // In localStorage speichern (als DataURL)
+        // In localStorage speichern (als DataURL mit Transparenz)
         try {
-          const c = document.createElement('canvas');
-          c.width = img.width; c.height = img.height;
-          c.getContext('2d').drawImage(img, 0, 0);
-          localStorage.setItem('msphere_faceswap', c.toDataURL('image/jpeg', 0.85));
+          localStorage.setItem('msphere_faceswap', masked.toDataURL('image/png'));
           localStorage.setItem('msphere_facemode', '1');
         } catch(e) { /* localStorage voll oder CORS */ }
       };
@@ -2203,6 +2265,11 @@ function saveFaceSwapImage() {
 // Webcam-Funktionen
 function startWebcam() {
   webcamReady = false;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    faceSwapStatus = 'error';
+    faceSwapError = 'Kamera benötigt HTTPS';
+    return;
+  }
   const video = document.getElementById('webcamVideo');
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 512, height: 512 } })
   .then(stream => {
@@ -2622,14 +2689,39 @@ function frame() {
       ctx.restore();
     }
 
-    // Hinweis zum Neustart (nach 45s)
+    // Hinweis zum Neustart + Spenden-Link (nach 45s)
     if (elapsed > 45) {
       const hintAlpha = Math.min(0.15, (elapsed - 45) / 4 * 0.15);
-      ctx.fillStyle = `rgba(255,255,255,${hintAlpha})`;
-      ctx.font = `${Math.min(canvas.width, canvas.height) * 0.018}px monospace`;
+      const hintFont = Math.min(canvas.width, canvas.height) * 0.018;
+      ctx.font = `${hintFont}px monospace`;
       ctx.textAlign = 'center';
+      // "klick" zum Neustart
+      ctx.fillStyle = `rgba(255,255,255,${hintAlpha})`;
       ctx.fillText('klick', cx, cy + r + 35);
+      // Spenden-Button
+      const donAlpha = Math.min(0.7, (elapsed - 45) / 6 * 0.7);
+      const donFont = hintFont * 1.1;
+      ctx.font = `${donFont}px "Courier New", monospace`;
+      const donText = '♡ Unterstützen ♡';
+      const donTxtW = ctx.measureText(donText).width;
+      const donBtnW = donTxtW + donFont * 2;
+      const donBtnH = donFont * 2.2;
+      const donBtnX = cx - donBtnW / 2;
+      const donBtnY = cy + r + 35 + hintFont * 1.8;
+      ctx.beginPath();
+      ctx.roundRect(donBtnX, donBtnY, donBtnW, donBtnH, donBtnH * 0.25);
+      ctx.fillStyle = `rgba(232, 106, 122, ${donAlpha * 0.15})`;
+      ctx.fill();
+      ctx.strokeStyle = `rgba(232, 106, 122, ${donAlpha * 0.6})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = `rgba(232, 106, 122, ${donAlpha})`;
+      ctx.textBaseline = 'middle';
+      ctx.fillText(donText, cx, donBtnY + donBtnH / 2);
+      donateHitArea = { x: donBtnX, y: donBtnY, w: donBtnW, h: donBtnH };
       ctx.textAlign = 'start';
+    } else {
+      donateHitArea = null;
     }
   }
 
