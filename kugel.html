@@ -1783,7 +1783,8 @@ function frame() {
     const glitchOffset = glitchAmount > 0 ? (Math.random() - 0.5) * glitchAmount * 3 : 0;
 
     if (alpha > 0.01) {
-      drawModel3D(cx, cy, r, alpha, glitchOffset, Math.min(1, glitchAmount));
+      const shrinkR = r * (1 - progress); // schrumpft linear bis 0
+      drawModel3D(cx, cy, shrinkR, alpha, glitchOffset, Math.min(1, glitchAmount));
     }
   }
   // done: kein Mönch
