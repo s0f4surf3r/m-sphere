@@ -2,20 +2,21 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>M-Sphere</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
+html { --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom); --sal: env(safe-area-inset-left); }
 body {
+  margin: 0;
   background: #0a0a0f;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
   overflow: hidden;
 }
 canvas {
   display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
 }
 </style>
 <script type="importmap">
@@ -28,7 +29,8 @@ canvas {
 </script>
 </head>
 <body>
-<canvas id="c"></canvas>
+<canvas id="c" style="-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none;-webkit-user-drag:none"></canvas>
+<div id="menuSpacer" style="width:1px;height:0;pointer-events:none"></div>
 <input type="file" id="faceInput" accept="image/*" capture="user" style="display:none">
 <input type="file" id="faceLoadInput" accept="image/*" style="display:none">
 <video id="webcamVideo" autoplay playsinline style="display:none"></video>
@@ -39,6 +41,15 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 
+// --- Koordinaten-Konvertierung (robust für iOS Safari) ---
+function canvasCoords(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  return [
+    (clientX - rect.left) * (canvas.width / rect.width),
+    (clientY - rect.top) * (canvas.height / rect.height)
+  ];
+}
+
 // --- State ---
 let state = 'idle'; // idle | ready | shaking | meditating | done
 let thoughtCounter = 0; // 0–100
@@ -48,6 +59,23 @@ let doneTime = 0; // Zeitpunkt des done-States
 let relapseFlash = 0; // Rückfall-Blitz (0–1, decays)
 let donateHitArea = null; // PayPal-Spenden-Link Hit-Area
 let counterFullFlash = 0; // Gold-Flash bei 100% Counter
+
+// --- Wake Lock: Bildschirm bleibt an während Meditation ---
+let wakeLock = null;
+async function requestWakeLock() {
+  if (wakeLock || !('wakeLock' in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch (e) { /* Wake Lock nicht verfügbar oder abgelehnt */ }
+}
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release(); wakeLock = null; }
+}
+// Re-request nach Tab-Wechsel (iOS released Wake Lock automatisch)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && state !== 'idle' && !wakeLock) requestWakeLock();
+});
 
 // --- Timer ---
 const DURATION_OPTIONS = [
@@ -142,12 +170,22 @@ try {
 
 // Hit-Bereiche für die Menu-Buttons
 let menuButtons = {};
-let menuScrollY = 0;
-let menuScrollMax = 0;
-let menuScrollAreaTop = 0;
-let menuTouchStartY = 0;
-let menuTouchScrollStart = 0;
 let menuTouchDist = 0;
+let menuContentHeight = 0; // Gesamte Menü-Inhaltshöhe für native Scrolling
+
+// --- Native Scrolling: Menü scrollt nativ, Spiel fixiert ---
+function enableMenuScroll() {
+  document.body.style.overflowY = 'auto';
+  document.body.style.overflowX = 'hidden';
+  canvas.style.touchAction = 'pan-y';
+}
+function disableMenuScroll() {
+  document.body.style.overflowY = 'hidden';
+  document.body.style.overflowX = 'hidden';
+  canvas.style.touchAction = 'none';
+  document.getElementById('menuSpacer').style.height = '0';
+  window.scrollTo(0, 0);
+}
 
 // --- Three.js Offscreen Setup ---
 const threeCanvas = document.createElement('canvas');
@@ -225,58 +263,68 @@ loader.load(
 
 // --- Shake Detection ---
 let lastMouseX = 0, lastMouseY = 0;
+let mouseDown = false;
 let shakeAccum = 0; // akkumulierte Bewegung
-let mouseDown = false; // Nur bei gedrückter Maus schütteln
+
+function addShakeDist(dist) {
+  shakeAccum += dist;
+}
 
 function onMouseMove(e) {
+  const [mx, my] = canvasCoords(e.clientX, e.clientY);
   if (!mouseDown) {
-    lastMouseX = e.clientX;
-    lastMouseY = e.clientY;
+    lastMouseX = mx;
+    lastMouseY = my;
     return;
   }
-  const dx = e.clientX - lastMouseX;
-  const dy = e.clientY - lastMouseY;
+  const dx = mx - lastMouseX;
+  const dy = my - lastMouseY;
   const dist = Math.sqrt(dx * dx + dy * dy);
-  shakeAccum += dist;
-  lastMouseX = e.clientX;
-  lastMouseY = e.clientY;
+  addShakeDist(dist);
+  lastMouseX = mx;
+  lastMouseY = my;
 }
 
 canvas.addEventListener('mousedown', (e) => {
+  e.preventDefault(); // Safari: verhindert Text-Selection/Drag
   // Im idle-State: Maus-Schütteln blockiert — erst Timer wählen
   if (state === 'idle') return;
   mouseDown = true;
-  lastMouseX = e.clientX;
-  lastMouseY = e.clientY;
+  const [mx, my] = canvasCoords(e.clientX, e.clientY);
+  lastMouseX = mx;
+  lastMouseY = my;
 });
 window.addEventListener('mouseup', () => { mouseDown = false; });
+canvas.addEventListener('dragstart', (e) => e.preventDefault());
+canvas.addEventListener('selectstart', (e) => e.preventDefault());
 
 let lastTouchX = 0, lastTouchY = 0;
 function onTouchMove(e) {
+  if (state === 'idle') {
+    // Native Scrolling übernimmt. Nur Touch-Distanz für Tap-Erkennung tracken.
+    const t = e.touches[0];
+    const [tx, ty] = canvasCoords(t.clientX, t.clientY);
+    menuTouchDist += Math.abs(ty - lastTouchY);
+    lastTouchX = tx; lastTouchY = ty;
+    return; // Kein preventDefault → natives Scrolling läuft weiter
+  }
   e.preventDefault();
   const t = e.touches[0];
-  if (state === 'idle') {
-    const dy = menuTouchStartY - t.clientY;
-    menuTouchDist += Math.abs(t.clientY - lastTouchY);
-    menuScrollY = Math.max(0, Math.min(menuScrollMax, menuTouchScrollStart + dy));
-    lastTouchX = t.clientX;
-    lastTouchY = t.clientY;
-    return;
-  }
-  const dx = t.clientX - lastTouchX;
-  const dy = t.clientY - lastTouchY;
+  const [tx, ty] = canvasCoords(t.clientX, t.clientY);
+  const dx = tx - lastTouchX;
+  const dy = ty - lastTouchY;
   const dist = Math.sqrt(dx * dx + dy * dy);
-  shakeAccum += dist;
-  lastTouchX = t.clientX;
-  lastTouchY = t.clientY;
+  const touchScale = canvas.width < 600 ? 3.0 : 1;
+  addShakeDist(dist * touchScale);
+  lastTouchX = tx;
+  lastTouchY = ty;
 }
 function onTouchStart(e) {
   const t = e.touches[0];
-  lastTouchX = t.clientX;
-  lastTouchY = t.clientY;
+  const [tx, ty] = canvasCoords(t.clientX, t.clientY);
+  lastTouchX = tx;
+  lastTouchY = ty;
   if (state === 'idle') {
-    menuTouchStartY = t.clientY;
-    menuTouchScrollStart = menuScrollY;
     menuTouchDist = 0;
   }
 }
@@ -287,29 +335,54 @@ function onDeviceMotion(e) {
   if (!a) return;
   const mag = Math.sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
   const shake = Math.max(0, mag - 12); // Schwelle: normales Halten ≈ 9.8
-  shakeAccum += shake * 3;
+  addShakeDist(shake * 10); // ×10: Gyro ist primärer Mobile-Input
 }
 
 canvas.addEventListener('mousemove', onMouseMove);
 canvas.addEventListener('touchstart', onTouchStart, { passive: false });
 canvas.addEventListener('touchmove', onTouchMove, { passive: false });
-window.addEventListener('devicemotion', onDeviceMotion);
-canvas.addEventListener('wheel', (e) => {
-  if (state !== 'idle') return;
-  menuScrollY = Math.max(0, Math.min(menuScrollMax, menuScrollY + e.deltaY));
-  e.preventDefault();
-}, { passive: false });
+// DeviceMotion: iOS 13+ braucht explizite Permission
+let deviceMotionGranted = false;
+let deviceMotionDenied = false;
+function requestMotionPermission() {
+  if (deviceMotionGranted || deviceMotionDenied) return;
+  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+    // iOS 13+ — Permission beim Start anfordern (muss im User-Gesture-Handler sein)
+    DeviceMotionEvent.requestPermission().then(permState => {
+      if (permState === 'granted') {
+        deviceMotionGranted = true;
+        window.addEventListener('devicemotion', onDeviceMotion);
+      } else {
+        deviceMotionDenied = true;
+      }
+    }).catch(err => {
+      console.warn('DeviceMotion permission error:', err);
+    });
+  } else if (typeof DeviceMotionEvent !== 'undefined') {
+    deviceMotionGranted = true;
+    window.addEventListener('devicemotion', onDeviceMotion);
+  }
+}
+// Nicht-iOS: sofort registrieren (braucht keine Permission)
+if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission !== 'function') {
+  deviceMotionGranted = true;
+  window.addEventListener('devicemotion', onDeviceMotion);
+}
+// Wheel-Scroll wird nativ vom Browser gehandhabt (kein Custom-Handler nötig)
 
 // Shake-Verarbeitung pro Frame
 function updateShake() {
   // shakeAccum → shakeIntensity (0–1), mit Decay
-  shakeIntensity = Math.min(1, shakeAccum / 80);
+  const isMob = canvas.width < 600 && canvas.height > canvas.width;
+  const threshold = isMob ? 30 : 80;
+  shakeIntensity = Math.min(1, shakeAccum / threshold);
   shakeAccum *= 0.3; // schneller Abfall
 
   if (shakeIntensity > 0.05) {
     // Schütteln erkannt → Counter hoch
     const wasFull = thoughtCounter >= 100;
-    thoughtCounter = Math.min(100, thoughtCounter + shakeIntensity * 0.55);
+    const rate = isMob ? 1.3 : 0.55;
+    thoughtCounter = Math.min(100, thoughtCounter + shakeIntensity * rate);
     if (!wasFull && thoughtCounter >= 100) {
       counterFullPlayed = true;
       counterFullFlash = 1;
@@ -328,7 +401,7 @@ function updateShake() {
   } else {
     // Kein Schütteln
     if (state === 'shaking' && thoughtCounter >= 100) {
-      // Meditation beginnt — shakeAccum resetten damit kein Rückfall-Sound triggert
+      // Meditation beginnt
       state = 'meditating';
       shakeAccum = 0;
       shakeIntensity = 0;
@@ -620,9 +693,21 @@ function drawMenu() {
   const W = canvas.width, H = canvas.height;
   const unit = Math.min(W, H);
   const cx = W / 2;
+  const isMobilePortrait = W < 600 && H > W;
+  const uiScale = isMobilePortrait ? 2.5 : 1;
+
+  // Mobile: Kontrast boosten (kleine Screens, helles Umgebungslicht)
+  const menuBg = isMobilePortrait ? 'rgba(20, 36, 60, 0.95)' : 'rgba(10, 22, 40, 0.97)';
+  const btnUnselFill = isMobilePortrait ? 'rgba(35, 72, 115, 0.6)' : 'rgba(26, 58, 92, 0.4)';
+  const btnUnselStroke = isMobilePortrait ? 'rgba(120, 165, 195, 0.75)' : 'rgba(88, 130, 160, 0.5)';
+  const btnSelFill = isMobilePortrait ? 'rgba(42, 191, 191, 0.3)' : 'rgba(42, 191, 191, 0.15)';
+  const btnSelStroke = isMobilePortrait ? 'rgba(42, 191, 191, 0.9)' : 'rgba(42, 191, 191, 0.6)';
+  const btnTextDim = isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.9)';
+  const donBtnFill = isMobilePortrait ? 'rgba(232, 106, 122, 0.25)' : 'rgba(232, 106, 122, 0.12)';
+  const donBtnStroke = isMobilePortrait ? 'rgba(232, 106, 122, 0.75)' : 'rgba(232, 106, 122, 0.5)';
 
   // Dunkler Overlay-Hintergrund
-  ctx.fillStyle = 'rgba(10, 22, 40, 0.97)';
+  ctx.fillStyle = menuBg;
   ctx.fillRect(0, 0, W, H);
 
   // Subtile Sterne im Hintergrund
@@ -631,7 +716,8 @@ function drawMenu() {
     const sx = ((starSeed * (i + 1) * 7.3) % W);
     const sy = ((starSeed * (i + 1) * 13.7) % H);
     const pulse = Math.sin(Date.now() * 0.001 + i) * 0.3 + 0.7;
-    ctx.fillStyle = `rgba(200, 220, 255, ${0.1 * pulse})`;
+    const starAlpha = isMobilePortrait ? 0.2 : 0.1;
+    ctx.fillStyle = `rgba(200, 220, 255, ${starAlpha * pulse})`;
     ctx.fillRect(sx, sy, 1.5, 1.5);
   }
 
@@ -639,13 +725,19 @@ function drawMenu() {
 
   // Vertikales Layout berechnen
   const titleSize = unit * 0.12;
-  const subtitleSize = unit * 0.02;
-  const rowFont = unit * 0.02;
-  const btnH = unit * 0.04;
-  const btnGap = unit * 0.012;
-  const sectionGap = unit * 0.025;
+  const subtitleSize = unit * 0.02 * uiScale;
+  const rowFont = unit * 0.02 * uiScale;
+  const btnH = unit * 0.04 * uiScale;
+  const btnGap = unit * 0.012 * uiScale;
+  const sectionGap = unit * 0.025 * uiScale;
 
-  let curY = H * 0.07;
+  const safeTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
+  let curY = Math.max(H * 0.07, safeTop + unit * 0.02);
+
+  // Native Scrolling: Gesamten Menü-Inhalt um scrollY nach oben verschieben
+  const scrollY = window.scrollY || 0;
+  ctx.save();
+  ctx.translate(0, -scrollY);
 
   // --- Titel: M-SPHERE mit ZPMA-Glow ---
   ctx.textAlign = 'center';
@@ -674,25 +766,25 @@ function drawMenu() {
   ctx.shadowOffsetY = 0;
   ctx.shadowBlur = 0;
   ctx.letterSpacing = '0px';
-  curY += titleSize - unit * 0.01;
+  curY += titleSize + (isMobilePortrait ? unit * 0.03 : -unit * 0.01);
 
   // Untertitel
-  ctx.fillStyle = 'rgba(42, 191, 191, 0.55)';
+  ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 0.75)' : 'rgba(42, 191, 191, 0.55)';
   ctx.font = `400 ${subtitleSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
   ctx.shadowColor = 'rgba(42, 191, 191, 0.4)';
   ctx.shadowBlur = 12;
-  ctx.letterSpacing = '8px';
+  ctx.letterSpacing = isMobilePortrait ? '3px' : '8px';
   ctx.fillText('INTERACTIVE MEDITATION', cx, curY);
   ctx.letterSpacing = '0px';
   ctx.shadowBlur = 0;
   curY += subtitleSize * 2;
 
   // Credits
-  ctx.fillStyle = 'rgba(240, 236, 230, 0.9)';
+  ctx.fillStyle = isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.9)';
   ctx.font = `${subtitleSize * 0.8}px "Courier New", monospace`;
   ctx.fillText('by Jochen Hornung Dev Studios', cx, curY);
   curY += subtitleSize * 1.5;
-  ctx.fillStyle = 'rgba(42, 191, 191, 0.75)';
+  ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 0.9)' : 'rgba(42, 191, 191, 0.75)';
   ctx.font = `${subtitleSize * 0.8}px "Courier New", monospace`;
   ctx.fillText('jochenhornung.de', cx, curY);
   // Hit-Area für Link speichern
@@ -702,7 +794,7 @@ function drawMenu() {
   curY += subtitleSize * 1.2;
   ctx.fillStyle = 'rgba(240, 236, 230, 0.35)';
   ctx.font = `${subtitleSize * 0.6}px "Courier New", monospace`;
-  ctx.fillText('v1.2', cx, curY);
+  ctx.fillText('v1.3', cx, curY);
   curY += subtitleSize * 1.2;
   // Spenden-Button
   const donLabel = '♡ Unterstützen ♡';
@@ -715,30 +807,22 @@ function drawMenu() {
   const donY = curY;
   ctx.beginPath();
   ctx.roundRect(donX, donY, donW, donH, donH * 0.25);
-  ctx.fillStyle = 'rgba(232, 106, 122, 0.12)';
+  ctx.fillStyle = donBtnFill;
   ctx.fill();
-  ctx.strokeStyle = 'rgba(232, 106, 122, 0.5)';
-  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = donBtnStroke;
+  ctx.lineWidth = isMobilePortrait ? 2 : 1.5;
   ctx.stroke();
-  ctx.fillStyle = 'rgba(232, 106, 122, 0.85)';
+  ctx.fillStyle = isMobilePortrait ? 'rgba(232, 106, 122, 1.0)' : 'rgba(232, 106, 122, 0.85)';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(donLabel, cx, donY + donH / 2);
   menuButtons.donate = { x: donX, y: donY, w: donW, h: donH };
   curY += donH + sectionGap * 2;
 
-  // --- Scrollbarer Bereich ab hier ---
-  menuScrollAreaTop = curY;
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(0, menuScrollAreaTop, W, H - menuScrollAreaTop);
-  ctx.clip();
-  ctx.translate(0, -menuScrollY);
-
   // --- Hilfsfunktion: Settings-Reihe (Label + Buttons) ---
   function drawSettingsRow(label, options, selectedIdx, y, labelColor) {
     const labelFont = rowFont * 0.85;
-    ctx.fillStyle = labelColor || 'rgba(240, 236, 230, 0.95)';
+    ctx.fillStyle = labelColor || (isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.95)');
     ctx.font = `${labelFont}px "Courier New", monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
@@ -757,32 +841,50 @@ function drawMenu() {
     totalW += (options.length - 1) * btnGap;
 
     const btns = [];
-    let rx = cx - totalW / 2;
+    const maxRowW = W * 0.92;
+    // Split buttons into wrapped lines
+    const lines = [[]];
+    let lineW = 0;
     for (let i = 0; i < options.length; i++) {
-      const sel = i === selectedIdx;
-      const w = widths[i];
-      btns.push({ x: rx, y: rowY, w, h: rBtnH, idx: i });
-      ctx.beginPath();
-      ctx.roundRect(rx, rowY, w, rBtnH, rBtnH * 0.25);
-      if (sel) {
-        ctx.fillStyle = 'rgba(42, 191, 191, 0.15)';
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(42, 191, 191, 0.6)';
-        ctx.lineWidth = 1.5;
-      } else {
-        ctx.fillStyle = 'rgba(26, 58, 92, 0.4)';
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(88, 130, 160, 0.5)';
-        ctx.lineWidth = 1;
+      const needed = widths[i] + (lines[lines.length - 1].length > 0 ? btnGap : 0);
+      if (lines[lines.length - 1].length > 0 && lineW + needed > maxRowW) {
+        lines.push([]);
+        lineW = 0;
       }
-      ctx.stroke();
-      ctx.fillStyle = sel ? '#2abfbf' : 'rgba(240, 236, 230, 0.9)';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(options[i], rx + w / 2, rowY + rBtnH / 2);
-      rx += w + btnGap;
+      lines[lines.length - 1].push(i);
+      lineW += widths[i] + (lines[lines.length - 1].length > 1 ? btnGap : 0);
     }
-    return { btns, bottomY: rowY + rBtnH };
+    let curRowY = rowY;
+    for (const line of lines) {
+      let lw = line.reduce((s, i) => s + widths[i], 0) + (line.length - 1) * btnGap;
+      let rx = cx - lw / 2;
+      for (const i of line) {
+        const sel = i === selectedIdx;
+        const w = widths[i];
+        btns.push({ x: rx, y: curRowY, w, h: rBtnH, idx: i });
+        ctx.beginPath();
+        ctx.roundRect(rx, curRowY, w, rBtnH, rBtnH * 0.25);
+        if (sel) {
+          ctx.fillStyle = btnSelFill;
+          ctx.fill();
+          ctx.strokeStyle = btnSelStroke;
+          ctx.lineWidth = isMobilePortrait ? 2 : 1.5;
+        } else {
+          ctx.fillStyle = btnUnselFill;
+          ctx.fill();
+          ctx.strokeStyle = btnUnselStroke;
+          ctx.lineWidth = isMobilePortrait ? 1.5 : 1;
+        }
+        ctx.stroke();
+        ctx.fillStyle = sel ? '#2abfbf' : btnTextDim;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(options[i], rx + w / 2, curRowY + rBtnH / 2);
+        rx += w + btnGap;
+      }
+      curRowY += rBtnH + btnGap;
+    }
+    return { btns, bottomY: curRowY - btnGap };
   }
 
   // --- MEDITATIONSZEIT + TIMER ANZEIGEN (eine Zeile) ---
@@ -797,12 +899,12 @@ function drawMenu() {
   const ttb = timerToggleBtn;
   ctx.beginPath();
   ctx.roundRect(ttb.x, ttb.y, ttb.w, ttb.h, ttb.h * 0.25);
-  ctx.fillStyle = timerVisible ? 'rgba(42, 191, 191, 0.15)' : 'rgba(26, 58, 92, 0.4)';
+  ctx.fillStyle = timerVisible ? btnSelFill : btnUnselFill;
   ctx.fill();
-  ctx.strokeStyle = timerVisible ? 'rgba(42, 191, 191, 0.6)' : 'rgba(88, 130, 160, 0.5)';
-  ctx.lineWidth = timerVisible ? 1.5 : 1;
+  ctx.strokeStyle = timerVisible ? btnSelStroke : btnUnselStroke;
+  ctx.lineWidth = timerVisible ? (isMobilePortrait ? 2 : 1.5) : (isMobilePortrait ? 1.5 : 1);
   ctx.stroke();
-  ctx.fillStyle = timerVisible ? '#2abfbf' : 'rgba(240, 236, 230, 0.9)';
+  ctx.fillStyle = timerVisible ? '#2abfbf' : btnTextDim;
   ctx.font = `${rowFont * 0.85}px "Courier New", monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -826,7 +928,8 @@ function drawMenu() {
   curY = distractRow.bottomY + sectionGap;
 
   // --- DEIN GESICHT ---
-  const faceRow = drawSettingsRow('DEIN GESICHT', FACE_MODES, faceModeIdx, curY);
+  const faceMobileLabels = isMobilePortrait ? ['Aus', 'Mediathek', 'Kamera', 'Laden'] : FACE_MODES;
+  const faceRow = drawSettingsRow('DEIN GESICHT', faceMobileLabels, faceModeIdx, curY);
   menuButtons.faceSwap = faceRow.btns;
   curY = faceRow.bottomY;
 
@@ -864,11 +967,11 @@ function drawMenu() {
       const snapW = rowFont * 8;
       const snapH = btnH;
       const snapX = cx - snapW / 2;
-      ctx.fillStyle = 'rgba(42, 191, 191, 0.15)';
-      ctx.strokeStyle = 'rgba(42, 191, 191, 0.5)';
-      ctx.lineWidth = 1;
+      ctx.fillStyle = btnSelFill;
+      ctx.strokeStyle = btnSelStroke;
+      ctx.lineWidth = isMobilePortrait ? 2 : 1;
       ctx.beginPath();
-      ctx.roundRect(snapX, snapY, snapW, snapH, 4);
+      ctx.roundRect(snapX, snapY, snapW, snapH, snapH * 0.2);
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
@@ -912,7 +1015,7 @@ function drawMenu() {
 
   // --- START Button ---
   const canStart = selectedDurationIdx >= 0;
-  const startW = unit * 0.25;
+  const startW = unit * 0.25 * uiScale;
   const startH = btnH * 1.3;
   const startX = cx - startW / 2;
   const pulse = Math.sin(Date.now() * 0.003) * 0.15 + 0.85;
@@ -931,33 +1034,37 @@ function drawMenu() {
   ctx.font = `700 ${rowFont * 1.4}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(canStart ? 'Klicke hier um zu starten' : 'Wähle eine Meditationszeit', cx, curY + startH / 2);
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  ctx.fillText(canStart
+    ? (isTouchDevice ? 'Tippe hier um zu starten' : 'Klicke hier um zu starten')
+    : 'Wähle eine Meditationszeit', cx, curY + startH / 2);
   ctx.shadowBlur = 0;
   menuButtons.start = canStart ? { x: startX, y: curY, w: startW, h: startH } : null;
 
-  const contentBottom = curY + startH + sectionGap;
-  ctx.restore(); // Scroll-Clip aufheben
+  // Gesamte Inhaltshöhe berechnen (logische Koordinaten, ohne Scroll-Offset)
+  menuContentHeight = curY + startH + sectionGap;
+  ctx.restore(); // Scroll-Translate aufheben
 
-  // Max-Scroll berechnen
-  menuScrollMax = Math.max(0, contentBottom - H);
-  menuScrollY = Math.min(menuScrollY, menuScrollMax);
+  // Spacer-Höhe für natives Scrolling setzen
+  document.getElementById('menuSpacer').style.height = menuContentHeight + 'px';
 
-  // Scroll-Fade oben/unten
-  if (menuScrollY > 0) {
-    const fadeH = unit * 0.04;
-    const grad = ctx.createLinearGradient(0, menuScrollAreaTop, 0, menuScrollAreaTop + fadeH);
-    grad.addColorStop(0, 'rgba(10, 22, 40, 0.97)');
-    grad.addColorStop(1, 'transparent');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, menuScrollAreaTop, W, fadeH);
-  }
-  if (menuScrollY < menuScrollMax) {
-    const fadeH = unit * 0.04;
-    const grad = ctx.createLinearGradient(0, H - fadeH, 0, H);
-    grad.addColorStop(0, 'transparent');
-    grad.addColorStop(1, 'rgba(10, 22, 40, 0.97)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, H - fadeH, W, fadeH);
+  // Scroll-Indikator (animierter Chevron) — Screen-Space
+  const maxScroll = Math.max(0, menuContentHeight - H);
+  if (maxScroll > 0 && scrollY < maxScroll - 5) {
+    const chevPulse = Math.sin(Date.now() * 0.003) * 0.3 + 0.7;
+    const chevY = H - (isMobilePortrait ? 28 : 18);
+    const chevSize = isMobilePortrait ? 10 : 7;
+    ctx.strokeStyle = `rgba(240, 236, 230, ${chevPulse * 0.4})`;
+    ctx.lineWidth = isMobilePortrait ? 2.5 : 1.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx - chevSize * 1.5, chevY - chevSize * 0.5);
+    ctx.lineTo(cx, chevY + chevSize * 0.5);
+    ctx.lineTo(cx + chevSize * 1.5, chevY - chevSize * 0.5);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+    ctx.lineJoin = 'miter';
   }
 
   ctx.textAlign = 'start';
@@ -966,22 +1073,22 @@ function drawMenu() {
   // --- Speichern-Overlay ---
   if (faceSwapShowSave && faceSwapImg) {
     // Dunkler Backdrop
-    ctx.fillStyle = 'rgba(5, 11, 20, 0.85)';
+    ctx.fillStyle = 'rgba(5, 11, 20, 0.88)';
     ctx.fillRect(0, 0, W, H);
 
     const oCx = W / 2;
-    const oCy = H * 0.42;
-    const oFont = unit * 0.022;
+    const oCy = H * 0.40;
+    const oFont = unit * 0.022 * uiScale;
 
     // Titel
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `700 ${oFont * 1.3}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
     ctx.fillStyle = '#2abfbf';
-    ctx.fillText('Face Swap fertig!', oCx, oCy - unit * 0.18);
+    ctx.fillText('Face Swap fertig!', oCx, oCy - unit * 0.18 * uiScale);
 
     // Kreisvorschau
-    const pR = unit * 0.1;
+    const pR = unit * (isMobilePortrait ? 0.2 : 0.1);
     const pCy = oCy;
     ctx.save();
     ctx.beginPath();
@@ -993,16 +1100,16 @@ function drawMenu() {
     ctx.drawImage(faceSwapImg, oCx - dW / 2, pCy - dH / 2, dW, dH);
     ctx.restore();
     // Kreis-Rand
-    ctx.strokeStyle = 'rgba(42, 191, 191, 0.4)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(42, 191, 191, 0.5)';
+    ctx.lineWidth = isMobilePortrait ? 3 : 2;
     ctx.beginPath();
     ctx.arc(oCx, pCy, pR, 0, Math.PI * 2);
     ctx.stroke();
 
     // Buttons: Speichern + Weiter
     ctx.font = `${oFont}px "Courier New", monospace`;
-    const btnY = pCy + pR + oFont * 2;
-    const bH = unit * 0.04;
+    const ovBtnY = pCy + pR + oFont * 2;
+    const ovBH = btnH;
     const gap = oFont * 1.5;
 
     // Speichern
@@ -1010,30 +1117,30 @@ function drawMenu() {
     const sW = ctx.measureText(sLabel).width + oFont * 2;
     const sX = oCx - sW - gap / 2;
     ctx.beginPath();
-    ctx.roundRect(sX, btnY, sW, bH, 4);
-    ctx.fillStyle = 'rgba(42, 191, 191, 0.2)';
+    ctx.roundRect(sX, ovBtnY, sW, ovBH, ovBH * 0.2);
+    ctx.fillStyle = btnSelFill;
     ctx.fill();
-    ctx.strokeStyle = 'rgba(42, 191, 191, 0.6)';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = btnSelStroke;
+    ctx.lineWidth = isMobilePortrait ? 2 : 1.5;
     ctx.stroke();
     ctx.fillStyle = '#2abfbf';
-    ctx.fillText(sLabel, sX + sW / 2, btnY + bH / 2);
-    menuButtons.faceSave = { x: sX, y: btnY, w: sW, h: bH };
+    ctx.fillText(sLabel, sX + sW / 2, ovBtnY + ovBH / 2);
+    menuButtons.faceSave = { x: sX, y: ovBtnY, w: sW, h: ovBH };
 
     // Weiter
     const wLabel = 'Weiter';
     const wW = ctx.measureText(wLabel).width + oFont * 2;
     const wX = oCx + gap / 2;
     ctx.beginPath();
-    ctx.roundRect(wX, btnY, wW, bH, 4);
-    ctx.fillStyle = 'rgba(26, 58, 92, 0.5)';
+    ctx.roundRect(wX, ovBtnY, wW, ovBH, ovBH * 0.2);
+    ctx.fillStyle = btnUnselFill;
     ctx.fill();
-    ctx.strokeStyle = 'rgba(88, 130, 160, 0.5)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = btnUnselStroke;
+    ctx.lineWidth = isMobilePortrait ? 1.5 : 1;
     ctx.stroke();
-    ctx.fillStyle = 'rgba(240, 236, 230, 0.9)';
-    ctx.fillText(wLabel, wX + wW / 2, btnY + bH / 2);
-    menuButtons.faceDismiss = { x: wX, y: btnY, w: wW, h: bH };
+    ctx.fillStyle = btnTextDim;
+    ctx.fillText(wLabel, wX + wW / 2, ovBtnY + ovBH / 2);
+    menuButtons.faceDismiss = { x: wX, y: ovBtnY, w: wW, h: ovBH };
   } else {
     menuButtons.faceSave = null;
     menuButtons.faceDismiss = null;
@@ -1059,24 +1166,22 @@ function handleMenuClick(x, y) {
     return true; // Klicks außerhalb ignorieren (Overlay bleibt)
   }
 
-  // Link (fixierter Header, kein Scroll-Offset)
+  // Alle Buttons: Screen-Y zu logischer Y umrechnen (natives Scrolling)
+  const sy = y + (window.scrollY || 0);
+  function hitBtn(btn) {
+    return x >= btn.x && x <= btn.x + btn.w && sy >= btn.y && sy <= btn.y + btn.h;
+  }
+  // Link
   const lnk = menuButtons.link;
-  if (lnk && x >= lnk.x && x <= lnk.x + lnk.w && y >= lnk.y && y <= lnk.y + lnk.h) {
+  if (lnk && hitBtn(lnk)) {
     window.open('https://jochenhornung.de', '_blank');
     return true;
   }
-  // Spenden-Link (fixierter Header)
+  // Spenden-Link
   const don = menuButtons.donate;
-  if (don && x >= don.x && x <= don.x + don.w && y >= don.y && y <= don.y + don.h) {
+  if (don && hitBtn(don)) {
     window.open('https://www.paypal.com/donate/?hosted_button_id=9DZ3ENM66BEC8', '_blank');
     return true;
-  }
-  // Scrollbare Buttons: Y um Scroll-Offset korrigieren
-  // Klick außerhalb des sichtbaren Scroll-Bereichs ignorieren
-  if (y < menuScrollAreaTop) return false;
-  const sy = y + menuScrollY; // logische Y-Position im Content
-  function hitBtn(btn) {
-    return x >= btn.x && x <= btn.x + btn.w && sy >= btn.y && sy <= btn.y + btn.h;
   }
   // Timer-Buttons
   for (const btn of menuButtons.timer || []) {
@@ -1129,12 +1234,23 @@ function handleMenuClick(x, y) {
       } else if (faceModeIdx === 1) {
         stopWebcam();
         if (faceSwapStatus === 'idle') {
-          // Foto → Datei-Dialog öffnen
-          document.getElementById('faceInput').click();
+          // Mediathek/Foto → Datei-Dialog OHNE capture (Galerie-Zugriff)
+          const fi = document.getElementById('faceInput');
+          fi.removeAttribute('capture');
+          fi.click();
         }
       } else if (faceModeIdx === 2) {
-        if (prevMode !== 2) {
-          // Webcam starten
+        const isMob = canvas.width < 600 && canvas.height > canvas.width;
+        if (isMob) {
+          // Mobile: File-Input MIT capture (öffnet Kamera, kein HTTPS nötig)
+          stopWebcam();
+          if (faceSwapStatus === 'idle') {
+            const fi = document.getElementById('faceInput');
+            fi.setAttribute('capture', 'user');
+            fi.click();
+          }
+        } else if (prevMode !== 2) {
+          // Desktop: Webcam mit Live-Preview
           faceSwapStatus = 'idle';
           faceSwapError = null;
           startWebcam();
@@ -1165,67 +1281,95 @@ function handleMenuClick(x, y) {
   // Start-Button
   const s = menuButtons.start;
   if (s && x >= s.x && x <= s.x + s.w && sy >= s.y && sy <= s.y + s.h) {
+    disableMenuScroll();
     state = 'ready';
+    requestMotionPermission(); // iOS: DeviceMotion-Permission genau jetzt anfordern
+    requestWakeLock(); // Bildschirm bleibt an
     return true;
   }
   return false;
 }
 
+// Gemeinsame Funktion: Zurück ins Menü
+function returnToMenu() {
+  if (state === 'idle') return;
+  state = 'idle';
+  thoughtCounter = 0;
+  counterFullPlayed = false;
+  particles.length = 0;
+  doneTime = 0; voicePlayed = false;
+  shakeIntensity = 0;
+  mouseDown = false;
+  selectedDurationIdx = -1;
+  if (faceSwapPollTimer) { clearInterval(faceSwapPollTimer); faceSwapPollTimer = null; }
+  stopWebcam();
+  releaseWakeLock();
+  enableMenuScroll();
+  window.scrollTo(0, 0);
+}
+
+// Zurück-Button Hit-Area (wird in frame() gesetzt)
+let backBtnArea = null;
+
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && state !== 'idle') {
-    state = 'idle';
-    thoughtCounter = 0;
-    counterFullPlayed = false;
-    particles.length = 0;
-    doneTime = 0; voicePlayed = false;
-    shakeIntensity = 0;
-    mouseDown = false;
-    selectedDurationIdx = -1;
-    menuScrollY = 0;
-    // Face Swap: Polling + Webcam stoppen, aber Bild behalten
-    if (faceSwapPollTimer) { clearInterval(faceSwapPollTimer); faceSwapPollTimer = null; }
-    stopWebcam();
-  }
+  if (e.key === 'Escape' && state !== 'idle') returnToMenu();
 });
 
 canvas.addEventListener('click', (e) => {
   ensureSound();
+  const [cx, cy] = canvasCoords(e.clientX, e.clientY);
+  // Zurück-Button (ready/shaking/meditating)
+  if (backBtnArea && state !== 'idle' && state !== 'done') {
+    const b = backBtnArea;
+    if (cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h) {
+      returnToMenu();
+      return;
+    }
+  }
   if (state === 'idle') {
-    handleMenuClick(e.clientX, e.clientY);
+    handleMenuClick(cx, cy);
   } else if (state === 'done') {
-    // Spenden-Link prüfen
     if (donateHitArea) {
       const d = donateHitArea;
-      if (e.clientX >= d.x && e.clientX <= d.x + d.w && e.clientY >= d.y && e.clientY <= d.y + d.h) {
+      if (cx >= d.x && cx <= d.x + d.w && cy >= d.y && cy <= d.y + d.h) {
         window.open('https://www.paypal.com/donate/?hosted_button_id=9DZ3ENM66BEC8', '_blank');
         return;
       }
     }
-    state = 'idle';
-    thoughtCounter = 0;
-    counterFullPlayed = false;
-    particles.length = 0;
-    doneTime = 0; voicePlayed = false;
-    selectedDurationIdx = -1;
-    menuScrollY = 0;
+    returnToMenu();
   }
 });
 
 canvas.addEventListener('touchend', (e) => {
+  e.preventDefault(); // verhindert synthetischen Click (Double-Firing)
   ensureSound();
+  // Zurück-Button (ready/shaking/meditating)
+  if (backBtnArea && state !== 'idle' && state !== 'done' && e.changedTouches.length > 0) {
+    const t = e.changedTouches[0];
+    const [tx, ty] = canvasCoords(t.clientX, t.clientY);
+    const b = backBtnArea;
+    if (tx >= b.x && tx <= b.x + b.w && ty >= b.y && ty <= b.y + b.h) {
+      returnToMenu();
+      return;
+    }
+  }
   if (state === 'idle' && e.changedTouches.length > 0) {
-    if (menuTouchDist < 10) { // Kein Scroll → Klick
+    if (menuTouchDist < 10) {
       const t = e.changedTouches[0];
-      handleMenuClick(t.clientX, t.clientY);
+      const [tx, ty] = canvasCoords(t.clientX, t.clientY);
+      handleMenuClick(tx, ty);
     }
   } else if (state === 'done') {
-    state = 'idle';
-    thoughtCounter = 0;
-    counterFullPlayed = false;
-    particles.length = 0;
-    doneTime = 0; voicePlayed = false;
-    selectedDurationIdx = -1;
-    menuScrollY = 0;
+    if (donateHitArea && e.changedTouches.length > 0) {
+      const t = e.changedTouches[0];
+      const [tx, ty] = canvasCoords(t.clientX, t.clientY);
+      const d = donateHitArea;
+      if (tx >= d.x && tx <= d.x + d.w && ty >= d.y && ty <= d.y + d.h) {
+        window.open('https://www.paypal.com/donate/?hosted_button_id=9DZ3ENM66BEC8', '_blank');
+        return;
+      }
+    }
+    returnToMenu();
   }
 });
 
@@ -1279,6 +1423,12 @@ let binauralOscs = [], binauralGains = [], binauralPans = [];
 
 function initSound() {
   if (soundInitialized) return;
+  // Silent Audio Trick: Aktiviert iOS "playback" Audio-Session (spielt auch mit Ringer auf stumm)
+  // HTML <audio> Element wechselt die Audio-Session von "ambient" zu "playback"
+  try {
+    const sa = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YQAAAAA=');
+    sa.play().catch(() => {});
+  } catch(e) {}
   audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
   audioCtx.resume();
 
@@ -1820,12 +1970,19 @@ function updateSound() {
 function ensureSound() {
   if (!soundInitialized) {
     initSound();
-  } else if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
+  } else if (audioCtx && audioCtx.state !== 'running') {
+    // Handhabt: 'suspended' UND 'interrupted' (iOS-spezifisch, z.B. nach Tab-Wechsel)
+    audioCtx.resume().catch(() => {});
   }
 }
 canvas.addEventListener('mousedown', ensureSound, { once: false });
 canvas.addEventListener('touchstart', ensureSound, { once: false });
+// iOS: Recovery nach 'interrupted' State (Tab-Wechsel, Anruf, etc.)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && audioCtx && audioCtx.state !== 'running') {
+    audioCtx.resume().catch(() => {});
+  }
+});
 
 // --- Hintergrund-Sterne ---
 let stars = [];
@@ -1865,19 +2022,26 @@ function drawStars() {
 
 // --- Sizing ---
 function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  const vv = window.visualViewport;
+  canvas.width = vv ? vv.width : window.innerWidth;
+  canvas.height = vv ? vv.height : window.innerHeight;
   generateStars();
 
   // Three.js Renderer an Statue-Bereich anpassen
   const r = Math.min(canvas.width, canvas.height) * 0.35;
-  const renderSize = Math.round(r * 1.8); // hohe Auflösung für Details
+  const isMobResize = canvas.width < 600 && canvas.height > canvas.width;
+  const renderSize = Math.round(r * (isMobResize ? 1.0 : 1.8)); // Mobile: niedrigere 3D-Auflösung
   renderer.setSize(renderSize, renderSize);
   camera.aspect = 1;
   camera.updateProjectionMatrix();
 }
-window.addEventListener('resize', resize);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', resize);
+} else {
+  window.addEventListener('resize', resize);
+}
 resize();
+enableMenuScroll(); // Initiales Menü: natives Scrolling aktiv
 
 // --- Draw ---
 function drawKugel() {
@@ -2346,8 +2510,12 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
       model3D.rotation.y = Math.sin(Date.now() * 0.0003) * 0.05;
     }
 
-    // Three.js rendern
-    renderer.render(scene, camera);
+    // Three.js rendern (Mobile: nur jeden 3. Frame — threeCanvas behält letztes Bild)
+    const isMob3D = canvas.width < 600 && canvas.height > canvas.width;
+    if (!isMob3D || !drawModel3D._fc || ++drawModel3D._fc >= 3) {
+      renderer.render(scene, camera);
+      drawModel3D._fc = 0;
+    }
     imgSource = threeCanvas;
     imgSize = threeCanvas.width / (Math.min(window.devicePixelRatio, 2));
   }
@@ -2502,10 +2670,13 @@ function frame() {
   }
 
   // Partikel spawnen beim Schütteln — mehr bei hohem Counter
-  if (shakeIntensity > 0.05) {
-    const baseCount = Math.floor(shakeIntensity * 30);
+  const isMobParticle = canvas.width < 600 && canvas.height > canvas.width;
+  const maxParticles = isMobParticle ? 400 : Infinity; // Mobile: Cap, Desktop: unbegrenzt (Original)
+  if (shakeIntensity > 0.05 && particles.length < maxParticles) {
+    const spawnRate = isMobParticle ? 15 : 30;
+    const baseCount = Math.floor(shakeIntensity * spawnRate);
     const bonusCount = Math.floor(thoughtCounter / 5); // +1 pro 5%
-    const count = baseCount + bonusCount;
+    const count = isMobParticle ? Math.min(baseCount + bonusCount, maxParticles - particles.length) : baseCount + bonusCount;
     for (let i = 0; i < count; i++) {
       spawnParticle(cx, cy, r);
     }
@@ -2562,12 +2733,28 @@ function frame() {
   // Hinweis im ready-State
   if (state === 'ready') {
     const pulse = Math.sin(Date.now() * 0.0015) * 0.15 + 0.85;
-    ctx.font = `${Math.min(canvas.width, canvas.height) * 0.02}px monospace`;
+    const hUnit = Math.min(canvas.width, canvas.height);
+    const isMobReady = canvas.width < 600 && canvas.height > canvas.width;
+    const hintFontSize = hUnit * (isMobReady ? 0.04 : 0.02);
+    ctx.font = `${hintFontSize}px monospace`;
     ctx.textAlign = 'center';
     ctx.shadowColor = `rgba(244, 168, 66, ${pulse * 0.3})`;
     ctx.shadowBlur = 12;
     ctx.fillStyle = `rgba(244, 168, 66, ${pulse})`;
-    ctx.fillText('Drücke, halte und schüttle mit der Maus die Kugel, bis der Kreis geschlossen ist.', cx, cy - r - 35);
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (isTouchDevice) {
+      ctx.fillText('Wische schnell über die Kugel', cx, cy - r - hintFontSize * 2.5);
+      if (deviceMotionGranted) {
+        ctx.fillText('oder schüttle dein Handy.', cx, cy - r - hintFontSize * 1.2);
+      } else {
+        ctx.font = `${hintFontSize * 0.7}px monospace`;
+        ctx.fillStyle = `rgba(244, 168, 66, ${pulse * 0.6})`;
+        ctx.fillText('(Handy-Schütteln: Browserzugriff nötig)', cx, cy - r - hintFontSize * 1.2);
+      }
+    } else {
+      ctx.fillText('Drücke, halte und schüttle mit der Maus die Kugel,', cx, cy - r - hintFontSize * 2.5);
+      ctx.fillText('bis der Kreis geschlossen ist.', cx, cy - r - hintFontSize * 1.2);
+    }
     ctx.shadowBlur = 0;
     ctx.textAlign = 'start';
   }
@@ -2578,9 +2765,11 @@ function frame() {
     const seconds = Math.floor(meditationTimeLeft % 60);
     const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     ctx.fillStyle = 'rgba(240, 236, 230, 0.8)';
-    ctx.font = `200 ${Math.min(canvas.width, canvas.height) * 0.035}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+    const timerMob = canvas.width < 600 && canvas.height > canvas.width;
+    const timerFontSize = Math.min(canvas.width, canvas.height) * (timerMob ? 0.06 : 0.035);
+    ctx.font = `200 ${timerFontSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText(timeStr, cx, cy + r + 55);
+    ctx.fillText(timeStr, cx, cy + r + (timerMob ? 40 : 55));
     ctx.textAlign = 'start';
   }
 
@@ -2692,12 +2881,14 @@ function frame() {
     // Hinweis zum Neustart + Spenden-Link (nach 45s)
     if (elapsed > 45) {
       const hintAlpha = Math.min(0.15, (elapsed - 45) / 4 * 0.15);
-      const hintFont = Math.min(canvas.width, canvas.height) * 0.018;
+      const doneIsMob = canvas.width < 600 && canvas.height > canvas.width;
+      const hintFont = Math.min(canvas.width, canvas.height) * (doneIsMob ? 0.035 : 0.018);
       ctx.font = `${hintFont}px monospace`;
       ctx.textAlign = 'center';
-      // "klick" zum Neustart
+      // "klick/tippe" zum Neustart
+      const isTouchDone = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
       ctx.fillStyle = `rgba(255,255,255,${hintAlpha})`;
-      ctx.fillText('klick', cx, cy + r + 35);
+      ctx.fillText(isTouchDone ? 'tippe' : 'klick', cx, cy + r + 35);
       // Spenden-Button
       const donAlpha = Math.min(0.7, (elapsed - 45) / 6 * 0.7);
       const donFont = hintFont * 1.1;
@@ -2741,7 +2932,7 @@ function frame() {
     ctx.strokeStyle = `rgba(255, 40, 40, ${relapseFlash * 0.6})`;
     ctx.lineWidth = 4 + relapseFlash * 8;
     ctx.stroke();
-    relapseFlash *= 0.92; // schneller Decay
+    relapseFlash *= 0.92;
   }
 
   // Counter-Ring um die Kugel (zeigt thoughtCounter %) — fixe Position, nicht mit Atem
@@ -2853,7 +3044,8 @@ function frame() {
     const goldPulse = Math.sin(Date.now() * 0.006) * 0.15 + 0.85;
     const lcx = canvas.width / 2;
     const lcy = canvas.height / 2;
-    const fontSize = Math.min(canvas.width, canvas.height) * 0.045;
+    const losIsMob = canvas.width < 600 && canvas.height > canvas.width;
+    const fontSize = Math.min(canvas.width, canvas.height) * (losIsMob ? 0.065 : 0.045);
     const txt = 'Du darfst jetzt loslassen';
     ctx.font = `300 ${fontSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
     ctx.textAlign = 'center';
@@ -2874,6 +3066,44 @@ function frame() {
     ctx.fillText(txt, lcx, lcy);
     ctx.shadowBlur = 0;
     ctx.textAlign = 'start';
+  }
+
+  // --- Zurück-Button (✕) für Touch-Geräte (kein ESC verfügbar) ---
+  const isTouchBack = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  if (isTouchBack && state !== 'idle' && state !== 'done') {
+    const safeT = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
+    const safeL = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sal')) || 0;
+    const bSize = 44; // Apple HIG Minimum
+    const bPad = 8;
+    const bx = safeL + bPad;
+    const by = safeT + bPad;
+    backBtnArea = { x: bx, y: by, w: bSize, h: bSize };
+
+    // Subtiler Kreis-Hintergrund
+    const bcx = bx + bSize / 2;
+    const bcy = by + bSize / 2;
+    ctx.beginPath();
+    ctx.arc(bcx, bcy, bSize / 2, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(10, 22, 40, 0.6)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(240, 236, 230, 0.25)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // ✕ Symbol
+    const cross = bSize * 0.22;
+    ctx.strokeStyle = 'rgba(240, 236, 230, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(bcx - cross, bcy - cross);
+    ctx.lineTo(bcx + cross, bcy + cross);
+    ctx.moveTo(bcx + cross, bcy - cross);
+    ctx.lineTo(bcx - cross, bcy + cross);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+  } else {
+    backBtnArea = null;
   }
 
   requestAnimationFrame(frame);
