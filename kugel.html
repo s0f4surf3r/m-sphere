@@ -29,6 +29,9 @@ canvas {
 </head>
 <body>
 <canvas id="c"></canvas>
+<input type="file" id="faceInput" accept="image/*" capture="user" style="display:none">
+<input type="file" id="faceLoadInput" accept="image/*" style="display:none">
+<video id="webcamVideo" autoplay playsinline style="display:none"></video>
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -102,13 +105,38 @@ let meditationSoundIdx = 0; // default: Stille
 const THOUGHT_MODES = ['Schweben', 'Reflektieren'];
 let thoughtModeIdx = 0; // default: Schweben
 
-// Mönch-Schrumpfen: 0=Aus, 1=Ein
-const SHRINK_MODES = ['Aus', 'Ein'];
-let shrinkModeIdx = 1; // default: Ein
+// Mönch-Schrumpfen: immer aktiv
+const shrinkModeIdx = 1;
 
 // Ablenkungen: 0=Aus, 1=Ein
 const DISTRACTION_MODES = ['Aus', 'Ein'];
 let distractionModeIdx = 1; // default: Ein
+
+// Face Swap
+const FACE_MODES = ['Aus', 'Foto', 'Webcam', 'Laden'];
+let faceModeIdx = 0;
+let faceSwapImg = null;
+let faceSwapStatus = 'idle';  // 'idle'|'uploading'|'processing'|'done'|'error'
+let faceSwapError = null;
+let faceSwapPollTimer = null;
+let faceSwapPredictionId = null;
+let faceSwapShowSave = false; // Speichern-Overlay anzeigen
+let webcamStream = null;
+let webcamReady = false;
+
+// Face Swap aus localStorage wiederherstellen
+try {
+  const savedFace = localStorage.getItem('msphere_faceswap');
+  if (savedFace) {
+    const img = new Image();
+    img.onload = () => {
+      faceSwapImg = img;
+      faceSwapStatus = 'done';
+      faceModeIdx = 1;
+    };
+    img.src = savedFace;
+  }
+} catch(e) {}
 
 // Hit-Bereiche für die Menu-Buttons
 let menuButtons = {};
@@ -121,7 +149,7 @@ let menuTouchDist = 0;
 
 // --- Three.js Offscreen Setup ---
 const threeCanvas = document.createElement('canvas');
-const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, alpha: true, antialias: true });
+const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, alpha: true, antialias: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.8;
@@ -605,7 +633,7 @@ function drawMenu() {
     ctx.fillRect(sx, sy, 1.5, 1.5);
   }
 
-  menuButtons = { timer: [], breathing: [], timerToggle: null, shake: [], meditation: [], start: null };
+  menuButtons = { timer: [], breathing: [], timerToggle: null, shake: [], meditation: [], start: null, faceSwap: [], webcamSnap: null, faceSave: null };
 
   // Vertikales Layout berechnen
   const titleSize = unit * 0.12;
@@ -733,33 +761,30 @@ function drawMenu() {
     return { btns, bottomY: rowY + rBtnH };
   }
 
-  // --- MEDITATIONSZEIT ---
+  // --- MEDITATIONSZEIT + TIMER ANZEIGEN (eine Zeile) ---
   const timeLabels = DURATION_OPTIONS.map(d => d.label + ' min');
+  timeLabels.push(timerVisible ? '⏱ An' : '⏱');
   const timeLabelColor = selectedDurationIdx < 0 ? '#f4a842' : null;
   const timeRow = drawSettingsRow('MEDITATIONSZEIT', timeLabels, selectedDurationIdx, curY, timeLabelColor);
+  // Letzter Button ist Timer-Toggle (separater Hit-Bereich)
+  const timerToggleBtn = timeRow.btns.pop();
   menuButtons.timer = timeRow.btns;
-  curY = timeRow.bottomY + btnGap * 1.5;
-
-  // Timer-Toggle (Teil der Meditationszeit-Sektion)
-  const tLabel = timerVisible ? 'TIMER ANZEIGEN  AN' : 'TIMER ANZEIGEN';
-  const toggleFont = rowFont * 0.85;
-  ctx.font = `${toggleFont}px "Courier New", monospace`;
-  const tw = ctx.measureText(tLabel).width + toggleFont * 2;
-  const th = btnH * 0.9;
-  const tx = cx - tw / 2;
+  // Timer-Toggle-Button nachfärben (eigener Selected-State)
+  const ttb = timerToggleBtn;
   ctx.beginPath();
-  ctx.roundRect(tx, curY, tw, th, th * 0.25);
-  ctx.fillStyle = timerVisible ? 'rgba(42, 191, 191, 0.12)' : 'rgba(26, 58, 92, 0.4)';
+  ctx.roundRect(ttb.x, ttb.y, ttb.w, ttb.h, ttb.h * 0.25);
+  ctx.fillStyle = timerVisible ? 'rgba(42, 191, 191, 0.15)' : 'rgba(26, 58, 92, 0.4)';
   ctx.fill();
-  ctx.strokeStyle = timerVisible ? 'rgba(42, 191, 191, 0.5)' : 'rgba(88, 130, 160, 0.5)';
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = timerVisible ? 'rgba(42, 191, 191, 0.6)' : 'rgba(88, 130, 160, 0.5)';
+  ctx.lineWidth = timerVisible ? 1.5 : 1;
   ctx.stroke();
   ctx.fillStyle = timerVisible ? '#2abfbf' : 'rgba(240, 236, 230, 0.9)';
+  ctx.font = `${rowFont * 0.85}px "Courier New", monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(tLabel, cx, curY + th / 2);
-  menuButtons.timerToggle = { x: tx, y: curY, w: tw, h: th };
-  curY += th + sectionGap;
+  ctx.fillText(timerVisible ? '⏱ An' : '⏱', ttb.x + ttb.w / 2, ttb.y + ttb.h / 2);
+  menuButtons.timerToggle = { x: ttb.x, y: ttb.y, w: ttb.w, h: ttb.h };
+  curY = timeRow.bottomY + sectionGap;
 
   // --- ATMEN ---
   const breathRow = drawSettingsRow('ATMEN', BREATHING_MODES, breathingMode, curY);
@@ -771,15 +796,95 @@ function drawMenu() {
   menuButtons.meditation = medRow.btns;
   curY = medRow.bottomY + sectionGap;
 
-  // --- MÖNCH SCHRUMPFEN ---
-  const shrinkRow = drawSettingsRow('MÖNCH SCHRUMPFEN', SHRINK_MODES, shrinkModeIdx, curY);
-  menuButtons.shrinkMode = shrinkRow.btns;
-  curY = shrinkRow.bottomY + sectionGap;
-
   // --- ABLENKUNGEN ---
   const distractRow = drawSettingsRow('ABLENKUNGEN', DISTRACTION_MODES, distractionModeIdx, curY);
   menuButtons.distractionMode = distractRow.btns;
   curY = distractRow.bottomY + sectionGap;
+
+  // --- DEIN GESICHT ---
+  const faceRow = drawSettingsRow('DEIN GESICHT', FACE_MODES, faceModeIdx, curY);
+  menuButtons.faceSwap = faceRow.btns;
+  curY = faceRow.bottomY;
+
+  // Status-Anzeige unter den Buttons (Foto- und Webcam-Modus)
+  if (faceModeIdx >= 1) {
+    const statusY = curY + rowFont * 0.6;
+    ctx.textAlign = 'center';
+    ctx.font = `400 ${rowFont * 0.85}px "Courier New", monospace`;
+
+    if (faceModeIdx === 2 && webcamReady && faceSwapStatus === 'idle') {
+      // Webcam-Vorschau: Kreis mit Live-Video + Auslöse-Button
+      const previewR = rowFont * 2.5;
+      const previewCy = statusY + previewR;
+      const video = document.getElementById('webcamVideo');
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, previewCy, previewR, 0, Math.PI * 2);
+      ctx.clip();
+      // Video-Frame zentriert in Kreis zeichnen
+      const vw = video.videoWidth || 1;
+      const vh = video.videoHeight || 1;
+      const vAspect = vw / vh;
+      const drawW = previewR * 2 * Math.max(1, vAspect);
+      const drawH = previewR * 2 * Math.max(1, 1 / vAspect);
+      ctx.drawImage(video, cx - drawW / 2, previewCy - drawH / 2, drawW, drawH);
+      ctx.restore();
+      // Kreis-Rand
+      ctx.strokeStyle = 'rgba(42, 191, 191, 0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(cx, previewCy, previewR, 0, Math.PI * 2);
+      ctx.stroke();
+      // Auslöse-Button darunter
+      const snapY = previewCy + previewR + rowFont * 0.8;
+      const snapW = rowFont * 8;
+      const snapH = btnH;
+      const snapX = cx - snapW / 2;
+      ctx.fillStyle = 'rgba(42, 191, 191, 0.15)';
+      ctx.strokeStyle = 'rgba(42, 191, 191, 0.5)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(snapX, snapY, snapW, snapH, 4);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
+      ctx.fillText('Foto aufnehmen', cx, snapY + snapH / 2 + rowFont * 0.15);
+      menuButtons.webcamSnap = { x: snapX, y: snapY, w: snapW, h: snapH };
+      curY = snapY + snapH + rowFont * 0.3;
+    } else if (faceModeIdx === 2 && !webcamReady && faceSwapStatus === 'idle') {
+      // Webcam wird gestartet...
+      ctx.fillStyle = 'rgba(244, 168, 66, 0.9)';
+      ctx.fillText('Kamera wird gestartet...', cx, statusY);
+      curY = statusY + rowFont * 0.8;
+      menuButtons.webcamSnap = null;
+    } else if (faceSwapStatus === 'uploading' || faceSwapStatus === 'processing') {
+      // Animierte Punkte
+      const dots = '.'.repeat(Math.floor(Date.now() / 500) % 4);
+      const label = faceSwapStatus === 'uploading' ? 'Sende Bild' : 'Face Swap läuft';
+      ctx.fillStyle = 'rgba(244, 168, 66, 0.9)';
+      ctx.fillText(label + dots, cx, statusY);
+      curY = statusY + rowFont * 0.8;
+      menuButtons.webcamSnap = null;
+    } else if (faceSwapStatus === 'done' && faceSwapImg) {
+      // Kompakte Vorschau + Häkchen
+      ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
+      ctx.fillText('✓ Gesicht aktiv', cx, statusY);
+      curY = statusY + rowFont * 0.8;
+      menuButtons.webcamSnap = null;
+    } else if (faceSwapStatus === 'error') {
+      ctx.fillStyle = 'rgba(232, 106, 122, 0.9)';
+      const errMsg = faceSwapError || 'Fehler beim Face Swap';
+      ctx.fillText(errMsg.length > 40 ? errMsg.substring(0, 37) + '...' : errMsg, cx, statusY);
+      curY = statusY + rowFont * 0.8;
+      menuButtons.webcamSnap = null;
+    } else {
+      menuButtons.webcamSnap = null;
+    }
+
+    ctx.textAlign = 'start';
+  }
+
+  curY += sectionGap;
 
   // --- START Button ---
   const canStart = selectedDurationIdx >= 0;
@@ -833,9 +938,103 @@ function drawMenu() {
 
   ctx.textAlign = 'start';
   ctx.textBaseline = 'alphabetic';
+
+  // --- Speichern-Overlay ---
+  if (faceSwapShowSave && faceSwapImg) {
+    // Dunkler Backdrop
+    ctx.fillStyle = 'rgba(5, 11, 20, 0.85)';
+    ctx.fillRect(0, 0, W, H);
+
+    const oCx = W / 2;
+    const oCy = H * 0.42;
+    const oFont = unit * 0.022;
+
+    // Titel
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `700 ${oFont * 1.3}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+    ctx.fillStyle = '#2abfbf';
+    ctx.fillText('Face Swap fertig!', oCx, oCy - unit * 0.18);
+
+    // Kreisvorschau
+    const pR = unit * 0.1;
+    const pCy = oCy;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(oCx, pCy, pR, 0, Math.PI * 2);
+    ctx.clip();
+    const iA = faceSwapImg.width / faceSwapImg.height;
+    const dW = pR * 2 * Math.max(1, iA);
+    const dH = pR * 2 * Math.max(1, 1 / iA);
+    ctx.drawImage(faceSwapImg, oCx - dW / 2, pCy - dH / 2, dW, dH);
+    ctx.restore();
+    // Kreis-Rand
+    ctx.strokeStyle = 'rgba(42, 191, 191, 0.4)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(oCx, pCy, pR, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Buttons: Speichern + Weiter
+    ctx.font = `${oFont}px "Courier New", monospace`;
+    const btnY = pCy + pR + oFont * 2;
+    const bH = unit * 0.04;
+    const gap = oFont * 1.5;
+
+    // Speichern
+    const sLabel = '💾 Speichern';
+    const sW = ctx.measureText(sLabel).width + oFont * 2;
+    const sX = oCx - sW - gap / 2;
+    ctx.beginPath();
+    ctx.roundRect(sX, btnY, sW, bH, 4);
+    ctx.fillStyle = 'rgba(42, 191, 191, 0.2)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(42, 191, 191, 0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = '#2abfbf';
+    ctx.fillText(sLabel, sX + sW / 2, btnY + bH / 2);
+    menuButtons.faceSave = { x: sX, y: btnY, w: sW, h: bH };
+
+    // Weiter
+    const wLabel = 'Weiter';
+    const wW = ctx.measureText(wLabel).width + oFont * 2;
+    const wX = oCx + gap / 2;
+    ctx.beginPath();
+    ctx.roundRect(wX, btnY, wW, bH, 4);
+    ctx.fillStyle = 'rgba(26, 58, 92, 0.5)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(88, 130, 160, 0.5)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(240, 236, 230, 0.9)';
+    ctx.fillText(wLabel, wX + wW / 2, btnY + bH / 2);
+    menuButtons.faceDismiss = { x: wX, y: btnY, w: wW, h: bH };
+  } else {
+    menuButtons.faceSave = null;
+    menuButtons.faceDismiss = null;
+  }
 }
 
 function handleMenuClick(x, y) {
+  // Speichern-Overlay hat Vorrang (blockiert alle anderen Klicks)
+  if (faceSwapShowSave) {
+    const sv = menuButtons.faceSave;
+    if (sv && x >= sv.x && x <= sv.x + sv.w && y >= sv.y && y <= sv.y + sv.h) {
+      saveFaceSwapImage();
+      faceSwapShowSave = false;
+      playTingsha();
+      return true;
+    }
+    const dm = menuButtons.faceDismiss;
+    if (dm && x >= dm.x && x <= dm.x + dm.w && y >= dm.y && y <= dm.y + dm.h) {
+      faceSwapShowSave = false;
+      playTingsha();
+      return true;
+    }
+    return true; // Klicks außerhalb ignorieren (Overlay bleibt)
+  }
+
   // Link (fixierter Header, kein Scroll-Offset)
   const lnk = menuButtons.link;
   if (lnk && x >= lnk.x && x <= lnk.x + lnk.w && y >= lnk.y && y <= lnk.y + lnk.h) {
@@ -866,14 +1065,6 @@ function handleMenuClick(x, y) {
       return true;
     }
   }
-  // Schrumpf-Modus
-  for (const btn of menuButtons.shrinkMode || []) {
-    if (hitBtn(btn)) {
-      shrinkModeIdx = btn.idx;
-      playTingsha();
-      return true;
-    }
-  }
   // Ablenkungen
   for (const btn of menuButtons.distractionMode || []) {
     if (hitBtn(btn)) {
@@ -889,6 +1080,50 @@ function handleMenuClick(x, y) {
       playTingsha();
       return true;
     }
+  }
+  // Face Swap
+  for (const btn of menuButtons.faceSwap || []) {
+    if (hitBtn(btn)) {
+      const prevMode = faceModeIdx;
+      faceModeIdx = btn.idx;
+      if (faceModeIdx === 0) {
+        // Aus → Reset
+        faceSwapImg = null;
+        faceSwapStatus = 'idle';
+        faceSwapError = null;
+        if (faceSwapPollTimer) { clearInterval(faceSwapPollTimer); faceSwapPollTimer = null; }
+        faceSwapPredictionId = null;
+        stopWebcam();
+        localStorage.removeItem('msphere_faceswap');
+        localStorage.removeItem('msphere_facemode');
+      } else if (faceModeIdx === 1) {
+        stopWebcam();
+        if (faceSwapStatus === 'idle') {
+          // Foto → Datei-Dialog öffnen
+          document.getElementById('faceInput').click();
+        }
+      } else if (faceModeIdx === 2) {
+        if (prevMode !== 2) {
+          // Webcam starten
+          faceSwapStatus = 'idle';
+          faceSwapError = null;
+          startWebcam();
+        }
+      } else if (faceModeIdx === 3) {
+        // Laden → Datei-Dialog (ohne capture, normaler Datei-Browser)
+        stopWebcam();
+        document.getElementById('faceLoadInput').click();
+      }
+      playTingsha();
+      return true;
+    }
+  }
+  // Webcam Snapshot
+  const snap = menuButtons.webcamSnap;
+  if (snap && hitBtn(snap)) {
+    captureWebcamSnapshot();
+    playTingsha();
+    return true;
   }
   // Timer-Toggle
   const t = menuButtons.timerToggle;
@@ -917,6 +1152,9 @@ window.addEventListener('keydown', (e) => {
     mouseDown = false;
     selectedDurationIdx = -1;
     menuScrollY = 0;
+    // Face Swap: Polling + Webcam stoppen, aber Bild behalten
+    if (faceSwapPollTimer) { clearInterval(faceSwapPollTimer); faceSwapPollTimer = null; }
+    stopWebcam();
   }
 });
 
@@ -1767,6 +2005,239 @@ function drawStatue(cx, cy, r) {
   ctx.restore();
 }
 
+// --- Face Swap ---
+const FACESWAP_API = 'https://m-sphere-api.vercel.app/api/faceswap';
+
+function renderMonkForFaceSwap() {
+  // Gleiche Kamera wie Gameplay, aber höhere Auflösung + Licht-Boost für Face-Detection
+  const origIntensities = {
+    key: keyLight.intensity, fill: fillLight.intensity, aura: auraLight.intensity,
+    hemi: hemiLight.intensity, ambient: ambientLight.intensity
+  };
+  const origRotY = model3D ? model3D.rotation.y : 0;
+
+  // Solider Hintergrund — nötig für Face-Detection
+  const origBg = scene.background;
+  scene.background = new THREE.Color(0x1a1a2e);
+
+  // Licht boosten für bessere Face-Detection
+  keyLight.intensity = 4.5;
+  fillLight.intensity = 3.0;
+  auraLight.intensity = 1.5;
+  hemiLight.intensity = 2.0;
+  ambientLight.intensity = 1.5;
+  const frontLight = new THREE.DirectionalLight(0xffffff, 2.5);
+  frontLight.position.set(0, 1.5, 4);
+  scene.add(frontLight);
+
+  // Modell gerade ausrichten
+  if (model3D) model3D.rotation.y = 0;
+
+  // Höhere Auflösung für bessere Face-Detection (Kamera bleibt unverändert)
+  const origSize = renderer.getSize(new THREE.Vector2());
+  renderer.setSize(1024, 1024);
+  renderer.setPixelRatio(1);
+
+  renderer.render(scene, camera);
+  const dataUrl = threeCanvas.toDataURL('image/jpeg', 0.92);
+
+  // Alles wiederherstellen
+  if (model3D) model3D.rotation.y = origRotY;
+  scene.background = origBg;
+  scene.remove(frontLight);
+  frontLight.dispose();
+
+  keyLight.intensity = origIntensities.key;
+  fillLight.intensity = origIntensities.fill;
+  auraLight.intensity = origIntensities.aura;
+  hemiLight.intensity = origIntensities.hemi;
+  ambientLight.intensity = origIntensities.ambient;
+
+  renderer.setSize(origSize.x, origSize.y);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  return dataUrl;
+}
+
+function startFaceSwap(selfieDataUrl) {
+  if (!modelLoaded || !model3D) {
+    faceSwapStatus = 'error';
+    faceSwapError = 'Mönch-Modell noch nicht geladen';
+    return;
+  }
+
+  faceSwapStatus = 'uploading';
+  faceSwapError = null;
+
+  // Mönch-Closeup rendern
+  const monkDataUrl = renderMonkForFaceSwap();
+
+  // An API senden
+  fetch(FACESWAP_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      swap_image: selfieDataUrl,
+      input_image: monkDataUrl
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.error) {
+      faceSwapStatus = 'error';
+      faceSwapError = data.error;
+      return;
+    }
+    faceSwapPredictionId = data.id;
+    faceSwapStatus = 'processing';
+    // Polling starten (alle 3s)
+    faceSwapPollTimer = setInterval(pollFaceSwap, 3000);
+  })
+  .catch(err => {
+    faceSwapStatus = 'error';
+    faceSwapError = err.message;
+  });
+}
+
+function pollFaceSwap() {
+  if (!faceSwapPredictionId) return;
+
+  fetch(FACESWAP_API + '?id=' + faceSwapPredictionId)
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === 'succeeded' && data.output) {
+      // Erfolg — Bild laden
+      clearInterval(faceSwapPollTimer);
+      faceSwapPollTimer = null;
+      const outputUrl = typeof data.output === 'string' ? data.output : data.output[0];
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        faceSwapImg = img;
+        faceSwapStatus = 'done';
+        faceSwapShowSave = true; // Speichern-Overlay zeigen
+        // In localStorage speichern (als DataURL)
+        try {
+          const c = document.createElement('canvas');
+          c.width = img.width; c.height = img.height;
+          c.getContext('2d').drawImage(img, 0, 0);
+          localStorage.setItem('msphere_faceswap', c.toDataURL('image/jpeg', 0.85));
+          localStorage.setItem('msphere_facemode', '1');
+        } catch(e) { /* localStorage voll oder CORS */ }
+      };
+      img.onerror = () => {
+        faceSwapStatus = 'error';
+        faceSwapError = 'Bild konnte nicht geladen werden';
+      };
+      img.src = outputUrl;
+    } else if (data.status === 'succeeded' && !data.output) {
+      clearInterval(faceSwapPollTimer);
+      faceSwapPollTimer = null;
+      faceSwapStatus = 'error';
+      faceSwapError = 'Kein Gesicht erkannt';
+    } else if (data.status === 'failed' || data.status === 'canceled') {
+      clearInterval(faceSwapPollTimer);
+      faceSwapPollTimer = null;
+      faceSwapStatus = 'error';
+      faceSwapError = data.error || 'Face Swap fehlgeschlagen';
+    }
+    // 'starting' / 'processing' → weiter pollen
+  })
+  .catch(err => {
+    clearInterval(faceSwapPollTimer);
+    faceSwapPollTimer = null;
+    faceSwapStatus = 'error';
+    faceSwapError = err.message;
+  });
+}
+
+// File-Input Handler
+document.getElementById('faceInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    startFaceSwap(ev.target.result);
+  };
+  reader.readAsDataURL(file);
+  // Input zurücksetzen damit gleiche Datei erneut gewählt werden kann
+  e.target.value = '';
+});
+
+// Laden-Handler: gespeichertes Face-Swap-Bild direkt laden (ohne API)
+document.getElementById('faceLoadInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      faceSwapImg = img;
+      faceSwapStatus = 'done';
+      faceModeIdx = 3; // Laden-Modus aktiv
+      // Auch in localStorage cachen
+      try {
+        localStorage.setItem('msphere_faceswap', ev.target.result);
+        localStorage.setItem('msphere_facemode', '1');
+      } catch(e) {}
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+});
+
+// Face-Swap-Bild als Download speichern
+function saveFaceSwapImage() {
+  if (!faceSwapImg) return;
+  const c = document.createElement('canvas');
+  c.width = faceSwapImg.width;
+  c.height = faceSwapImg.height;
+  c.getContext('2d').drawImage(faceSwapImg, 0, 0);
+  const a = document.createElement('a');
+  a.href = c.toDataURL('image/png');
+  a.download = 'msphere-monk-' + Date.now() + '.png';
+  a.click();
+}
+
+// Webcam-Funktionen
+function startWebcam() {
+  webcamReady = false;
+  const video = document.getElementById('webcamVideo');
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 512, height: 512 } })
+  .then(stream => {
+    webcamStream = stream;
+    video.srcObject = stream;
+    video.onloadedmetadata = () => { webcamReady = true; };
+  })
+  .catch(err => {
+    faceSwapStatus = 'error';
+    faceSwapError = 'Kamera: ' + err.message;
+  });
+}
+
+function stopWebcam() {
+  if (webcamStream) {
+    webcamStream.getTracks().forEach(t => t.stop());
+    webcamStream = null;
+  }
+  webcamReady = false;
+  const video = document.getElementById('webcamVideo');
+  video.srcObject = null;
+}
+
+function captureWebcamSnapshot() {
+  const video = document.getElementById('webcamVideo');
+  if (!video.videoWidth) return;
+  const c = document.createElement('canvas');
+  c.width = video.videoWidth;
+  c.height = video.videoHeight;
+  c.getContext('2d').drawImage(video, 0, 0);
+  const dataUrl = c.toDataURL('image/png');
+  stopWebcam();
+  startFaceSwap(dataUrl);
+}
+
 function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
   scale = scale || 1;
   if (!modelLoaded) {
@@ -1784,24 +2255,38 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
     return;
   }
 
-  // Lighting an Rost-Wert anpassen (warm → kalt/dunkel)
-  const warmth = 1 - rustAmount;
-  keyLight.intensity = 3.5 * warmth + 1.0 * (1 - warmth);
-  fillLight.intensity = 1.5 * warmth + 0.5 * (1 - warmth);
-  auraLight.intensity = 1.0 * warmth + 0.2 * (1 - warmth);
-  hemiLight.intensity = 1.2 * warmth + 0.4 * (1 - warmth);
-  ambientLight.intensity = 0.8 * warmth + 0.3 * (1 - warmth);
+  // Bildquelle bestimmen: Face-Swap-Bild oder Live-3D-Render
+  let imgSource;
+  let imgSize;
 
-  // Modell leicht rotieren (langsame Atmung)
-  if (model3D) {
-    model3D.rotation.y = Math.sin(Date.now() * 0.0003) * 0.05;
+  const useFaceSwap = faceModeIdx >= 1 && faceSwapImg;
+
+  if (useFaceSwap) {
+    // Face-Swap-Bild (gleiche Kamera wie Gameplay, nur höhere Auflösung)
+    imgSource = faceSwapImg;
+    imgSize = threeCanvas.width / (Math.min(window.devicePixelRatio, 2));
+  } else {
+    // Lighting an Rost-Wert anpassen (warm → kalt/dunkel)
+    const warmth = 1 - rustAmount;
+    keyLight.intensity = 3.5 * warmth + 1.0 * (1 - warmth);
+    fillLight.intensity = 1.5 * warmth + 0.5 * (1 - warmth);
+    auraLight.intensity = 1.0 * warmth + 0.2 * (1 - warmth);
+    hemiLight.intensity = 1.2 * warmth + 0.4 * (1 - warmth);
+    ambientLight.intensity = 0.8 * warmth + 0.3 * (1 - warmth);
+
+    // Modell leicht rotieren (langsame Atmung)
+    if (model3D) {
+      model3D.rotation.y = Math.sin(Date.now() * 0.0003) * 0.05;
+    }
+
+    // Three.js rendern
+    renderer.render(scene, camera);
+    imgSource = threeCanvas;
+    imgSize = threeCanvas.width / (Math.min(window.devicePixelRatio, 2));
   }
 
-  // Three.js rendern
-  renderer.render(scene, camera);
-
   // Auf Haupt-Canvas zeichnen (mit optionalem Schrumpf-Faktor)
-  const fullSize = threeCanvas.width / (Math.min(window.devicePixelRatio, 2));
+  const fullSize = imgSize;
   const drawSize = fullSize * scale;
   const drawX = cx - drawSize / 2 + (glitchOffset || 0);
   // Unterseite bleibt fix (Mönch schrumpft an Ort und Stelle, schwebt nicht)
@@ -1811,12 +2296,19 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
   ctx.save();
   ctx.globalAlpha = alpha;
 
+  // Face-Swap-Bild zur Kugel clippen (versteckt Hintergrund-Rechteck)
+  if (useFaceSwap) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.92, 0, Math.PI * 2);
+    ctx.clip();
+  }
+
   // Glitch: horizontaler Versatz
   if (glitchOffset && Math.random() < 0.3) {
     ctx.translate(glitchOffset, 0);
   }
 
-  ctx.drawImage(threeCanvas, drawX, drawY, drawSize, drawSize);
+  ctx.drawImage(imgSource, drawX, drawY, drawSize, drawSize);
 
   // Rost-Overlay auf das 3D-Modell (Alpha mit Model-Alpha multipliziert)
   if (rustAmount > 0) {
