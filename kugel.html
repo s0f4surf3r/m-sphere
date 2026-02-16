@@ -55,9 +55,38 @@ const DURATION_OPTIONS = [
 ];
 let selectedDurationIdx = -1; // nichts vorausgewählt
 // Atem-Modi: 0=Aus, 1=Kohärent (5.5s/5.5s), 2=Beruhigend (4s/6s)
-const BREATHING_MODES = ['Aus', 'Kohärent 5.5:5.5', 'Beruhigend 4:6'];
-const BREATHING_TIMING = [null, { in: 5.5, out: 5.5 }, { in: 4, out: 6 }];
+const BREATHING_MODES = ['Aus', 'Kohärent 5.5:5.5', 'Beruhigend 4:6', '4-7-8', 'Box 4-4-4-4'];
+const BREATHING_TIMING = [
+  null,
+  { in: 5.5, holdIn: 0, out: 5.5, holdOut: 0 },
+  { in: 4, holdIn: 0, out: 6, holdOut: 0 },
+  { in: 4, holdIn: 7, out: 8, holdOut: 0 },     // 4-7-8: Einatmen, Halten, Langsam ausatmen
+  { in: 4, holdIn: 4, out: 4, holdOut: 4 },      // Box: Einatmen, Halten, Ausatmen, Halten
+];
 let breathingMode = 1; // default: Kohärent
+
+// Atem-Welle berechnen: unterstützt Hold-Phasen (4-7-8, Box)
+// Gibt -1 (voll ausgeatmet) → +1 (voll eingeatmet) zurück, 0 bei Aus
+function calcBreathWave(bt, elapsedSec) {
+  if (!bt) return 0;
+  const cycle = bt.in + (bt.holdIn || 0) + bt.out + (bt.holdOut || 0);
+  const phase = elapsedSec % cycle;
+  if (phase < bt.in) {
+    // Einatmen: -1 → +1
+    return Math.sin((phase / bt.in) * Math.PI - Math.PI / 2);
+  } else if (phase < bt.in + (bt.holdIn || 0)) {
+    // Atem anhalten (voll eingeatmet): +1
+    return 1;
+  } else if (phase < bt.in + (bt.holdIn || 0) + bt.out) {
+    // Ausatmen: +1 → -1
+    const outPhase = phase - bt.in - (bt.holdIn || 0);
+    return Math.sin(Math.PI / 2 - (outPhase / bt.out) * Math.PI);
+  } else {
+    // Atem anhalten (voll ausgeatmet): -1
+    return -1;
+  }
+}
+
 let timerVisible = false; // Timer unter Kugel an/aus
 let meditationDuration = 60;
 let meditationTimeLeft = 0;
@@ -65,9 +94,9 @@ let meditationStartTime = 0;
 
 // Sound-Presets
 const SHAKE_SOUNDS = ['Rauschen', 'Synapsen', 'Stimmen', 'Metallisch'];
-const MEDITATION_SOUNDS = ['Drone', 'Klangschale', 'Tanpura', 'Tanpura2', 'Binaural'];
+const MEDITATION_SOUNDS = ['Drone', 'Klangschale', 'Tanpura', '528 Hz', '432 Hz', 'Stille', 'Binaural'];
 let shakeSoundIdx = 0; // default: Rauschen
-let meditationSoundIdx = 3; // default: Tanpura2
+let meditationSoundIdx = 5; // default: Stille
 
 // Gedankenmodus: 0=Schweben (bleiben wo sie sind), 1=Reflektieren (Rand-Reflexion)
 const THOUGHT_MODES = ['Schweben', 'Reflektieren'];
@@ -77,8 +106,18 @@ let thoughtModeIdx = 0; // default: Schweben
 const SHRINK_MODES = ['Aus', 'Ein'];
 let shrinkModeIdx = 1; // default: Ein
 
+// Ablenkungen: 0=Aus, 1=Ein
+const DISTRACTION_MODES = ['Aus', 'Ein'];
+let distractionModeIdx = 1; // default: Ein
+
 // Hit-Bereiche für die Menu-Buttons
-let menuButtons = {}; // { timer: [], breathing: null, shake: [], meditation: [], start: null }
+let menuButtons = {};
+let menuScrollY = 0;
+let menuScrollMax = 0;
+let menuScrollAreaTop = 0;
+let menuTouchStartY = 0;
+let menuTouchScrollStart = 0;
+let menuTouchDist = 0;
 
 // --- Three.js Offscreen Setup ---
 const threeCanvas = document.createElement('canvas');
@@ -186,6 +225,14 @@ let lastTouchX = 0, lastTouchY = 0;
 function onTouchMove(e) {
   e.preventDefault();
   const t = e.touches[0];
+  if (state === 'idle') {
+    const dy = menuTouchStartY - t.clientY;
+    menuTouchDist += Math.abs(t.clientY - lastTouchY);
+    menuScrollY = Math.max(0, Math.min(menuScrollMax, menuTouchScrollStart + dy));
+    lastTouchX = t.clientX;
+    lastTouchY = t.clientY;
+    return;
+  }
   const dx = t.clientX - lastTouchX;
   const dy = t.clientY - lastTouchY;
   const dist = Math.sqrt(dx * dx + dy * dy);
@@ -197,6 +244,11 @@ function onTouchStart(e) {
   const t = e.touches[0];
   lastTouchX = t.clientX;
   lastTouchY = t.clientY;
+  if (state === 'idle') {
+    menuTouchStartY = t.clientY;
+    menuTouchScrollStart = menuScrollY;
+    menuTouchDist = 0;
+  }
 }
 
 // Device Motion (Handy schütteln)
@@ -212,6 +264,11 @@ canvas.addEventListener('mousemove', onMouseMove);
 canvas.addEventListener('touchstart', onTouchStart, { passive: false });
 canvas.addEventListener('touchmove', onTouchMove, { passive: false });
 window.addEventListener('devicemotion', onDeviceMotion);
+canvas.addEventListener('wheel', (e) => {
+  if (state !== 'idle') return;
+  menuScrollY = Math.max(0, Math.min(menuScrollMax, menuScrollY + e.deltaY));
+  e.preventDefault();
+}, { passive: false });
 
 // Shake-Verarbeitung pro Frame
 function updateShake() {
@@ -247,6 +304,7 @@ function updateShake() {
       shakeIntensity = 0;
       meditationTimeLeft = meditationDuration;
       meditationStartTime = Date.now();
+      bowlStrikeTime = Date.now() / 1000; // Erster Anschlag sofort
       counterFullPlayed = false;
       if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
       playEndBell();
@@ -435,13 +493,14 @@ function updateParticles(cx, cy, r) {
       const dx = p.x - cx;
       const dy = p.y - cy;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist > r * 0.92) {
+      const rBound = Math.min(canvas.width, canvas.height) * 0.35;
+      if (dist > rBound * 0.98) {
         const nx = dx / dist;
         const ny = dy / dist;
         p.vx -= 2 * (p.vx * nx + p.vy * ny) * nx;
         p.vy -= 2 * (p.vx * nx + p.vy * ny) * ny;
-        p.x = cx + nx * r * 0.91;
-        p.y = cy + ny * r * 0.91;
+        p.x = cx + nx * rBound * 0.97;
+        p.y = cy + ny * rBound * 0.97;
         p.vx *= 0.7;
         p.vy *= 0.7;
       }
@@ -490,7 +549,12 @@ function drawParticles() {
     const sz = p.size * shrink;
     // Alpha: individuelles Life ODER Meditations-Timer (der niedrigere Wert)
     const baseAlpha = state === 'meditating' ? Math.min(p.life, medAlpha) : p.life;
-    ctx.globalAlpha = baseAlpha * 0.8;
+    // Sanftes Ausfaden am Kugelrand
+    const rBound = Math.min(canvas.width, canvas.height) * 0.35;
+    const pcx = canvas.width / 2, pcy = canvas.height / 2;
+    const distFromCenter = Math.sqrt((p.x - pcx) * (p.x - pcx) + (p.y - pcy) * (p.y - pcy));
+    const edgeFade = distFromCenter > rBound * 0.92 ? Math.max(0, 1 - (distFromCenter - rBound * 0.92) / (rBound * 0.08)) : 1;
+    ctx.globalAlpha = baseAlpha * 0.8 * edgeFade;
     ctx.beginPath();
     ctx.arc(p.x, p.y, sz, 0, Math.PI * 2);
     ctx.fillStyle = `rgb(${cr},${cg},${cb})`;
@@ -607,6 +671,14 @@ function drawMenu() {
   menuButtons.link = { x: cx - linkW / 2, y: curY, w: linkW, h: linkH };
   curY += sectionGap * 3;
 
+  // --- Scrollbarer Bereich ab hier ---
+  menuScrollAreaTop = curY;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, menuScrollAreaTop, W, H - menuScrollAreaTop);
+  ctx.clip();
+  ctx.translate(0, -menuScrollY);
+
   // --- Hilfsfunktion: Settings-Reihe (Label + Buttons) ---
   function drawSettingsRow(label, options, selectedIdx, y, labelColor) {
     const labelFont = rowFont * 0.85;
@@ -662,35 +734,10 @@ function drawMenu() {
   const timeLabelColor = selectedDurationIdx < 0 ? '#f4a842' : null;
   const timeRow = drawSettingsRow('MEDITATIONSZEIT', timeLabels, selectedDurationIdx, curY, timeLabelColor);
   menuButtons.timer = timeRow.btns;
-  curY = timeRow.bottomY + sectionGap;
+  curY = timeRow.bottomY + btnGap * 1.5;
 
-  // --- GEDANKEN-SOUND ---
-  const shakeRow = drawSettingsRow('GEDANKEN-SOUND', SHAKE_SOUNDS, shakeSoundIdx, curY);
-  menuButtons.shake = shakeRow.btns;
-  curY = shakeRow.bottomY + sectionGap;
-
-  // --- MEDITATIONS-SOUND ---
-  const medRow = drawSettingsRow('MEDITATIONS-SOUND', MEDITATION_SOUNDS, meditationSoundIdx, curY);
-  menuButtons.meditation = medRow.btns;
-  curY = medRow.bottomY + sectionGap;
-
-  // --- GEDANKENMODUS ---
-  const thoughtRow = drawSettingsRow('GEDANKENMODUS', THOUGHT_MODES, thoughtModeIdx, curY);
-  menuButtons.thoughtMode = thoughtRow.btns;
-  curY = thoughtRow.bottomY + sectionGap;
-
-  // --- MÖNCH SCHRUMPFEN ---
-  const shrinkRow = drawSettingsRow('MÖNCH SCHRUMPFEN', SHRINK_MODES, shrinkModeIdx, curY);
-  menuButtons.shrinkMode = shrinkRow.btns;
-  curY = shrinkRow.bottomY + sectionGap;
-
-  // --- ATMEN ---
-  const breathRow = drawSettingsRow('ATMEN', BREATHING_MODES, breathingMode, curY);
-  menuButtons.breathing = breathRow.btns;
-  curY = breathRow.bottomY + sectionGap * 0.6;
-
-  // --- TIMER ANZEIGEN Toggle ---
-  const tLabel = timerVisible ? 'TIMER ANZEIGEN  AN' : 'TIMER ANZEIGEN  AUS';
+  // Timer-Toggle (Teil der Meditationszeit-Sektion)
+  const tLabel = timerVisible ? 'TIMER ANZEIGEN  AN' : 'TIMER ANZEIGEN';
   const toggleFont = rowFont * 0.85;
   ctx.font = `${toggleFont}px "Courier New", monospace`;
   const tw = ctx.measureText(tLabel).width + toggleFont * 2;
@@ -708,7 +755,27 @@ function drawMenu() {
   ctx.textBaseline = 'middle';
   ctx.fillText(tLabel, cx, curY + th / 2);
   menuButtons.timerToggle = { x: tx, y: curY, w: tw, h: th };
-  curY += th + sectionGap * 1.2;
+  curY += th + sectionGap;
+
+  // --- ATMEN ---
+  const breathRow = drawSettingsRow('ATMEN', BREATHING_MODES, breathingMode, curY);
+  menuButtons.breathing = breathRow.btns;
+  curY = breathRow.bottomY + sectionGap;
+
+  // --- MEDITATIONS-SOUND ---
+  const medRow = drawSettingsRow('MEDITATIONS-SOUND', MEDITATION_SOUNDS, meditationSoundIdx, curY);
+  menuButtons.meditation = medRow.btns;
+  curY = medRow.bottomY + sectionGap;
+
+  // --- MÖNCH SCHRUMPFEN ---
+  const shrinkRow = drawSettingsRow('MÖNCH SCHRUMPFEN', SHRINK_MODES, shrinkModeIdx, curY);
+  menuButtons.shrinkMode = shrinkRow.btns;
+  curY = shrinkRow.bottomY + sectionGap;
+
+  // --- ABLENKUNGEN ---
+  const distractRow = drawSettingsRow('ABLENKUNGEN', DISTRACTION_MODES, distractionModeIdx, curY);
+  menuButtons.distractionMode = distractRow.btns;
+  curY = distractRow.bottomY + sectionGap;
 
   // --- START Button ---
   const canStart = selectedDurationIdx >= 0;
@@ -732,61 +799,85 @@ function drawMenu() {
   ctx.shadowBlur = 0;
   menuButtons.start = canStart ? { x: startX, y: curY, w: startW, h: startH } : null;
 
+  const contentBottom = curY + startH + sectionGap;
+  ctx.restore(); // Scroll-Clip aufheben
+
+  // Max-Scroll berechnen
+  menuScrollMax = Math.max(0, contentBottom - H);
+  menuScrollY = Math.min(menuScrollY, menuScrollMax);
+
+  // Scroll-Fade oben/unten
+  if (menuScrollY > 0) {
+    const fadeH = unit * 0.04;
+    const grad = ctx.createLinearGradient(0, menuScrollAreaTop, 0, menuScrollAreaTop + fadeH);
+    grad.addColorStop(0, 'rgba(10, 22, 40, 0.97)');
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, menuScrollAreaTop, W, fadeH);
+  }
+  if (menuScrollY < menuScrollMax) {
+    const fadeH = unit * 0.04;
+    const grad = ctx.createLinearGradient(0, H - fadeH, 0, H);
+    grad.addColorStop(0, 'transparent');
+    grad.addColorStop(1, 'rgba(10, 22, 40, 0.97)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, H - fadeH, W, fadeH);
+  }
+
   ctx.textAlign = 'start';
   ctx.textBaseline = 'alphabetic';
 }
 
 function handleMenuClick(x, y) {
-  // Link
+  // Link (fixierter Header, kein Scroll-Offset)
   const lnk = menuButtons.link;
   if (lnk && x >= lnk.x && x <= lnk.x + lnk.w && y >= lnk.y && y <= lnk.y + lnk.h) {
     window.open('https://jochenhornung.de', '_blank');
     return true;
   }
+  // Scrollbare Buttons: Y um Scroll-Offset korrigieren
+  // Klick außerhalb des sichtbaren Scroll-Bereichs ignorieren
+  if (y < menuScrollAreaTop) return false;
+  const sy = y + menuScrollY; // logische Y-Position im Content
+  function hitBtn(btn) {
+    return x >= btn.x && x <= btn.x + btn.w && sy >= btn.y && sy <= btn.y + btn.h;
+  }
   // Timer-Buttons
   for (const btn of menuButtons.timer || []) {
-    if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+    if (hitBtn(btn)) {
       selectedDurationIdx = btn.idx;
       meditationDuration = DURATION_OPTIONS[btn.idx].seconds;
       playTingsha();
       return true;
     }
   }
-  // Shake-Sound
-  for (const btn of menuButtons.shake || []) {
-    if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
-      shakeSoundIdx = btn.idx;
-      playTingsha();
-      return true;
-    }
-  }
   // Meditation-Sound
   for (const btn of menuButtons.meditation || []) {
-    if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+    if (hitBtn(btn)) {
       meditationSoundIdx = btn.idx;
-      playTingsha();
-      return true;
-    }
-  }
-  // Gedankenmodus
-  for (const btn of menuButtons.thoughtMode || []) {
-    if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
-      thoughtModeIdx = btn.idx;
       playTingsha();
       return true;
     }
   }
   // Schrumpf-Modus
   for (const btn of menuButtons.shrinkMode || []) {
-    if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+    if (hitBtn(btn)) {
       shrinkModeIdx = btn.idx;
+      playTingsha();
+      return true;
+    }
+  }
+  // Ablenkungen
+  for (const btn of menuButtons.distractionMode || []) {
+    if (hitBtn(btn)) {
+      distractionModeIdx = btn.idx;
       playTingsha();
       return true;
     }
   }
   // Breathing-Modus
   for (const btn of menuButtons.breathing || []) {
-    if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+    if (hitBtn(btn)) {
       breathingMode = btn.idx;
       playTingsha();
       return true;
@@ -794,14 +885,14 @@ function handleMenuClick(x, y) {
   }
   // Timer-Toggle
   const t = menuButtons.timerToggle;
-  if (t && x >= t.x && x <= t.x + t.w && y >= t.y && y <= t.y + t.h) {
+  if (t && x >= t.x && x <= t.x + t.w && sy >= t.y && sy <= t.y + t.h) {
     timerVisible = !timerVisible;
     playTingsha();
     return true;
   }
   // Start-Button
   const s = menuButtons.start;
-  if (s && x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) {
+  if (s && x >= s.x && x <= s.x + s.w && sy >= s.y && sy <= s.y + s.h) {
     state = 'ready';
     return true;
   }
@@ -818,6 +909,7 @@ window.addEventListener('keydown', (e) => {
     shakeIntensity = 0;
     mouseDown = false;
     selectedDurationIdx = -1;
+    menuScrollY = 0;
   }
 });
 
@@ -832,14 +924,17 @@ canvas.addEventListener('click', (e) => {
     particles.length = 0;
     doneTime = 0; voicePlayed = false;
     selectedDurationIdx = -1;
+    menuScrollY = 0;
   }
 });
 
 canvas.addEventListener('touchend', (e) => {
   ensureSound();
   if (state === 'idle' && e.changedTouches.length > 0) {
-    const t = e.changedTouches[0];
-    handleMenuClick(t.clientX, t.clientY);
+    if (menuTouchDist < 10) { // Kein Scroll → Klick
+      const t = e.changedTouches[0];
+      handleMenuClick(t.clientX, t.clientY);
+    }
   } else if (state === 'done') {
     state = 'idle';
     thoughtCounter = 0;
@@ -847,6 +942,7 @@ canvas.addEventListener('touchend', (e) => {
     particles.length = 0;
     doneTime = 0; voicePlayed = false;
     selectedDurationIdx = -1;
+    menuScrollY = 0;
   }
 });
 
@@ -878,14 +974,22 @@ let metallOscs = [], metallGains = [];
 // Drone (Meditation): Grundton + Quinte
 let droneOscs = [], droneGains = [];
 
-// Klangschale (Meditation): Singing-Bowl-Partials
+// Klangschale (Meditation): Tibetische Klangschale mit Schwebung + periodischem Anschlag
 let bowlOscs = [], bowlGains = [];
+let bowlStrikeTime = 0; // Zeitpunkt des letzten Anschlags
+let bowlStrikeInterval = 8; // Sekunden zwischen Anschlägen
 
 // Tanpura (Meditation): Harmonischer Drone mit Jivari-Buzz
 let tanpuraOscs = [], tanpuraGains = [];
 
-// Tanpura2 (Meditation): Tanpura ohne Buzz/Rauschen
+// Tanpura2-Oscs (legacy, werden gemutet — "Stille"-Modus braucht keine Oscs)
 let tanpura2Oscs = [], tanpura2Gains = [];
+
+// 528 Hz (Meditation): "Love Frequency" Solfeggio
+let hz528Oscs = [], hz528Gains = [];
+
+// 432 Hz (Meditation): Naturstimmung
+let hz432Oscs = [], hz432Gains = [];
 
 // Binaural (Meditation): Stereo-gepannte Theta-Beats
 let binauralOscs = [], binauralGains = [], binauralPans = [];
@@ -975,19 +1079,39 @@ function initSound() {
     droneGains.push(gain);
   });
 
-  // --- Klangschale: Singing-Bowl-Partials (220 Hz Basis) ---
-  const bowlBase = 220;
-  [1.0, 2.71, 5.41, 8.56, 12.24].forEach((ratio, i) => {
-    const osc = audioCtx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.value = bowlBase * ratio;
-    const gain = audioCtx.createGain();
-    gain.gain.value = 0;
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    bowlOscs.push(osc);
-    bowlGains.push(gain);
+  // --- Tibetische Klangschale: Schwebungspaare + metallische Obertöne ---
+  // Jeder Partial besteht aus zwei leicht verstimmten Oszillatoren → Schwebung
+  const bowlBase = 176; // tieferer Grundton (F3), typisch für große tibetische Schale
+  const bowlPartials = [
+    { ratio: 1.0,   beat: 0.8,  vol: 0.07 },  // Grundton mit langsamer Schwebung
+    { ratio: 2.83,  beat: 1.5,  vol: 0.04 },  // 1. Oberton (inharmonisch)
+    { ratio: 5.43,  beat: 2.2,  vol: 0.02 },  // 2. Oberton
+    { ratio: 8.65,  beat: 3.0,  vol: 0.01 },  // 3. Oberton (metallisch)
+    { ratio: 12.8,  beat: 4.0,  vol: 0.005 }, // 4. Oberton (Shimmer)
+  ];
+  bowlPartials.forEach(p => {
+    // Oszillator A
+    const oscA = audioCtx.createOscillator();
+    oscA.type = 'sine';
+    oscA.frequency.value = bowlBase * p.ratio - p.beat / 2;
+    const gainA = audioCtx.createGain();
+    gainA.gain.value = 0;
+    oscA.connect(gainA);
+    gainA.connect(audioCtx.destination);
+    oscA.start();
+    bowlOscs.push(oscA);
+    bowlGains.push(gainA);
+    // Oszillator B (leicht verstimmt → Schwebung)
+    const oscB = audioCtx.createOscillator();
+    oscB.type = 'sine';
+    oscB.frequency.value = bowlBase * p.ratio + p.beat / 2;
+    const gainB = audioCtx.createGain();
+    gainB.gain.value = 0;
+    oscB.connect(gainB);
+    gainB.connect(audioCtx.destination);
+    oscB.start();
+    bowlOscs.push(oscB);
+    bowlGains.push(gainB);
   });
 
   // --- Tanpura: Sa-Pa-Sa Drone (60 Hz) mit Jivari-Buzz ---
@@ -1033,6 +1157,46 @@ function initSound() {
     osc.start();
     tanpura2Oscs.push(osc);
     tanpura2Gains.push(gain);
+  });
+
+  // --- 528 Hz: Solfeggio "Love Frequency" ---
+  // Grundton + Oktave darunter + sanfte Quinte, leichte Schwebung
+  [
+    { freq: 528,   type: 'sine' },     // Grundton
+    { freq: 528.8, type: 'sine' },     // Schwebungspartner (~0.8 Hz Beat)
+    { freq: 264,   type: 'sine' },     // Oktave darunter (Wärme)
+    { freq: 792,   type: 'sine' },     // Quinte darüber (Oberton)
+  ].forEach(p => {
+    const osc = audioCtx.createOscillator();
+    osc.type = p.type;
+    osc.frequency.value = p.freq;
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    hz528Oscs.push(osc);
+    hz528Gains.push(gain);
+  });
+
+  // --- 432 Hz: Naturstimmung ---
+  // Grundton + Oktave darunter + Quinte, leichte Schwebung
+  [
+    { freq: 432,   type: 'sine' },     // Grundton
+    { freq: 432.6, type: 'sine' },     // Schwebungspartner (~0.6 Hz Beat)
+    { freq: 216,   type: 'sine' },     // Oktave darunter
+    { freq: 648,   type: 'sine' },     // Quinte darüber
+  ].forEach(p => {
+    const osc = audioCtx.createOscillator();
+    osc.type = p.type;
+    osc.frequency.value = p.freq;
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    hz432Oscs.push(osc);
+    hz432Gains.push(gain);
   });
 
   // --- Binaural: 200 Hz links / 204 Hz rechts → 4 Hz Theta-Beat ---
@@ -1233,16 +1397,26 @@ function updateShakeSound(t) {
 
 function updateMeditationSound(t, progress) {
   const mode = MEDITATION_SOUNDS[meditationSoundIdx];
+  const bt = BREATHING_TIMING[breathingMode];
 
-  // Gedanken-Rauschen löst sich auf
-  // Bei Tanpura2: Noise wird als Atem-Geräusch wiederverwendet (gesteuert unten)
-  if (mode === 'Tanpura2' && BREATHING_TIMING[breathingMode]) {
-    // Noise-Steuerung passiert im Tanpura2-Block unten
-  } else if (mode === 'Tanpura2') {
-    noiseGain.gain.linearRampToValueAtTime(0, t + 0.3);
+  // Envelope: sanftes Ein-/Ausblenden
+  const envelope = progress < 0.12 ? progress / 0.12
+    : progress > 0.88 ? (1 - progress) / 0.12
+    : 1.0;
+
+  // --- Atem-Sound (unabhängig vom Meditations-Sound) ---
+  // Nasen-Atem-Geräusch: gefiltertes Rauschen das mit dem Atem anschwillt
+  if (bt && meditationStartTime > 0) {
+    const breathTime2 = (Date.now() - meditationStartTime) / 1000;
+    const bw = calcBreathWave(bt, breathTime2);
+    const breathMod = (bw + 1) / 2; // 0=Ausatmen, 1=Einatmen
+    const breathNoiseVol = breathMod * 0.06 * envelope;
+    noiseGain.gain.linearRampToValueAtTime(breathNoiseVol, t + 0.08);
+    filterNode.frequency.linearRampToValueAtTime(350 + breathMod * 400, t + 0.08);
+    filterNode.Q.linearRampToValueAtTime(0.8 + breathMod * 0.5, t + 0.08);
   } else {
-    noiseGain.gain.linearRampToValueAtTime(0.1 * (1 - progress), t + 0.1);
-    filterNode.frequency.linearRampToValueAtTime(300 * (1 - progress) + 60, t + 0.1);
+    // Kein Atmen → Gedanken-Rauschen schnell stumm
+    noiseGain.gain.linearRampToValueAtTime(0, t + 0.3);
   }
 
   // Shake-Sounds stumm
@@ -1254,13 +1428,10 @@ function updateMeditationSound(t, progress) {
   if (mode !== 'Drone') muteGroup(droneGains, t);
   if (mode !== 'Klangschale') muteGroup(bowlGains, t);
   if (mode !== 'Tanpura') muteGroup(tanpuraGains, t);
-  if (mode !== 'Tanpura2') muteGroup(tanpura2Gains, t);
+  if (mode !== '528 Hz') muteGroup(hz528Gains, t);
+  if (mode !== '432 Hz') muteGroup(hz432Gains, t);
+  muteGroup(tanpura2Gains, t);
   if (mode !== 'Binaural') muteGroup(binauralGains, t);
-
-  // Envelope: sanftes Ein-/Ausblenden
-  const envelope = progress < 0.12 ? progress / 0.12
-    : progress > 0.88 ? (1 - progress) / 0.12
-    : 1.0;
 
   if (mode === 'Drone') {
     const droneCurve = progress < 0.5
@@ -1272,14 +1443,30 @@ function updateMeditationSound(t, progress) {
       : (1 - progress) / 0.4 * 0.04;
     droneGains[1].gain.linearRampToValueAtTime(drone2Curve, t + 0.2);
   } else if (mode === 'Klangschale') {
-    const bowlVols = [0.06, 0.03, 0.015, 0.008, 0.004];
-    const bowlBase = 220;
-    const ratios = [1.0, 2.71, 5.41, 8.56, 12.24];
-    bowlOscs.forEach((osc, i) => {
-      const wobble = Math.sin(t * (0.2 + i * 0.13)) * (1 + i * 0.5);
-      osc.frequency.linearRampToValueAtTime(bowlBase * ratios[i] + wobble, t + 0.1);
-      bowlGains[i].gain.linearRampToValueAtTime(bowlVols[i] * envelope, t + 0.2);
-    });
+    // Tibetische Klangschale: Schwebungspaare + periodischer Anschlag
+    const bowlPartialVols = [0.07, 0.04, 0.02, 0.01, 0.005];
+    const now = Date.now() / 1000;
+
+    // Periodischer Anschlag: lauter Impuls der exponentiell abklingt
+    if (now - bowlStrikeTime > bowlStrikeInterval) {
+      bowlStrikeTime = now;
+    }
+    const timeSinceStrike = now - bowlStrikeTime;
+    // Exponentieller Decay: schnell laut, langsam leiser (τ ≈ 4s)
+    const strikeEnv = Math.exp(-timeSinceStrike * 0.25);
+    // Sustain-Level: leiser Dauerton zwischen Anschlägen
+    const sustain = 0.3;
+    const strikeGain = sustain + (1 - sustain) * strikeEnv;
+
+    // Jeder Partial hat 2 Oszillatoren (A+B Schwebungspaar)
+    for (let p = 0; p < bowlPartialVols.length; p++) {
+      const vol = bowlPartialVols[p] * envelope * strikeGain;
+      // Höhere Partials klingen schneller ab
+      const partialDecay = Math.exp(-timeSinceStrike * 0.1 * (p + 1));
+      const partialVol = vol * (sustain + (1 - sustain) * partialDecay);
+      bowlGains[p * 2].gain.linearRampToValueAtTime(partialVol, t + 0.05);
+      bowlGains[p * 2 + 1].gain.linearRampToValueAtTime(partialVol, t + 0.05);
+    }
   } else if (mode === 'Tanpura') {
     const tanpVols = [0.06, 0.04, 0.05, 0.025, 0.02];
     tanpuraGains.forEach((g, i) => {
@@ -1291,34 +1478,20 @@ function updateMeditationSound(t, progress) {
         g.gain.linearRampToValueAtTime(vol, t + 0.2);
       }
     });
-  } else if (mode === 'Tanpura2') {
-    // Atem-Welle berechnen (gleiche Logik wie in frame())
-    let breathMod = 0.5; // ohne Atmen: neutral
-    const bt2 = BREATHING_TIMING[breathingMode];
-    if (bt2 && meditationStartTime > 0) {
-      const breathTime2 = (Date.now() - meditationStartTime) / 1000;
-      const breathCycle2 = bt2.in + bt2.out;
-      const phase2 = breathTime2 % breathCycle2;
-      let bw;
-      if (phase2 < bt2.in) {
-        bw = Math.sin((phase2 / bt2.in) * Math.PI - Math.PI / 2);
-      } else {
-        bw = Math.sin(Math.PI / 2 - ((phase2 - bt2.in) / bt2.out) * Math.PI);
-      }
-      breathMod = (bw + 1) / 2; // 0=Ausatmen, 1=Einatmen
-    }
-
-    // Drone stumm — nur Atem-Geräusch
-    muteGroup(tanpura2Gains, t);
-
-    // Nasen-Atem-Geräusch: gefiltertes Rauschen das mit dem Atem anschwillt
-    if (bt2) {
-      const breathNoiseVol = breathMod * 0.06 * envelope; // leise, organisch
-      noiseGain.gain.linearRampToValueAtTime(breathNoiseVol, t + 0.08);
-      // Bandpass ~400–800 Hz für nasalen Klang, verschiebt sich mit Atem
-      filterNode.frequency.linearRampToValueAtTime(350 + breathMod * 400, t + 0.08);
-      filterNode.Q.linearRampToValueAtTime(0.8 + breathMod * 0.5, t + 0.08);
-    }
+  } else if (mode === '528 Hz') {
+    // Solfeggio "Love Frequency": Grundton + Schwebung + Oktave + Quinte
+    const vols528 = [0.05, 0.05, 0.03, 0.015]; // Grund, Beat, Oktave, Quinte
+    hz528Gains.forEach((g, i) => {
+      g.gain.linearRampToValueAtTime(vols528[i] * envelope, t + 0.2);
+    });
+  } else if (mode === '432 Hz') {
+    // Naturstimmung: Grundton + Schwebung + Oktave + Quinte
+    const vols432 = [0.05, 0.05, 0.03, 0.015];
+    hz432Gains.forEach((g, i) => {
+      g.gain.linearRampToValueAtTime(vols432[i] * envelope, t + 0.2);
+    });
+  } else if (mode === 'Stille') {
+    // Bewusst kein Meditations-Sound — nur Atem-Geräusch (wenn ATMEN aktiv)
   } else if (mode === 'Binaural') {
     binauralGains.forEach(g => {
       g.gain.linearRampToValueAtTime(0.07 * envelope, t + 0.2);
@@ -1337,6 +1510,8 @@ function updateSound() {
     muteGroup(droneGains, t);
     muteGroup(bowlGains, t);
     muteGroup(tanpuraGains, t);
+    muteGroup(hz528Gains, t);
+    muteGroup(hz432Gains, t);
     muteGroup(tanpura2Gains, t);
     muteGroup(binauralGains, t);
   } else if (state === 'meditating') {
@@ -1351,6 +1526,8 @@ function updateSound() {
     muteGroup(droneGains, t);
     muteGroup(bowlGains, t);
     muteGroup(tanpuraGains, t);
+    muteGroup(hz528Gains, t);
+    muteGroup(hz432Gains, t);
     muteGroup(tanpura2Gains, t);
     muteGroup(binauralGains, t);
   }
@@ -1651,7 +1828,8 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
 function frame() {
   updateShake();
   updateSound();
-  updateTemptations();
+  if (distractionModeIdx === 1) updateTemptations();
+  else temptationActive = null;
 
   // Hintergrund-Farbshift je nach State
   let bgR = 10, bgG = 10, bgB = 15;
@@ -1684,21 +1862,13 @@ function frame() {
   let r = Math.min(canvas.width, canvas.height) * 0.35;
   const rFixed = r; // Original-Radius für Timer-Ring (bewegt sich nicht mit Atem)
 
-  // Atem-Welle berechnen (asymmetrisch möglich)
+  // Atem-Welle berechnen (mit Hold-Phasen für 4-7-8 und Box)
   let breathWave = 0;
   let breathTime = 0;
   const bt = BREATHING_TIMING[breathingMode];
   if (bt && state === 'meditating') {
-    const breathCycle = bt.in + bt.out;
     breathTime = (Date.now() - meditationStartTime) / 1000;
-    const phase = breathTime % breathCycle;
-    if (phase < bt.in) {
-      // Einatmen: -1 → 1
-      breathWave = Math.sin((phase / bt.in) * Math.PI - Math.PI / 2);
-    } else {
-      // Ausatmen: 1 → -1
-      breathWave = Math.sin(Math.PI / 2 - ((phase - bt.in) / bt.out) * Math.PI);
-    }
+    breathWave = calcBreathWave(bt, breathTime);
     r *= 1 + breathWave * 0.025; // ±2.5% Radius
   }
 
@@ -1813,7 +1983,7 @@ function frame() {
   // Partikel ÜBER dem Mönch zeichnen (verdecken ihn bei vollem Counter)
   ctx.save();
   ctx.beginPath();
-  ctx.arc(cx, cy, r * 0.95, 0, Math.PI * 2);
+  ctx.arc(cx, cy, rFixed, 0, Math.PI * 2);
   ctx.clip();
   drawParticles();
   ctx.restore();
@@ -1828,7 +1998,7 @@ function frame() {
     const pulse = Math.sin(Date.now() * 0.002) * 0.5 + 0.5;
     ctx.font = `${Math.min(canvas.width, canvas.height) * 0.02}px monospace`;
     ctx.textAlign = 'center';
-    ctx.fillStyle = `rgba(42, 191, 191, ${0.2 + pulse * 0.15})`;
+    ctx.fillStyle = `rgba(42, 191, 191, ${0.7 + pulse * 0.2})`;
     ctx.fillText('Drücke, halte und schüttle mit der Maus die Kugel.', cx, cy - r - 35);
     ctx.textAlign = 'start';
   }
@@ -1838,7 +2008,7 @@ function frame() {
     const minutes = Math.floor(meditationTimeLeft / 60);
     const seconds = Math.floor(meditationTimeLeft % 60);
     const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    ctx.fillStyle = `rgba(240, 236, 230, ${0.12 + 0.08 * (1 - meditationTimeLeft / meditationDuration)})`;
+    ctx.fillStyle = 'rgba(240, 236, 230, 0.8)';
     ctx.font = `200 ${Math.min(canvas.width, canvas.height) * 0.035}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
     ctx.textAlign = 'center';
     ctx.fillText(timeStr, cx, cy + r + 55);
@@ -2084,16 +2254,31 @@ function frame() {
 
   ctx.restore(); // Schüttel-Translate aufheben
 
-  // "Du darfst jetzt loslassen ..." — außerhalb des Shake-Translates (wackelt nicht mit)
+  // "Du darfst jetzt loslassen" — Overlay mit Glow mittig über der Kugel
   if (thoughtCounter >= 100 && state === 'shaking') {
     const goldPulse = Math.sin(Date.now() * 0.006) * 0.15 + 0.85;
     const lcx = canvas.width / 2;
     const lcy = canvas.height / 2;
-    ctx.fillStyle = `rgba(255, 215, 0, ${0.7 * goldPulse})`;
-    ctx.font = `600 ${Math.min(canvas.width, canvas.height) * 0.022}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+    const fontSize = Math.min(canvas.width, canvas.height) * 0.045;
+    const txt = 'Du darfst jetzt loslassen';
+    ctx.font = `300 ${fontSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText('Du darfst jetzt loslassen ...', lcx, lcy + rFixed + 15);
+    ctx.textBaseline = 'middle';
+    // Schwarze Outline um jeden Buchstaben
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
+    ctx.lineWidth = fontSize * 0.15;
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = 20;
+    ctx.strokeText(txt, lcx, lcy);
+    ctx.strokeText(txt, lcx, lcy);
+    // Goldener Glow
+    ctx.shadowColor = `rgba(255, 215, 0, ${0.8 * goldPulse})`;
+    ctx.shadowBlur = 40;
+    ctx.fillStyle = `rgba(255, 235, 180, ${0.95 * goldPulse})`;
+    ctx.fillText(txt, lcx, lcy);
+    ctx.fillText(txt, lcx, lcy);
+    ctx.shadowBlur = 0;
     ctx.textAlign = 'start';
   }
 
