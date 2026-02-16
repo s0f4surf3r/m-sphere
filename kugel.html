@@ -176,6 +176,79 @@ let menuButtons = {};
 let menuTouchDist = 0;
 let menuContentHeight = 0; // Gesamte Menü-Inhaltshöhe für native Scrolling
 
+// --- Legal Overlay (Impressum/Datenschutz/About/Menu) ---
+let legalOverlay = null; // 'menu' | 'about' | 'impressum' | 'datenschutz' | null
+let legalScrollY = 0;
+let legalCloseBtn = null;
+let legalBackBtn = null;
+let legalTouchLastY = 0;
+let burgerBtnArea = null;
+let burgerMenuItems = [];
+
+const IMPRESSUM_TEXT = `IMPRESSUM
+
+Angaben gemäß § 5 TMG:
+Jochen Hornung
+Schmidtstr. 11
+10179 Berlin
+
+Kontakt:
+kontakt@jochenhornung.de
+
+Streitschlichtung:
+Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: https://ec.europa.eu/consumers/odr/
+
+Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.`;
+
+const DATENSCHUTZ_TEXT = `DATENSCHUTZERKLÄRUNG
+
+Verantwortlicher:
+Jochen Hornung
+Schmidtstr. 11, 10179 Berlin
+kontakt@jochenhornung.de
+
+1. HOSTING
+Diese Webapp wird über GitHub Pages (GitHub Inc., USA) bereitgestellt. Beim Aufruf werden Server-Logdaten (IP-Adresse, Zugriffszeit, Browser) erfasst. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.
+
+2. LOKALE DATENSPEICHERUNG
+M-Sphere speichert Einstellungen und das Face-Swap-Ergebnis im localStorage deines Browsers. Diese Daten verlassen dein Gerät nicht und können jederzeit über die Browsereinstellungen gelöscht werden.
+
+3. FACE SWAP (GESICHTSTAUSCH)
+Wenn du die Face-Swap-Funktion nutzt, wird dein Selfie zusammen mit einem gerenderten 3D-Modell an folgende Dienste übermittelt:
+- Vercel Inc. (USA): API-Proxy (keine dauerhafte Speicherung)
+- Replicate Inc. (USA): KI-Bildverarbeitung (temporäre Speicherung während der Verarbeitung)
+Die Übermittlung erfolgt verschlüsselt (HTTPS). Rechtsgrundlage: Art. 6 Abs. 1 lit. a DSGVO (Einwilligung durch aktive Nutzung der Funktion). Die Bilder werden nicht dauerhaft auf den Servern gespeichert.
+
+4. SPENDEN (PAYPAL)
+Der Spenden-Button leitet zu PayPal weiter. Dort gelten die Datenschutzbestimmungen von PayPal.
+
+5. COOKIES
+M-Sphere verwendet keine Cookies und keine Tracking- oder Analyse-Tools.
+
+6. DEINE RECHTE
+Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch. Beschwerden kannst du an die zuständige Aufsichtsbehörde richten:
+Berliner Beauftragte für Datenschutz und Informationsfreiheit
+Telefon: 030 13889-0
+
+7. SSL-VERSCHLÜSSELUNG
+Die Übertragung erfolgt per HTTPS/SSL.
+
+Stand: Februar 2026`;
+
+const ABOUT_TEXT = `ÜBER M-SPHERE
+
+M-Sphere ist eine interaktive Meditations-Erfahrung,
+inspiriert von Thomas Metzingers Schneekugel-Metapher.
+
+Schüttle die Kugel, um deine Gedanken aufzuwirbeln.
+Dann lass los — und beobachte, wie sich alles auflöst.
+
+Entwicklung:
+Jochen Hornung Dev Studios
+jochenhornung.de
+
+Version v1.4`;
+
 // --- Native Scrolling: Menü scrollt nativ, Spiel fixiert ---
 function enableMenuScroll() {
   document.body.style.overflowY = 'auto';
@@ -305,6 +378,16 @@ canvas.addEventListener('selectstart', (e) => e.preventDefault());
 
 let lastTouchX = 0, lastTouchY = 0;
 function onTouchMove(e) {
+  if (legalOverlay) {
+    e.preventDefault();
+    const t = e.touches[0];
+    const [tx, ty] = canvasCoords(t.clientX, t.clientY);
+    const dy = ty - legalTouchLastY;
+    legalScrollY = Math.max(0, legalScrollY - dy);
+    legalTouchLastY = ty;
+    menuTouchDist += Math.abs(dy);
+    return;
+  }
   if (state === 'idle') {
     // Native Scrolling übernimmt. Nur Touch-Distanz für Tap-Erkennung tracken.
     const t = e.touches[0];
@@ -329,6 +412,10 @@ function onTouchStart(e) {
   const [tx, ty] = canvasCoords(t.clientX, t.clientY);
   lastTouchX = tx;
   lastTouchY = ty;
+  if (legalOverlay) {
+    legalTouchLastY = ty;
+    menuTouchDist = 0;
+  }
   if (state === 'idle') {
     menuTouchDist = 0;
   }
@@ -346,6 +433,12 @@ function onDeviceMotion(e) {
 canvas.addEventListener('mousemove', onMouseMove);
 canvas.addEventListener('touchstart', onTouchStart, { passive: false });
 canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+canvas.addEventListener('wheel', (e) => {
+  if (legalOverlay) {
+    e.preventDefault();
+    legalScrollY = Math.max(0, legalScrollY + e.deltaY);
+  }
+}, { passive: false });
 // DeviceMotion: iOS 13+ braucht explizite Permission
 let deviceMotionGranted = false;
 let deviceMotionDenied = false;
@@ -786,7 +879,9 @@ function drawMenu() {
   ctx.shadowOffsetY = 0;
   ctx.shadowBlur = 0;
   ctx.letterSpacing = '0px';
-  curY += titleSize + (isMobilePortrait ? unit * 0.03 : unit * 0.015);
+  const titleMetrics = ctx.measureText('M-SPHERE');
+  const actualTitleH = titleMetrics.actualBoundingBoxDescent || titleSize;
+  curY += actualTitleH + (isMobilePortrait ? unit * 0.015 : unit * 0.008);
 
   // Untertitel
   ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 0.75)' : 'rgba(42, 191, 191, 0.55)';
@@ -814,7 +909,7 @@ function drawMenu() {
   curY += subtitleSize * 1.2;
   ctx.fillStyle = 'rgba(240, 236, 230, 0.35)';
   ctx.font = `${subtitleSize * 0.6}px "Courier New", monospace`;
-  ctx.fillText('v1.3', cx, curY);
+  ctx.fillText('v1.4', cx, curY);
   curY += subtitleSize * 1.2;
   // Spenden-Button
   const donLabel = '♡ Unterstützen ♡';
@@ -1068,6 +1163,27 @@ function drawMenu() {
   // Spacer-Höhe für natives Scrolling setzen
   document.getElementById('menuSpacer').style.height = menuContentHeight + 'px';
 
+  // ☰ Burger-Icon oben rechts (Screen-Space, scrollt nicht mit)
+  const burgerSize = unit * 0.04;
+  const burgerPad = unit * 0.03;
+  const burgerX = W - burgerPad - burgerSize;
+  const burgerY = Math.max(burgerPad, safeTop + burgerPad * 0.5);
+  burgerBtnArea = { x: burgerX, y: burgerY, w: burgerSize, h: burgerSize };
+
+  ctx.strokeStyle = 'rgba(42, 191, 191, 0.5)';
+  ctx.lineWidth = isMobilePortrait ? 2.5 : 1.5;
+  ctx.lineCap = 'round';
+  const lineLen = burgerSize * 0.7;
+  const lineStartX = burgerX + (burgerSize - lineLen) / 2;
+  for (let i = 0; i < 3; i++) {
+    const ly = burgerY + burgerSize * (0.25 + i * 0.25);
+    ctx.beginPath();
+    ctx.moveTo(lineStartX, ly);
+    ctx.lineTo(lineStartX + lineLen, ly);
+    ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+
   // Scroll-Indikator (animierter Chevron) — Screen-Space
   const maxScroll = Math.max(0, menuContentHeight - H);
   if (maxScroll > 0 && scrollY < maxScroll - 5) {
@@ -1167,7 +1283,231 @@ function drawMenu() {
   }
 }
 
+function wrapLegalText(ctx, text, maxWidth) {
+  if (!text || ctx.measureText(text).width <= maxWidth) return [text];
+  const words = text.split(' ');
+  const lines = [];
+  let current = '';
+  for (const word of words) {
+    const test = current ? current + ' ' + word : word;
+    if (ctx.measureText(test).width > maxWidth && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = test;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+function drawLegalOverlay() {
+  if (!legalOverlay) return;
+
+  const W = canvas.width;
+  const H = canvas.height;
+
+  // Halbtransparenter Hintergrund
+  ctx.fillStyle = 'rgba(10, 22, 40, 0.94)';
+  ctx.fillRect(0, 0, W, H);
+
+  const isMob = W < 600 && H > W;
+  const padding = W * (isMob ? 0.06 : 0.1);
+  const topPad = H * 0.06;
+  const fontSize = Math.max(12, Math.min(W, H) * (isMob ? 0.032 : 0.02));
+  const lineHeight = fontSize * 1.6;
+  const maxTextWidth = W - padding * 2;
+
+  // Schließen-Button (✕) oben rechts
+  const closeBtnSize = fontSize * 2.5;
+  const closeX = W - padding - closeBtnSize;
+  const closeY = topPad;
+  legalCloseBtn = { x: closeX, y: closeY, w: closeBtnSize, h: closeBtnSize };
+
+  ctx.fillStyle = 'rgba(42, 191, 191, 0.8)';
+  ctx.font = `${closeBtnSize * 0.7}px "Courier New", monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('✕', closeX + closeBtnSize / 2, closeY + closeBtnSize / 2);
+
+  // --- Burger-Panel (Menu-State) ---
+  if (legalOverlay === 'menu') {
+    burgerMenuItems = [];
+    legalBackBtn = null;
+    const itemFont = Math.max(16, Math.min(W, H) * (isMob ? 0.045 : 0.028));
+    const items = [
+      { label: 'Über M-Sphere', target: 'about' },
+      { label: 'Impressum', target: 'impressum' },
+      { label: 'Datenschutz', target: 'datenschutz' }
+    ];
+    const itemH = itemFont * 3;
+    const totalH = items.length * itemH;
+    const startY = (H - totalH) / 2;
+
+    ctx.font = `${itemFont}px "Courier New", monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    for (let i = 0; i < items.length; i++) {
+      const iy = startY + i * itemH;
+      const itemArea = { x: W * 0.1, y: iy, w: W * 0.8, h: itemH, target: items[i].target };
+      burgerMenuItems.push(itemArea);
+
+      // Hover-Highlight-Linie (subtil)
+      ctx.strokeStyle = 'rgba(42, 191, 191, 0.15)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(W * 0.2, iy + itemH - 1);
+      ctx.lineTo(W * 0.8, iy + itemH - 1);
+      ctx.stroke();
+
+      // Label
+      ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
+      ctx.fillText(items[i].label, W / 2 - itemFont * 0.5, iy + itemH / 2);
+
+      // Arrow →
+      ctx.fillStyle = 'rgba(42, 191, 191, 0.4)';
+      const arrowX = W / 2 + ctx.measureText(items[i].label).width / 2 + itemFont * 0.6;
+      ctx.fillText('→', arrowX, iy + itemH / 2);
+    }
+
+    ctx.textAlign = 'start';
+    ctx.textBaseline = 'alphabetic';
+    return;
+  }
+
+  // --- Text-Overlay (about/impressum/datenschutz) ---
+  burgerMenuItems = [];
+
+  // ← Zurück-Button oben links
+  const backBtnSize = closeBtnSize;
+  const backX = padding;
+  const backY = topPad;
+  ctx.font = `${backBtnSize * 0.6}px "Courier New", monospace`;
+  const backTextW = ctx.measureText('← Zurück').width;
+  legalBackBtn = { x: backX, y: backY, w: backTextW + backBtnSize * 0.3, h: backBtnSize };
+
+  ctx.fillStyle = 'rgba(42, 191, 191, 0.8)';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('← Zurück', backX, backY + backBtnSize / 2);
+
+  // Inhaltsbereich (geclippt)
+  const contentTop = topPad + closeBtnSize + fontSize * 0.5;
+  const contentHeight = H - contentTop - topPad;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, contentTop, W, contentHeight);
+  ctx.clip();
+
+  // Text aufbereiten mit Word-Wrap
+  const text = legalOverlay === 'impressum' ? IMPRESSUM_TEXT
+    : legalOverlay === 'datenschutz' ? DATENSCHUTZ_TEXT
+    : ABOUT_TEXT;
+  const rawLines = text.split('\n');
+  const firstLine = rawLines[0];
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+
+  const wrappedLines = [];
+  for (const raw of rawLines) {
+    if (raw === '') {
+      wrappedLines.push({ text: '', style: 'blank' });
+    } else if (raw === firstLine) {
+      wrappedLines.push({ text: raw, style: 'title' });
+    } else if (/^\d+\./.test(raw)) {
+      ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+      const wrapped = wrapLegalText(ctx, raw, maxTextWidth);
+      for (const w of wrapped) wrappedLines.push({ text: w, style: 'heading' });
+      ctx.font = `${fontSize}px "Courier New", monospace`;
+    } else {
+      ctx.font = `${fontSize}px "Courier New", monospace`;
+      const wrapped = wrapLegalText(ctx, raw, maxTextWidth);
+      for (const w of wrapped) wrappedLines.push({ text: w, style: 'normal' });
+    }
+  }
+
+  const totalTextHeight = wrappedLines.length * lineHeight + fontSize;
+  const maxScroll = Math.max(0, totalTextHeight - contentHeight);
+  legalScrollY = Math.max(0, Math.min(legalScrollY, maxScroll));
+
+  let y = contentTop - legalScrollY;
+
+  for (const line of wrappedLines) {
+    if (y + lineHeight > contentTop && y < contentTop + contentHeight) {
+      if (line.style === 'title') {
+        ctx.fillStyle = '#2abfbf';
+        ctx.font = `bold ${fontSize * 1.4}px "Courier New", monospace`;
+        ctx.fillText(line.text, padding, y);
+        ctx.font = `${fontSize}px "Courier New", monospace`;
+      } else if (line.style === 'heading') {
+        ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
+        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.fillText(line.text, padding, y);
+        ctx.font = `${fontSize}px "Courier New", monospace`;
+      } else if (line.style === 'normal') {
+        ctx.fillStyle = 'rgba(240, 236, 230, 0.85)';
+        ctx.fillText(line.text, padding, y);
+      }
+    }
+    y += lineHeight;
+  }
+
+  ctx.restore();
+
+  // Scroll-Indikator
+  if (maxScroll > 0) {
+    const scrollPct = maxScroll > 0 ? legalScrollY / maxScroll : 0;
+    const barH = Math.max(20, contentHeight * (contentHeight / totalTextHeight));
+    const barY = contentTop + scrollPct * (contentHeight - barH);
+    ctx.fillStyle = 'rgba(42, 191, 191, 0.3)';
+    ctx.beginPath();
+    ctx.roundRect(W - padding * 0.4, barY, 3, barH, 1.5);
+    ctx.fill();
+  }
+
+  ctx.textAlign = 'start';
+  ctx.textBaseline = 'alphabetic';
+}
+
 function handleMenuClick(x, y) {
+  // Legal-Overlay hat Vorrang
+  if (legalOverlay) {
+    // ✕ Schließen-Button (alle States)
+    if (legalCloseBtn) {
+      const cb = legalCloseBtn;
+      if (x >= cb.x && x <= cb.x + cb.w && y >= cb.y && y <= cb.y + cb.h) {
+        legalOverlay = null;
+        return true;
+      }
+    }
+    if (legalOverlay === 'menu') {
+      // Burger-Panel: Menü-Items prüfen
+      for (const item of burgerMenuItems) {
+        if (x >= item.x && x <= item.x + item.w && y >= item.y && y <= item.y + item.h) {
+          legalOverlay = item.target;
+          legalScrollY = 0;
+          return true;
+        }
+      }
+      // Klick außerhalb → schließen
+      legalOverlay = null;
+      return true;
+    }
+    // Text-Overlays: ← Zurück-Button
+    if (legalBackBtn) {
+      const bb = legalBackBtn;
+      if (x >= bb.x && x <= bb.x + bb.w && y >= bb.y && y <= bb.y + bb.h) {
+        legalOverlay = 'menu';
+        legalScrollY = 0;
+        return true;
+      }
+    }
+    // Klick in Text-Overlay tut nichts (Scrolling via Drag/Wheel)
+    return true;
+  }
   // Speichern-Overlay hat Vorrang (blockiert alle anderen Klicks)
   if (faceSwapShowSave) {
     const sv = menuButtons.faceSave;
@@ -1184,6 +1524,16 @@ function handleMenuClick(x, y) {
       return true;
     }
     return true; // Klicks außerhalb ignorieren (Overlay bleibt)
+  }
+
+  // ☰ Burger-Icon (Screen-Space, VOR Scroll-Offset-Berechnung)
+  if (burgerBtnArea) {
+    const b = burgerBtnArea;
+    if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
+      legalOverlay = 'menu';
+      legalScrollY = 0;
+      return true;
+    }
   }
 
   // Alle Buttons: Screen-Y zu logischer Y umrechnen (natives Scrolling)
@@ -1332,7 +1682,10 @@ function returnToMenu() {
 let backBtnArea = null;
 
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && state !== 'idle') returnToMenu();
+  if (e.key === 'Escape') {
+    if (legalOverlay) { legalOverlay = null; legalScrollY = 0; return; }
+    if (state !== 'idle') returnToMenu();
+  }
 });
 
 canvas.addEventListener('click', (e) => {
@@ -2761,6 +3114,7 @@ function frame() {
   // Overlay-Menü im idle-State
   if (state === 'idle') {
     drawMenu();
+    drawLegalOverlay();
   }
 
   // Hinweis im ready-State
