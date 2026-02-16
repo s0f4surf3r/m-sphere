@@ -265,6 +265,8 @@ loader.load(
 let lastMouseX = 0, lastMouseY = 0;
 let mouseDown = false;
 let shakeAccum = 0; // akkumulierte Bewegung
+let lastFrameTime = 0; // für dt-Berechnung (Safari FPS-Kompensation)
+let lowFpsDt = 1; // globaler dt-Faktor: 1.0 bei ≥60fps, >1.0 bei niedrigeren FPS
 
 function addShakeDist(dist) {
   shakeAccum += dist;
@@ -373,16 +375,22 @@ if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.request
 // Shake-Verarbeitung pro Frame
 function updateShake() {
   // shakeAccum → shakeIntensity (0–1), mit Decay
+  // lowFpsDt-Normalisierung: bei niedrigen FPS akkumuliert shakeAccum mehr Distanz pro Frame
+  // (weil mehr Mouse-Events zwischen den Frames feuern). Division durch lowFpsDt normalisiert
+  // auf 60fps-Äquivalent. Zusammen mit der dt-Multiplikation beim Counter ergibt sich:
+  // - Unter dem Cap: natürlich kompensiert (keine Veränderung)
+  // - Am Cap (intensity=1): dt kompensiert die fehlenden Frames
   const isMob = canvas.width < 600 && canvas.height > canvas.width;
   const threshold = isMob ? 30 : 80;
-  shakeIntensity = Math.min(1, shakeAccum / threshold);
+  const normalizedAccum = shakeAccum / lowFpsDt;
+  shakeIntensity = Math.min(1, normalizedAccum / threshold);
   shakeAccum *= 0.3; // schneller Abfall
 
   if (shakeIntensity > 0.05) {
-    // Schütteln erkannt → Counter hoch
+    // Schütteln erkannt → Counter hoch (dt kompensiert niedrige FPS)
     const wasFull = thoughtCounter >= 100;
     const rate = isMob ? 1.3 : 0.55;
-    thoughtCounter = Math.min(100, thoughtCounter + shakeIntensity * rate);
+    thoughtCounter = Math.min(100, thoughtCounter + shakeIntensity * rate * lowFpsDt);
     if (!wasFull && thoughtCounter >= 100) {
       counterFullPlayed = true;
       counterFullFlash = 1;
@@ -575,17 +583,17 @@ function updateParticles(cx, cy, r) {
     if (state === 'meditating') {
       // Meditation: sanftes Abbremsen, KEIN Fallen
       // Partikel bleiben wo sie sind und verblassen mit dem Timer
-      p.vx *= 0.995;
-      p.vy *= 0.995;
-      p.x += p.vx;
-      p.y += p.vy;
+      p.vx *= Math.pow(0.995, lowFpsDt);
+      p.vy *= Math.pow(0.995, lowFpsDt);
+      p.x += p.vx * lowFpsDt;
+      p.y += p.vy * lowFpsDt;
       // Kein individueller Decay — Leben wird vom Timer gesteuert
     } else {
       // Normal: Bewegung + leichte Gravitation
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vy += 0.02;
-      p.life -= p.decay;
+      p.x += p.vx * lowFpsDt;
+      p.y += p.vy * lowFpsDt;
+      p.vy += 0.02 * lowFpsDt;
+      p.life -= p.decay * lowFpsDt;
     }
     p.age++;
 
@@ -935,7 +943,7 @@ function drawMenu() {
 
   // Status-Anzeige unter den Buttons (Foto- und Webcam-Modus)
   if (faceModeIdx >= 1) {
-    const statusY = curY + rowFont * 0.6;
+    const statusY = curY + rowFont * 1.2;
     ctx.textAlign = 'center';
     ctx.font = `400 ${rowFont * 0.85}px "Courier New", monospace`;
 
@@ -995,7 +1003,7 @@ function drawMenu() {
     } else if (faceSwapStatus === 'done' && faceSwapImg) {
       // Kompakte Vorschau + Häkchen
       ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
-      ctx.fillText('✓ Gesicht aktiv', cx, statusY);
+      ctx.fillText('✓ Eigenes Gesicht aktiv', cx, statusY);
       curY = statusY + rowFont * 0.8;
       menuButtons.webcamSnap = null;
     } else if (faceSwapStatus === 'error') {
@@ -2560,6 +2568,15 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
 }
 
 function frame() {
+  // FPS-Kompensation: bei <60fps skaliert dt hoch, bei ≥60fps bleibt dt=1.0
+  // Löst Safari-Problem: langsameres Canvas-Rendering → weniger Frames → Counter füllt sich trotzdem
+  const now = performance.now();
+  if (lastFrameTime > 0) {
+    const elapsed = now - lastFrameTime;
+    lowFpsDt = Math.max(1, Math.min(4, elapsed / 16.67)); // clamp: min 1.0 (≥60fps unverändert), max 4.0
+  }
+  lastFrameTime = now;
+
   updateShake();
   updateSound();
   if (distractionModeIdx === 1) updateTemptations();
@@ -2674,8 +2691,8 @@ function frame() {
   const maxParticles = isMobParticle ? 400 : Infinity; // Mobile: Cap, Desktop: unbegrenzt (Original)
   if (shakeIntensity > 0.05 && particles.length < maxParticles) {
     const spawnRate = isMobParticle ? 15 : 30;
-    const baseCount = Math.floor(shakeIntensity * spawnRate);
-    const bonusCount = Math.floor(thoughtCounter / 5); // +1 pro 5%
+    const baseCount = Math.floor(shakeIntensity * spawnRate * lowFpsDt); // dt: mehr Partikel pro Frame bei niedrigen FPS
+    const bonusCount = Math.floor(thoughtCounter / 5 * lowFpsDt);
     const count = isMobParticle ? Math.min(baseCount + bonusCount, maxParticles - particles.length) : baseCount + bonusCount;
     for (let i = 0; i < count; i++) {
       spawnParticle(cx, cy, r);
@@ -2932,7 +2949,7 @@ function frame() {
     ctx.strokeStyle = `rgba(255, 40, 40, ${relapseFlash * 0.6})`;
     ctx.lineWidth = 4 + relapseFlash * 8;
     ctx.stroke();
-    relapseFlash *= 0.92;
+    relapseFlash *= Math.pow(0.92, lowFpsDt);
   }
 
   // Counter-Ring um die Kugel (zeigt thoughtCounter %) — fixe Position, nicht mit Atem
@@ -2980,7 +2997,7 @@ function frame() {
     ctx.strokeStyle = `rgba(255, 255, 200, ${counterFullFlash * 0.8})`;
     ctx.lineWidth = 8 + counterFullFlash * 12;
     ctx.stroke();
-    counterFullFlash *= 0.9;
+    counterFullFlash *= Math.pow(0.9, lowFpsDt);
   }
 
   // Atem-Nebel NUR außerhalb der Kugel (Meditation)
