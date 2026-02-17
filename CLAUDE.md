@@ -128,6 +128,7 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Three.js v0.170.0** via importmap (CDN jsdelivr)
 - **Modell**: `japanese_monk_cyborg_sitting.glb` — Cyborg-Mönch (Sketchfab, Romain Brunas)
 - **Offscreen Canvas**: WebGLRenderer (alpha:true, ACES tonemap, sRGB output, exposure 1.8), Render-Größe r*1.8
+- **Mobile Display**: Mönch-Bild wird 1.4× skaliert (statt 1.0×) damit er tiefer sitzt wie auf Desktop
 - **drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount)**: Zentrale Funktion
 - **Kamera**: PerspectiveCamera(32°, 1:1), Position (0, 0.8, 5.0), Blick auf (0, 0.3, 0)
 - **Lighting** (Studio-Setup):
@@ -157,19 +158,27 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Maus**: Nur bei `mouseDown=true` — Bewegung ohne Klick wird ignoriert
 - **Touch**: touchmove-Distanz
 - **Device Motion**: Accelerometer, Schwelle >12
-- `shakeAccum` → `shakeIntensity` (0–1), Decay 0.3/Frame, Counter-Rate 0.55
+- `shakeAccum` → `shakeIntensity` (0–1), Decay 0.3/Frame, Counter-Rate 0.55 (Desktop) / 0.7 (Mobile)
+- **Mobile**: Schwelle 30 (statt 80), touchScale 3.0, Füllzeit ~2.4s
 - **Meditationsstart**: shakeAccum + shakeIntensity werden auf 0 resetet
 
 ### Partikel (Gedanken)
-- **Spawn**: Aus dem Oberkopf des Mönchs (`cy - r * 0.28`), ab 60% Counter auch aus dem Körper
-- **Spawn-Rate**: `shakeIntensity * 30` + Bonus pro 5% Counter
-- **Decay**: Sehr langsam (0.0001–0.0005) — akkumulieren und pflastern den Raum zu
+- **Spawn**: Aus dem Scheitel des Mönchs (`cy - r * 0.28 - r * 0.05`), bei Schweben2/3/4 zusätzlich 35% aus zufälligen Positionen in der Kugel
+- **Spawn-Rate**: `shakeIntensity * 12` (Desktop) + `counter/20` Bonus / Mobile: `2 + counter * 0.15`
+- **Desktop-Cap**: 3500 Partikel, **Mobile-Cap**: 800 Partikel
+- **Decay**: Desktop 0.00015–0.0005, Mobile 0.00003–0.0001
 - **10 Neon-Farben**, Glow per RadialGradient, Spawn-Blitz (weißer Kern, 4 Frames)
-- **Meditation**: Abbremsen (0.995/Frame), verblassen linear mit Timer, Farben → Aschgrau
-- **Gedankenmodus**:
-  - **Schweben** (Default): Rand-Reflexion nur beim Schütteln, Partikel bleiben bei Meditationsstart wo sie sind
-  - **Reflektieren**: Rand-Reflexion immer aktiv (Partikel ziehen sich zusammen)
-- **Physik**: Leichte Gravitation, Reflexion am Kugelrand (r*0.92)
+- **Meditation**: Brownsche Bewegung (0.15→0 linear), Reibung (0.99→0.97 linear), verblassen mit sqrt-Kurve (`Math.pow(1-progress, 0.5)`), Farben → Aschgrau
+- **Kugelwand**: Harte Wand, Partikel prallen ab. Desktop: 0.95r, Mobile: 0.88r. Dämpfung 0.6/0.2
+- **Gedankenmodus** (6 Modi):
+  - **Schweben** (Default, idx=0): Null Gravitation, gleichmäßige Verteilung, Brownsche Bewegung
+  - **Schweben2** (idx=1, EINGEFROREN): Wie Schweben + pixelgenaue Mönch-Silhouetten-Abstoßung (48×48 Maske via gl.readPixels), sanfter Sog zum Mönch (progress*0.01), Brownsche Bewegung
+  - **Schweben3** (idx=2, EINGEFROREN): Wie Schweben2, identische Physik
+  - **Schweben4** (idx=3, experimentell): Wie Schweben2/3 aber Mönch-Maske via Haupt-Canvas getImageData (Safari-kompatibel, Brightness-Threshold >180)
+  - **Sinken** (idx=4): Gravitation 0.003 (Shaking) / 0.002 (Meditation), Partikel sinken langsam ab
+  - **Reflektieren** (idx=5): Wie Schweben, Rand-Reflexion immer aktiv
+- **Mönch-Kollisionsmaske**: 48×48 Uint8Array, Update alle 30 Frames. Chrome: gl.readPixels. Safari: ctx.getImageData vom Haupt-Canvas (Brightness >180). Partikel werden radial zur nächsten freien Stelle geschoben.
+- **Physik**: Desktop leichte Reibung (0.995), Mobile stärkere Reibung (0.98) + Gravitation (0.002)
 
 ### Mönch-Verhalten je State
 - **idle**: Nicht sichtbar (Overlay-Menü verdeckt alles)
@@ -226,11 +235,17 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - shakeAccum/shakeIntensity werden bei Meditationsstart auf 0 gesetzt (verhindert falsche Rückfall-Trigger)
 - Voice über AudioContext statt HTML Audio Element (umgeht Autoplay-Block)
 - AudioContext mit `latencyHint: 'interactive'` + `resume()` an kritischen Stellen
+- **iOS Stumm-Schalter**: `navigator.audioSession.type = 'playback'` (Safari 16.4+) + Silent-Audio-Fallback → Sound spielt auch bei stummgeschaltetem iPhone
 - ESC-Taste als universeller Abbruch → zurück ins Menü
 - Ring wechselt bei 100% zu Gold + "Du darfst jetzt loslassen ..." als Feedback
-- Gedankenmodus wählbar: Schweben (Partikel bleiben) vs. Reflektieren (Partikel kontrahieren)
+- Gedankenmodus: 6 Modi (Schweben, Schweben2, Schweben3, Schweben4, Sinken, Reflektieren)
+- **Schweben2 + Schweben3 sind EINGEFROREN** — nicht verändern ohne ausdrückliche User-Anweisung
+- Mönch-Silhouetten-Abstoßung: Pixelgenaue 48×48 Kollisionsmaske, Safari-Fallback via Haupt-Canvas
+- DPR-Skalierung: cW/cH globale CSS-Dimensionen, dpr=1 (deaktiviert für Performance)
+- Meditation: Alles linear (Verblassen sqrt-Kurve, Reibung, Brownsche Bewegung, Sog)
+- Counter-Rate: Desktop 0.55, Mobile 0.35
 
 ## Offene Fragen / Nächste Schritte
 - Partikel-Formen variieren (nicht nur Kreise — Icons, Symbole?)
-- Mobile-Optimierung testen (Gyro, Touch-Verhalten)
 - Wasser-Visualisierung im Done-State verbessern
+- Mobile-Testing: Alle Schweben-Modi auf iPhone verifizieren
