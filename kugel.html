@@ -59,21 +59,42 @@ let thoughtCounter = 0; // 0–100
 let counterFullPlayed = false; // 100%-Sound nur einmal
 let shakeIntensity = 0; // aktuelle Schüttel-Stärke (0–1)
 let doneTime = 0; // Zeitpunkt des done-States
+let breathDoneFinished = false; // Atem-Zyklus nach Meditation beendet
 let relapseFlash = 0; // Rückfall-Blitz (0–1, decays)
 let donateHitArea = null; // PayPal-Spenden-Link Hit-Area
 let counterFullFlash = 0; // Gold-Flash bei 100% Counter
 
 // --- Wake Lock: Bildschirm bleibt an während Meditation ---
 let wakeLock = null;
+let noSleepVideo = null; // iOS Fallback: unsichtbares Video verhindert Screen-Dimming
 async function requestWakeLock() {
-  if (wakeLock || !('wakeLock' in navigator)) return;
-  try {
-    wakeLock = await navigator.wakeLock.request('screen');
-    wakeLock.addEventListener('release', () => { wakeLock = null; });
-  } catch (e) { /* Wake Lock nicht verfügbar oder abgelehnt */ }
+  // Methode 1: Wake Lock API (Chrome, Safari 16.4+)
+  if (!wakeLock && 'wakeLock' in navigator) {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch (e) { /* nicht verfügbar */ }
+  }
+  // Methode 2: iOS Fallback — winziges Video im Loop hält Screen wach
+  if (!noSleepVideo && !wakeLock) {
+    noSleepVideo = document.createElement('video');
+    noSleepVideo.setAttribute('playsinline', '');
+    noSleepVideo.setAttribute('muted', '');
+    noSleepVideo.muted = true;
+    noSleepVideo.loop = true;
+    noSleepVideo.style.position = 'fixed';
+    noSleepVideo.style.opacity = '0';
+    noSleepVideo.style.width = '1px';
+    noSleepVideo.style.height = '1px';
+    // Tiny transparent WebM (base64)
+    noSleepVideo.src = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAA6FtZGF0AAACrQYF//+p3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE2NCByMzA5NSBiYWVlNDAwIC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAyMiAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTEgcmVmPTMgZGVibG9jaz0xOjA6MCBhbmFseXNlPTB4MzoweDExMyBtZT1oZXggc3VibWU9NyBwc3k9MSBwc3lfcmQ9MS4wMDowLjAwIG1peGVkX3JlZj0xIG1lX3JhbmdlPTE2IGNocm9tYV9tZT0xIHRyZWxsaXM9MSA4eDhkY3Q9MSBjcW09MCBkZWFkem9uZT0yMSwxMSBmYXN0X3Bza2lwPTEgY2hyb21hX3FwX29mZnNldD0tMiB0aHJlYWRzPTEgbG9va2FoZWFkX3RocmVhZHM9MSBzbGljZWRfdGhyZWFkcz0wIG5yPTAgZGVjaW1hdGU9MSBpbnRlcmxhY2VkPTAgYmx1cmF5X2NvbXBhdD0wIGNvbnN0cmFpbmVkX2ludHJhPTAgYmZyYW1lcz0zIGJfcHlyYW1pZD0yIGJfYWRhcHQ9MSBiX2JpYXM9MCBkaXJlY3Q9MSB3ZWlnaHRiPTEgb3Blbl9nb3A9MCB3ZWlnaHRwPTIga2V5aW50PTI1MCBrZXlpbnRfbWluPTI1IHNjZW5lY3V0PTQwIGludHJhX3JlZnJlc2g9MCByY19sb29rYWhlYWQ9NDAgcmM9Y3JmIG1idHJlZT0xIGNyZj0yMy4wIHFjb21wPTAuNjAgcXBtaW49MCBxcG1heD02OSBxcHN0ZXA9NCBpcF9yYXRpbz0xLjQwIGFxPTE6MS4wMACAAAAATmWIhAAR//73iB8yy2AUAQKBEAAP/AAEJwisKFBkLgC9AALQAEsAD6MAFaACUABbACfk8BNYAAW3IBQAH4cRR+I/kAAAAwAAAwAA8AAAADBBmiRsQz/+AQAAAAMBAAADAAMAAAMAAAMAAAMAB4EAAAMASUGaJGxDP/4BAAADAQAAAwAAAwAAAwAAAwAAAwAHggAAAwBHQZokbEM//gEAAAMBAAADAAADAAADAAADAAADAAeCAAAAwBBBmkRsQx/98QAAAAMBAAADAAADAAADAAADAAADAAdxAAAAMEGaZGxDH/3RAAADAAADAAADAAADAAADAAADAAeCAAAAwBBBmoRsQxf9sQAAAwAAAwAAAwAAAwAAAwAAAwAHcQ==';
+    document.body.appendChild(noSleepVideo);
+    noSleepVideo.play().catch(() => {});
+  }
 }
 function releaseWakeLock() {
   if (wakeLock) { wakeLock.release(); wakeLock = null; }
+  if (noSleepVideo) { noSleepVideo.pause(); noSleepVideo.remove(); noSleepVideo = null; }
 }
 // Re-request nach Tab-Wechsel (iOS released Wake Lock automatisch)
 document.addEventListener('visibilitychange', () => {
@@ -138,16 +159,23 @@ const MEDITATION_SOUNDS = ['Stille', 'Drone', 'Klangschale', 'Tanpura', '528 Hz'
 let shakeSoundIdx = 0; // default: Rauschen
 let meditationSoundIdx = 0; // default: Stille
 
-// Gedankenmodus: 0=Schweben, 1=Schweben2 (eingefroren!), 2=Schweben3 (eingefroren!), 3=Schweben4 (experimentell), 4=Sinken, 5=Reflektieren
-const THOUGHT_MODES = ['Schweben', 'Schweben2', 'Schweben3', 'Schweben4', 'Sinken', 'Reflektieren'];
-let thoughtModeIdx = 0; // default: Schweben
+// Gedankenmodus: 0=Schweben, 1=alt-Schweben2 (eingefroren!), 2=alt-Schweben3 (eingefroren!), 3=Schweben mit Sog, 4=Sinken, 5=Reflektieren, 6=Schweben2 (Kollision ohne Sog)
+const THOUGHT_MODES = ['Schweben', 'Schweben2', 'Schweben3', 'Schweben mit Sog', 'Sinken', 'Reflektieren', 'Schweben2'];
+const THOUGHT_MODES_VISIBLE = [0, 6, 3, 4, 5]; // Nur diese im Menü anzeigen
+let thoughtModeIdx = 3; // default: Schweben mit Sog
+
+// Gedankenfluss: Intensitätsstufe der Partikel (1x–5x)
+const FLOW_LEVELS = ['0.5x', '1x', '2x', '3x', '4x', '5x'];
+const FLOW_VALUES = [0.5, 1, 2, 3, 4, 5];
+let flowLevelIdx = 1; // default: 1x
 
 // Mönch-Schrumpfen: immer aktiv
 const shrinkModeIdx = 1;
 
 // Ablenkungen: 0=Aus, 1=Ein
 const DISTRACTION_MODES = ['Aus', 'Ein'];
-let distractionModeIdx = 1; // default: Ein
+let distractionModeIdx = 0; // default: Aus
+let showDistractionInMenu = false; // Erst via Burger-Menü aktivierbar
 
 // Face Swap
 const FACE_MODES = ['Aus', 'Foto', 'Webcam', 'Laden'];
@@ -183,6 +211,9 @@ let menuContentHeight = 0; // Gesamte Menü-Inhaltshöhe für native Scrolling
 
 // --- Legal Overlay (Impressum/Datenschutz/About/Menu) ---
 let legalOverlay = null; // 'menu' | 'about' | 'impressum' | 'datenschutz' | null
+// Ausklappbare Menü-Sektionen (true = offen)
+const menuExpanded = { breathing: false, meditation: false, thoughtMode: false, flowLevel: false, distraction: false, face: false };
+let menuToggleAreas = {}; // Hit-Areas für Sektions-Header
 let legalScrollY = 0;
 let legalCloseBtn = null;
 let legalBackBtn = null;
@@ -252,7 +283,7 @@ Entwicklung:
 Jochen Hornung Dev Studios
 jochenhornung.de
 
-Version v1.4`;
+Version v1.5`;
 
 // --- Native Scrolling: Menü scrollt nativ, Spiel fixiert ---
 function enableMenuScroll() {
@@ -484,7 +515,7 @@ canvas.addEventListener('touchstart', onTouchStart, { passive: false });
 canvas.addEventListener('touchmove', onTouchMove, { passive: false });
 // Motion-Permission Retry: beim ersten Touch in ready/shaking nochmal anfordern
 canvas.addEventListener('touchstart', () => {
-  if ((state === 'ready' || state === 'shaking') && !deviceMotionGranted && !deviceMotionDenied) {
+  if ((state === 'ready' || state === 'shaking') && !deviceMotionGranted) {
     requestMotionPermission();
   }
 }, { passive: true });
@@ -498,7 +529,7 @@ canvas.addEventListener('wheel', (e) => {
 let deviceMotionGranted = false;
 let deviceMotionDenied = false;
 function requestMotionPermission() {
-  if (deviceMotionGranted || deviceMotionDenied) return;
+  if (deviceMotionGranted) return; // Bereits erlaubt — nicht nochmal fragen
   if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
     // iOS 13+ — Permission beim Start anfordern (muss im User-Gesture-Handler sein)
     DeviceMotionEvent.requestPermission().then(permState => {
@@ -506,7 +537,7 @@ function requestMotionPermission() {
         deviceMotionGranted = true;
         window.addEventListener('devicemotion', onDeviceMotion);
       } else {
-        deviceMotionDenied = true;
+        // Nicht merken — bei nächster User-Geste erneut versuchen
       }
     }).catch(err => {
       console.warn('DeviceMotion permission error:', err);
@@ -540,7 +571,7 @@ function updateShake() {
   if (shakeIntensity > 0.05) {
     // Schütteln erkannt → Counter hoch (dt kompensiert niedrige FPS)
     const wasFull = thoughtCounter >= 100;
-    const rate = isMob ? 0.35 : 0.55;
+    const rate = isMob ? 0.55 : 0.55;
     thoughtCounter = Math.min(100, thoughtCounter + shakeIntensity * rate * lowFpsDt);
     if (!wasFull && thoughtCounter >= 100) {
       counterFullPlayed = true;
@@ -587,9 +618,9 @@ function updateShake() {
       if (meditationTimeLeft <= 0) {
         state = 'done';
         thoughtCounter = 0;
-        particles.length = 0; // Partikel sind durch medAlpha=0 + Sog unsichtbar/zentral → sauberer Schnitt
         doneTime = Date.now();
         playEndBell();
+        // Partikel nicht hart löschen — im done-State sanft ausfaden lassen
       }
     }
   }
@@ -711,11 +742,12 @@ function spawnParticle(cx, cy, r) {
   const headY = cy - r * 0.28; // Oberkopf / Scheitel des Mönchs
   const bodyY = cy + r * 0.05; // Körpermitte
   const angle = Math.random() * Math.PI * 2;
-  const speed = 1.5 + Math.random() * 3 * shakeIntensity;
+  const flow = FLOW_VALUES[flowLevelIdx];
+  const speed = (1.5 + Math.random() * 3 * shakeIntensity) * (1 + (flow - 1) * 0.15);
 
   let spawnX, spawnY;
   // Schweben2: 35% der Partikel an zufälligen Stellen in der Kugel (Mönch-Maske hält sie raus)
-  if ((thoughtModeIdx === 1 || thoughtModeIdx === 2 || thoughtModeIdx === 3) && Math.random() < 0.35) {
+  if ((thoughtModeIdx === 1 || thoughtModeIdx === 2 || thoughtModeIdx === 3 || thoughtModeIdx === 6) && Math.random() < 0.35) {
     const rSpawn = r * 0.85 * Math.sqrt(Math.random()); // gleichmäßig im Kreis
     const aSpawn = Math.random() * Math.PI * 2;
     spawnX = cx + Math.cos(aSpawn) * rSpawn;
@@ -732,7 +764,7 @@ function spawnParticle(cx, cy, r) {
     vx: Math.cos(angle) * speed,
     vy: Math.sin(angle) * speed, // gleichmäßig in alle Richtungen
     life: 1,
-    decay: (cW < 600 ? 0.00003 : 0.00015) + Math.random() * (cW < 600 ? 0.00007 : 0.00035),
+    decay: ((cW < 600 ? 0.00003 : 0.00015) + Math.random() * (cW < 600 ? 0.00007 : 0.00035)) / (1 + (flow - 1) * 0.3),
     size: Math.random() < 0.15 ? 5 + Math.random() * 3 : (Math.random() < 0.3 ? 1 + Math.random() * 1.5 : 2 + Math.random() * 3),
     color: NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)],
     age: 0 // für Spawn-Blitz
@@ -751,10 +783,10 @@ function updateParticles(cx, cy, r) {
       p.vx *= Math.pow(frict, lowFpsDt);
       p.vy *= Math.pow(frict, lowFpsDt);
       // Brownsche Bewegung wird mit der Zeit ruhiger
-      const brownStr = 0.15 * calm;
+      const brownStr = 0.15 * calm * (1 + (FLOW_VALUES[flowLevelIdx] - 1) * 0.25);
       p.vx += (Math.random() - 0.5) * brownStr * lowFpsDt;
       p.vy += (Math.random() - 0.5) * brownStr * lowFpsDt;
-      // Schweben2: Sanfter Sog zum Mönch-Zentrum — Partikel rücken nach wenn er schrumpft
+      // Schweben mit Sog: Sanfter Sog zum Mönch-Zentrum — Partikel rücken nach wenn er schrumpft (NICHT für idx=6)
       if ((thoughtModeIdx === 1 || thoughtModeIdx === 2 || thoughtModeIdx === 3) && monkDrawSize > 4) {
         const mcx = monkDrawX + monkDrawSize * 0.5;
         const mcy = monkDrawY + monkDrawSize * 0.5;
@@ -762,7 +794,8 @@ function updateParticles(cx, cy, r) {
         const dy = mcy - p.y;
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
         // Linearer Sog — wächst gleichmäßig mit der Meditation
-        const pull = progress * 0.01;
+        const isMobPull = cW < 600 && cH > cW;
+        const pull = progress * (isMobPull ? 0.003 : 0.01);
         p.vx += (dx / dist) * pull * lowFpsDt;
         p.vy += (dy / dist) * pull * lowFpsDt;
       }
@@ -818,7 +851,7 @@ function updateParticles(cx, cy, r) {
     }
 
     // Schweben2: Pixelgenaue Mönch-Abstoßung (Silhouetten-Maske)
-    if ((thoughtModeIdx === 1 || thoughtModeIdx === 2 || thoughtModeIdx === 3) && monkMask && monkDrawSize > 4
+    if ((thoughtModeIdx === 1 || thoughtModeIdx === 2 || thoughtModeIdx === 3 || thoughtModeIdx === 6) && monkMask && monkDrawSize > 4
         && (state === 'shaking' || state === 'meditating' || state === 'ready')) {
       // Partikel-Position → Masken-Koordinate
       const relX = (p.x - monkDrawX) / monkDrawSize;
@@ -892,6 +925,11 @@ function drawParticles() {
     const progress = 1 - meditationTimeLeft / meditationDuration; // 0→1
     desat = progress;
     medAlpha = Math.pow(1 - progress, 0.5); // Wurzelkurve: länger sichtbar, erst spät weg
+  } else if (state === 'done') {
+    // Partikel sind am Ende der Meditation bereits unsichtbar (medAlpha ≈ 0)
+    desat = 1;
+    medAlpha = 0;
+    particles.length = 0;
   }
 
   // Schrumpf-Faktor: nur sanft während Meditation (nicht aggressiv)
@@ -901,7 +939,7 @@ function drawParticles() {
     const [cr, cg, cb] = desat > 0 ? desaturate(p.color, desat) : hexToRgb(p.color);
     const sz = p.size * shrink;
     // Alpha: individuelles Life ODER Meditations-Timer (der niedrigere Wert)
-    const baseAlpha = state === 'meditating' ? Math.min(p.life, medAlpha) : p.life;
+    const baseAlpha = (state === 'meditating' || state === 'done') ? Math.min(p.life, medAlpha) : p.life;
     // Sanftes Ausfaden am Kugelrand
     const rBound = Math.min(cW, cH) * 0.35;
     const pcx = cW / 2, pcy = cH / 2;
@@ -957,7 +995,7 @@ function drawMenu() {
   const uiScale = isMobilePortrait ? 2.5 : 1;
 
   // Mobile: Kontrast boosten (kleine Screens, helles Umgebungslicht)
-  const menuBg = isMobilePortrait ? 'rgba(20, 36, 60, 0.95)' : 'rgba(10, 22, 40, 0.97)';
+  const menuBg = 'rgba(0, 0, 0, 1)';
   const btnUnselFill = isMobilePortrait ? 'rgba(35, 72, 115, 0.6)' : 'rgba(26, 58, 92, 0.4)';
   const btnUnselStroke = isMobilePortrait ? 'rgba(120, 165, 195, 0.75)' : 'rgba(88, 130, 160, 0.5)';
   const btnSelFill = isMobilePortrait ? 'rgba(42, 191, 191, 0.3)' : 'rgba(42, 191, 191, 0.15)';
@@ -1006,15 +1044,15 @@ function drawMenu() {
   ctx.letterSpacing = `${-titleSize * 0.02}px`;
 
   // Glow Layer 1: breiter Teal-Schein
-  ctx.shadowColor = 'rgba(42, 191, 191, 0.5)';
-  ctx.shadowBlur = 60;
-  ctx.fillStyle = 'rgba(42, 191, 191, 0.2)';
+  ctx.shadowColor = 'rgba(42, 191, 191, 0.7)';
+  ctx.shadowBlur = 80;
+  ctx.fillStyle = 'rgba(42, 191, 191, 0.35)';
   ctx.fillText('M-SPHERE', cx, curY);
 
   // Glow Layer 2: mittlerer Teal-Schein
-  ctx.shadowColor = 'rgba(42, 191, 191, 0.8)';
-  ctx.shadowBlur = 30;
-  ctx.fillStyle = 'rgba(42, 191, 191, 0.3)';
+  ctx.shadowColor = 'rgba(42, 191, 191, 1.0)';
+  ctx.shadowBlur = 35;
+  ctx.fillStyle = 'rgba(42, 191, 191, 0.5)';
   ctx.fillText('M-SPHERE', cx, curY);
 
   // Layer 3: Haupttext mit kleinem Drop-Shadow
@@ -1042,10 +1080,6 @@ function drawMenu() {
   curY += subtitleSize * 2;
 
   // Credits
-  ctx.fillStyle = isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.9)';
-  ctx.font = `${subtitleSize * 0.8}px "Courier New", monospace`;
-  ctx.fillText('by Jochen Hornung Dev Studios', cx, curY);
-  curY += subtitleSize * 1.5;
   ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 0.9)' : 'rgba(42, 191, 191, 0.75)';
   ctx.font = `${subtitleSize * 0.8}px "Courier New", monospace`;
   ctx.fillText('jochenhornung.de', cx, curY);
@@ -1056,7 +1090,7 @@ function drawMenu() {
   curY += subtitleSize * 1.2;
   ctx.fillStyle = 'rgba(240, 236, 230, 0.35)';
   ctx.font = `${subtitleSize * 0.6}px "Courier New", monospace`;
-  ctx.fillText('v1.4', cx, curY);
+  ctx.fillText('v1.5', cx, curY);
   curY += subtitleSize * 1.2;
   // Spenden-Button
   const donLabel = '♡ Unterstützen ♡';
@@ -1081,15 +1115,79 @@ function drawMenu() {
   menuButtons.donate = { x: donX, y: donY, w: donW, h: donH };
   curY += donH + sectionGap * 2;
 
-  // --- Hilfsfunktion: Settings-Reihe (Label + Buttons) ---
-  function drawSettingsRow(label, options, selectedIdx, y, labelColor) {
+  // --- Hilfsfunktion: Settings-Reihe (Label + Buttons, optional einklappbar) ---
+  function drawSettingsRow(label, options, selectedIdx, y, labelColor, collapseKey) {
     const labelFont = rowFont * 0.85;
-    ctx.fillStyle = labelColor || (isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.95)');
+    const isCollapsed = collapseKey && !menuExpanded[collapseKey];
+    const selectedLabel = selectedIdx >= 0 && selectedIdx < options.length ? options[selectedIdx] : '';
+
     ctx.font = `${labelFont}px "Courier New", monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(label, cx, y);
 
+    if (collapseKey && isCollapsed) {
+      // Eingeklappt: Label + großer Dreieckspfeil ▶
+      const lineH = labelFont * 2;
+      const arrowSize = labelFont * 1.2;
+      ctx.fillStyle = labelColor || (isMobilePortrait ? 'rgba(240, 236, 230, 0.8)' : 'rgba(240, 236, 230, 0.7)');
+      ctx.textBaseline = 'middle';
+      // Label + Pfeil nebeneinander, zentriert
+      const labelW = ctx.measureText(label).width;
+      const gap = labelFont * 0.6;
+      const totalW = labelW + gap + arrowSize;
+      const startX = cx - totalW / 2;
+      ctx.textAlign = 'left';
+      ctx.fillText(label, startX, y + lineH / 2);
+      // Dreieck ▶ (rechtszeigend)
+      ctx.fillStyle = 'rgba(42, 191, 191, 0.7)';
+      const ax = startX + labelW + gap;
+      const ay = y + lineH / 2;
+      ctx.beginPath();
+      ctx.moveTo(ax, ay - arrowSize * 0.4);
+      ctx.lineTo(ax + arrowSize * 0.6, ay);
+      ctx.lineTo(ax, ay + arrowSize * 0.4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      // Hit-Area: volle Breite
+      menuToggleAreas[collapseKey] = { x: cx - W * 0.45, y: y, w: W * 0.9, h: lineH };
+      return { btns: [], bottomY: y + lineH };
+    }
+
+    // Expanded: Label + Dreieck ▼ (runterzeigend)
+    if (collapseKey) {
+      const arrowSize = labelFont * 1.2;
+      const labelW = ctx.measureText(label).width;
+      const gap = labelFont * 0.6;
+      const totalW = labelW + gap + arrowSize;
+      const startX = cx - totalW / 2;
+      ctx.fillStyle = labelColor || (isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.95)');
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, startX, y + labelFont);
+      // Dreieck ▼ (runterzeigend)
+      ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
+      const ax = startX + labelW + gap + arrowSize * 0.3;
+      const ay = y + labelFont;
+      ctx.beginPath();
+      ctx.moveTo(ax - arrowSize * 0.4, ay - arrowSize * 0.25);
+      ctx.lineTo(ax + arrowSize * 0.4, ay - arrowSize * 0.25);
+      ctx.lineTo(ax, ay + arrowSize * 0.35);
+      ctx.closePath();
+      ctx.fill();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      // Hit-Area zum Zuklappen (gleiche Zeile)
+      const lineH = labelFont * 2;
+      menuToggleAreas[collapseKey] = { x: cx - W * 0.45, y: y, w: W * 0.9, h: lineH };
+    } else {
+      // Nicht-klappbar (z.B. MEDITATIONSZEIT): nur Label
+      ctx.fillStyle = labelColor || (isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.95)');
+      ctx.fillText(label, cx, y);
+    }
+
+    // Buttons zeichnen
     const rowY = y + labelFont + btnGap * 1.2;
     const rBtnH = btnH * 0.9;
     ctx.font = `${rowFont * 0.85}px "Courier New", monospace`;
@@ -1104,7 +1202,6 @@ function drawMenu() {
 
     const btns = [];
     const maxRowW = W * 0.92;
-    // Split buttons into wrapped lines
     const lines = [[]];
     let lineW = 0;
     for (let i = 0; i < options.length; i++) {
@@ -1175,28 +1272,42 @@ function drawMenu() {
   curY = timeRow.bottomY + sectionGap;
 
   // --- ATMEN ---
-  const breathRow = drawSettingsRow('ATMEN', BREATHING_MODES, breathingMode, curY);
+  menuToggleAreas = {};
+  const breathRow = drawSettingsRow('ATEMRHYTHMUS', BREATHING_MODES, breathingMode, curY, null, 'breathing');
   menuButtons.breathing = breathRow.btns;
   curY = breathRow.bottomY + sectionGap;
 
   // --- MEDITATIONS-SOUND ---
-  const medRow = drawSettingsRow('MEDITATIONS-SOUND', MEDITATION_SOUNDS, meditationSoundIdx, curY);
+  const medRow = drawSettingsRow('MEDITATIONS-SOUND', MEDITATION_SOUNDS, meditationSoundIdx, curY, null, 'meditation');
   menuButtons.meditation = medRow.btns;
   curY = medRow.bottomY + sectionGap;
 
-  // --- GEDANKENMODUS ---
-  const thoughtRow = drawSettingsRow('GEDANKENMODUS', THOUGHT_MODES, thoughtModeIdx, curY);
+  // --- GEDANKENMODUS (nur sichtbare Modi) ---
+  const visLabels = THOUGHT_MODES_VISIBLE.map(i => THOUGHT_MODES[i]);
+  const visSelectedIdx = THOUGHT_MODES_VISIBLE.indexOf(thoughtModeIdx);
+  const thoughtRow = drawSettingsRow('GEDANKENMODUS', visLabels, visSelectedIdx, curY, null, 'thoughtMode');
+  // Button-Indizes auf echte THOUGHT_MODES-Indizes mappen
+  thoughtRow.btns.forEach((btn, i) => { btn.idx = THOUGHT_MODES_VISIBLE[i]; });
   menuButtons.thoughtMode = thoughtRow.btns;
   curY = thoughtRow.bottomY + sectionGap;
 
-  // --- ABLENKUNGEN ---
-  const distractRow = drawSettingsRow('ABLENKUNGEN', DISTRACTION_MODES, distractionModeIdx, curY);
-  menuButtons.distractionMode = distractRow.btns;
-  curY = distractRow.bottomY + sectionGap;
+  // --- GEDANKENFLUSS ---
+  const flowRow = drawSettingsRow('GEDANKENFLUSS', FLOW_LEVELS, flowLevelIdx, curY, null, 'flowLevel');
+  menuButtons.flowLevel = flowRow.btns;
+  curY = flowRow.bottomY + sectionGap;
+
+  // --- ABLENKUNGEN (nur wenn via Burger aktiviert) ---
+  if (showDistractionInMenu) {
+    const distractRow = drawSettingsRow('ABLENKUNGEN', DISTRACTION_MODES, distractionModeIdx, curY, null, 'distraction');
+    menuButtons.distractionMode = distractRow.btns;
+    curY = distractRow.bottomY + sectionGap;
+  } else {
+    menuButtons.distractionMode = [];
+  }
 
   // --- DEIN GESICHT ---
   const faceMobileLabels = isMobilePortrait ? ['Aus', 'Mediathek', 'Kamera', 'Laden'] : FACE_MODES;
-  const faceRow = drawSettingsRow('DEIN GESICHT', faceMobileLabels, faceModeIdx, curY);
+  const faceRow = drawSettingsRow('DEIN GESICHT', faceMobileLabels, faceModeIdx, curY, null, 'face');
   menuButtons.faceSwap = faceRow.btns;
   curY = faceRow.bottomY;
 
@@ -1298,13 +1409,14 @@ function drawMenu() {
     ctx.shadowBlur = 15;
     ctx.fillStyle = `rgba(244, 168, 66, ${waber})`;
   }
-  ctx.font = `700 ${rowFont * 1.4}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const startLabel = canStart
+    ? (isTouchDevice ? 'Tippe hier um zu starten' : 'Klicke hier um zu starten')
+    : 'Wähle eine Meditationszeit';
+  ctx.font = `${canStart ? '700' : '400'} ${rowFont * 1.4}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  ctx.fillText(canStart
-    ? (isTouchDevice ? 'Tippe hier um zu starten' : 'Klicke hier um zu starten')
-    : 'Wähle eine Meditationszeit', cx, curY + startH / 2);
+  ctx.fillText(startLabel, cx, curY + startH / 2);
   ctx.shadowBlur = 0;
   menuButtons.start = canStart ? { x: startX, y: curY, w: startW, h: startH } : null;
 
@@ -1488,6 +1600,7 @@ function drawLegalOverlay() {
     legalBackBtn = null;
     const itemFont = Math.max(16, Math.min(W, H) * (isMob ? 0.045 : 0.028));
     const items = [
+      { label: showDistractionInMenu ? 'Ablenkungen ausblenden' : 'Ablenkungen einblenden', target: '_toggleDistraction' },
       { label: 'Über M-Sphere', target: 'about' },
       { label: 'Impressum', target: 'impressum' },
       { label: 'Datenschutz', target: 'datenschutz' }
@@ -1639,6 +1752,12 @@ function handleMenuClick(x, y) {
       // Burger-Panel: Menü-Items prüfen
       for (const item of burgerMenuItems) {
         if (x >= item.x && x <= item.x + item.w && y >= item.y && y <= item.y + item.h) {
+          if (item.target === '_toggleDistraction') {
+            showDistractionInMenu = !showDistractionInMenu;
+            if (!showDistractionInMenu) distractionModeIdx = 0; // Beim Ausblenden auch deaktivieren
+            legalOverlay = null;
+            return true;
+          }
           legalOverlay = item.target;
           legalScrollY = 0;
           return true;
@@ -1666,13 +1785,11 @@ function handleMenuClick(x, y) {
     if (sv && x >= sv.x && x <= sv.x + sv.w && y >= sv.y && y <= sv.y + sv.h) {
       saveFaceSwapImage();
       faceSwapShowSave = false;
-      playTingsha();
       return true;
     }
     const dm = menuButtons.faceDismiss;
     if (dm && x >= dm.x && x <= dm.x + dm.w && y >= dm.y && y <= dm.y + dm.h) {
       faceSwapShowSave = false;
-      playTingsha();
       return true;
     }
     return true; // Klicks außerhalb ignorieren (Overlay bleibt)
@@ -1693,6 +1810,17 @@ function handleMenuClick(x, y) {
   function hitBtn(btn) {
     return x >= btn.x && x <= btn.x + btn.w && sy >= btn.y && sy <= btn.y + btn.h;
   }
+  // Sektions-Header Toggle — Klick klappt auf/zu
+  for (const [key, area] of Object.entries(menuToggleAreas)) {
+    if (area && x >= area.x && x <= area.x + area.w && sy >= area.y && sy <= area.y + area.h) {
+      const wasOpen = menuExpanded[key];
+      // Alle zuklappen
+      for (const k in menuExpanded) menuExpanded[k] = false;
+      // Toggle: nur öffnen wenn vorher zu
+      if (!wasOpen) menuExpanded[key] = true;
+      return true;
+    }
+  }
   // Link
   const lnk = menuButtons.link;
   if (lnk && hitBtn(lnk)) {
@@ -1710,7 +1838,14 @@ function handleMenuClick(x, y) {
     if (hitBtn(btn)) {
       selectedDurationIdx = btn.idx;
       meditationDuration = DURATION_OPTIONS[btn.idx].seconds;
-      playTingsha();
+      return true;
+    }
+  }
+  // Breathing
+  for (const btn of menuButtons.breathing || []) {
+    if (hitBtn(btn)) {
+      breathingMode = btn.idx;
+      menuExpanded.breathing = false;
       return true;
     }
   }
@@ -1718,7 +1853,7 @@ function handleMenuClick(x, y) {
   for (const btn of menuButtons.meditation || []) {
     if (hitBtn(btn)) {
       meditationSoundIdx = btn.idx;
-      playTingsha();
+      menuExpanded.meditation = false;
       return true;
     }
   }
@@ -1726,7 +1861,15 @@ function handleMenuClick(x, y) {
   for (const btn of menuButtons.thoughtMode || []) {
     if (hitBtn(btn)) {
       thoughtModeIdx = btn.idx;
-      playTingsha();
+      menuExpanded.thoughtMode = false;
+      return true;
+    }
+  }
+  // Gedankenfluss
+  for (const btn of menuButtons.flowLevel || []) {
+    if (hitBtn(btn)) {
+      flowLevelIdx = btn.idx;
+      menuExpanded.flowLevel = false;
       return true;
     }
   }
@@ -1734,15 +1877,7 @@ function handleMenuClick(x, y) {
   for (const btn of menuButtons.distractionMode || []) {
     if (hitBtn(btn)) {
       distractionModeIdx = btn.idx;
-      playTingsha();
-      return true;
-    }
-  }
-  // Breathing-Modus
-  for (const btn of menuButtons.breathing || []) {
-    if (hitBtn(btn)) {
-      breathingMode = btn.idx;
-      playTingsha();
+      menuExpanded.distraction = false;
       return true;
     }
   }
@@ -1790,7 +1925,7 @@ function handleMenuClick(x, y) {
         stopWebcam();
         document.getElementById('faceLoadInput').click();
       }
-      playTingsha();
+      menuExpanded.face = false;
       return true;
     }
   }
@@ -1798,14 +1933,12 @@ function handleMenuClick(x, y) {
   const snap = menuButtons.webcamSnap;
   if (snap && hitBtn(snap)) {
     captureWebcamSnapshot();
-    playTingsha();
     return true;
   }
   // Timer-Toggle
   const t = menuButtons.timerToggle;
   if (t && x >= t.x && x <= t.x + t.w && sy >= t.y && sy <= t.y + t.h) {
     timerVisible = !timerVisible;
-    playTingsha();
     return true;
   }
   // Start-Button
@@ -1813,6 +1946,10 @@ function handleMenuClick(x, y) {
   if (s && x >= s.x && x <= s.x + s.w && sy >= s.y && sy <= s.y + s.h) {
     disableMenuScroll();
     state = 'ready';
+    // Audio-Session auf "playback" → Shake-Sound ignoriert iPhone-Stumm-Schalter
+    if (navigator.audioSession) {
+      try { navigator.audioSession.type = 'playback'; } catch(e) {}
+    }
     requestMotionPermission(); // iOS: DeviceMotion-Permission genau jetzt anfordern
     requestWakeLock(); // Bildschirm bleibt an
     return true;
@@ -1831,7 +1968,7 @@ function returnToMenu() {
   thoughtCounter = 0;
   counterFullPlayed = false;
   particles.length = 0;
-  doneTime = 0; voicePlayed = false;
+  doneTime = 0; voicePlayed = false; breathDoneFinished = false;
   shakeIntensity = 0;
   mouseDown = false;
   selectedDurationIdx = -1;
@@ -3063,12 +3200,12 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
 
   // Auf Haupt-Canvas zeichnen (mit optionalem Schrumpf-Faktor)
   const isMobDisplay = cW < 600 && cH > cW;
-  const fullSize = isMobDisplay && !useFaceSwap ? imgSize * 1.8 : imgSize;
+  const fullSize = isMobDisplay && !useFaceSwap ? imgSize * 1.4 : imgSize;
   const drawSize = fullSize * scale;
   const drawX = cx - drawSize / 2 + (glitchOffset || 0);
   // Unterseite bleibt fix (Mönch schrumpft an Ort und Stelle, schwebt nicht)
   // Mobile: Mönch etwas tiefer in der Kugel (+ r*0.08)
-  const fullBottom = cy + fullSize * 0.5 + (isMobDisplay ? r * 0.08 : 0);
+  const fullBottom = cy + fullSize * 0.5 + (isMobDisplay ? r * 0.02 : r * 0.04);
   const drawY = fullBottom - drawSize;
 
   // Globale Mönch-Position für Partikel-Kollision speichern
@@ -3130,21 +3267,8 @@ function frame() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   // Hintergrund-Farbshift je nach State
-  let bgR = 10, bgG = 10, bgB = 15;
-  if (state === 'shaking') {
-    // Warm/rötlich beim Schütteln
-    bgR = 10 + shakeIntensity * 15;
-    bgG = 8;
-    bgB = 10;
-  } else if (state === 'meditating') {
-    // Kühl/bläulich während Meditation
-    const mp = 1 - meditationTimeLeft / meditationDuration;
-    bgR = 8 - mp * 3;
-    bgG = 10 + mp * 4;
-    bgB = 15 + mp * 8;
-  } else if (state === 'done') {
-    bgR = 5; bgG = 14; bgB = 23;
-  }
+  let bgR = 0, bgG = 0, bgB = 0;
+  // Alle States: reines Schwarz
 
   // Hintergrund immer opak (Trail-Effekt deaktiviert: erzeugte Geistbilder außerhalb der Kugel durch Shake-Offset)
   ctx.fillStyle = `rgb(${Math.round(bgR)}, ${Math.round(bgG)}, ${Math.round(bgB)})`;
@@ -3159,10 +3283,15 @@ function frame() {
   let breathWave = 0;
   let breathTime = 0;
   const bt = BREATHING_TIMING[breathingMode];
-  if (bt && state === 'meditating') {
+  if (bt && (state === 'meditating' || (state === 'done' && !breathDoneFinished))) {
     breathTime = (Date.now() - meditationStartTime) / 1000;
     breathWave = calcBreathWave(bt, breathTime);
-    r *= 1 + breathWave * 0.032; // ±3.2% Radius
+    // Im Done-State: Atem-Zyklus zu Ende atmen, dann stoppen
+    if (state === 'done') {
+      if (breathWave <= -0.9) breathDoneFinished = true;
+    } else {
+      r *= 1 + breathWave * 0.032; // ±3.2% Radius (nur während Meditation)
+    }
   }
 
   // Schüttel-Wackeln: ganzer Inhalt wackelt (nach BG-Fill, vor allem Content)
@@ -3170,8 +3299,9 @@ function frame() {
 
   if (shakeIntensity > 0.05) {
     const isMobShake = cW < 600 && cH > cW;
-    offsetX += (Math.random() - 0.5) * shakeIntensity * (isMobShake ? 20 : 45);
-    offsetY += (Math.random() - 0.5) * shakeIntensity * (isMobShake ? 12 : 30);
+    const flowShake = 1 + (FLOW_VALUES[flowLevelIdx] - 1) * 0.12;
+    offsetX += (Math.random() - 0.5) * shakeIntensity * (isMobShake ? 20 : 45) * flowShake;
+    offsetY += (Math.random() - 0.5) * shakeIntensity * (isMobShake ? 12 : 30) * flowShake;
   }
 
   // Verführungs-Twitch
@@ -3231,18 +3361,18 @@ function frame() {
     ctx.restore();
   }
 
-  // Partikel spawnen beim Schütteln — mehr bei hohem Counter
+  // Partikel spawnen beim Schütteln — Gedankenfluss-Multiplikator
+  const flow = FLOW_VALUES[flowLevelIdx]; // 0.5–5
   const isMobParticle = cW < 600 && cH > cW;
-  const maxParticles = isMobParticle ? 800 : 3500;
+  const maxParticles = isMobParticle ? 800 * flow : 3500 * flow;
   if (shakeIntensity > 0.05 && particles.length < maxParticles) {
     let count;
     if (isMobParticle) {
-      // Mobile: Partikel bauen sich mit dem Counter auf (wenige am Anfang, Flut am Ende)
-      const mobRate = Math.max(2, Math.floor(2 + thoughtCounter * 0.15));
+      const mobRate = Math.max(2, Math.floor(2 + thoughtCounter * 0.15)) * flow;
       count = Math.min(Math.floor(shakeIntensity * mobRate * lowFpsDt), maxParticles - particles.length);
     } else {
-      const baseCount = Math.floor(shakeIntensity * 12 * lowFpsDt);
-      const bonusCount = Math.floor(thoughtCounter / 20 * lowFpsDt);
+      const baseCount = Math.floor(shakeIntensity * (12 + (flow - 1) * 8) * lowFpsDt);
+      const bonusCount = Math.floor(thoughtCounter / (20 / flow) * lowFpsDt);
       count = Math.min(baseCount + bonusCount, maxParticles - particles.length);
     }
     for (let i = 0; i < count; i++) {
@@ -3274,7 +3404,9 @@ function frame() {
   } else if (state === 'meditating') {
     // Meditation: Mönch ist da, glitcht zunehmend, löst sich bis zum Ende auf
     const progress = 1 - meditationTimeLeft / meditationDuration; // 0→1
-    const glitchAmount = Math.max(0, progress - 0.3) * 1.2; // ab 30% glitchen
+    const glitchAmount = distractionModeIdx === 1
+      ? Math.max(0, progress - 0.3) * 1.2   // Ablenkungen ein: ab 30%, stark
+      : Math.max(0, progress - 0.5) * 0.6;  // Ablenkungen aus: ab 50%, subtil
     const alpha = Math.pow(1 - progress, 0.5); // Wurzelkurve: länger sichtbar, erst spät weg
     const glitchOffset = glitchAmount > 0 ? (Math.random() - 0.5) * glitchAmount * 3 : 0;
 
@@ -3287,7 +3419,7 @@ function frame() {
 
   // Mönch-Kollisionsmaske aktualisieren (NACH dem Zeichnen, VOR den Partikeln)
   monkMaskAge++;
-  if ((thoughtModeIdx === 1 || thoughtModeIdx === 2 || thoughtModeIdx === 3) && (!monkMask || monkMaskAge >= 30)) {
+  if ((thoughtModeIdx === 1 || thoughtModeIdx === 2 || thoughtModeIdx === 3 || thoughtModeIdx === 6) && (!monkMask || monkMaskAge >= 30)) {
     updateMonkMask();
   }
 
@@ -3318,17 +3450,17 @@ function frame() {
     ctx.fillStyle = `rgba(244, 168, 66, ${pulse})`;
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     if (isTouchDevice) {
-      ctx.fillText('Wische schnell über die Kugel', cx, cy - r - hintFontSize * 2.5);
+      ctx.fillText('Wische schnell über die Kugel', cx, cy - r - hintFontSize * 3.2);
       if (deviceMotionGranted) {
-        ctx.fillText('oder schüttle dein Handy.', cx, cy - r - hintFontSize * 1.2);
+        ctx.fillText('oder schüttle dein Handy.', cx, cy - r - hintFontSize * 1.9);
       } else {
         ctx.font = `${hintFontSize * 0.7}px monospace`;
         ctx.fillStyle = `rgba(244, 168, 66, ${pulse * 0.6})`;
-        ctx.fillText('(Handy-Schütteln: Browserzugriff nötig)', cx, cy - r - hintFontSize * 1.2);
+        ctx.fillText('(Handy-Schütteln: Browserzugriff nötig)', cx, cy - r - hintFontSize * 1.9);
       }
     } else {
-      ctx.fillText('Drücke, halte und schüttle mit der Maus die Kugel,', cx, cy - r - hintFontSize * 2.5);
-      ctx.fillText('bis der Kreis geschlossen ist.', cx, cy - r - hintFontSize * 1.2);
+      ctx.fillText('Drücke, halte und schüttle mit der Maus die Kugel,', cx, cy - r - hintFontSize * 3.2);
+      ctx.fillText('bis der Kreis geschlossen ist.', cx, cy - r - hintFontSize * 1.9);
     }
     ctx.shadowBlur = 0;
     ctx.textAlign = 'start';
@@ -3560,14 +3692,17 @@ function frame() {
 
   // Atem-Nebel NUR außerhalb der Kugel (Meditation)
   // Atem-Nebel NUR außerhalb der Kugel — nur Cyan (#2abfbf)
-  if (bt && state === 'meditating') {
+  const breathFadeOut = state === 'done'
+    ? (breathDoneFinished ? 0 : Math.max(0, (breathWave + 1) / 2)) // Beim letzten Ausatmen mit Welle ausfaden
+    : 1;
+  if (bt && (state === 'meditating' || (state === 'done' && !breathDoneFinished))) {
     // Nebel-Ausdehnung: pulsiert mit dem Atem (breathWave von oben)
     const clipR = r + 2;
     const nebelBase = clipR;
     const breathIntensity = (breathWave + 1) / 2; // 0→1 einatmen, 1→0 ausatmen
     const nebelExpand = (0.35 + breathIntensity * 0.65) * r * 0.25;
     const nebelOuter = nebelBase + nebelExpand;
-    const nebelAlpha = 0.1 + breathIntensity * 0.08;
+    const nebelAlpha = (0.1 + breathIntensity * 0.08) * breathFadeOut;
     const maxOuter = nebelOuter + r * 0.15;
 
     // Clip: nur Ring außerhalb der Kugel zeichnen
@@ -3614,16 +3749,19 @@ function frame() {
 
   ctx.restore(); // Schüttel-Translate aufheben
 
-  // DEBUG: Diagnose-Overlay (temporär)
-  ctx.save();
-  ctx.font = 'bold 18px monospace';
-  ctx.fillStyle = 'yellow';
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'top';
-  const _fps = lowFpsDt > 0 ? Math.round(60 / lowFpsDt) : 60;
-  const _gyro = deviceMotionGranted ? 'ON' : (deviceMotionDenied ? 'NO' : '??');
-  ctx.fillText(`v6 FPS:${_fps} P:${particles.length} C:${Math.round(thoughtCounter)}% G:${_gyro} M:${monkMaskSolid}`, cW - 10, 10);
-  ctx.restore();
+  // DEBUG: Diagnose-Overlay (ausgeblendet — ?debug=1 in URL zum Aktivieren)
+  if (new URLSearchParams(location.search).has('debug')) {
+    ctx.save();
+    ctx.font = 'bold 18px monospace';
+    ctx.fillStyle = 'yellow';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    const _fps = lowFpsDt > 0 ? Math.round(60 / lowFpsDt) : 60;
+    const _gyro = deviceMotionGranted ? 'ON' : '??';
+    const _sec = location.protocol === 'https:' ? 'S' : 'H';
+    ctx.fillText(`v7 FPS:${_fps} P:${particles.length} C:${Math.round(thoughtCounter)}% G:${_gyro} ${_sec} M:${monkMaskSolid}`, cW - 10, 10);
+    ctx.restore();
+  }
 
   // "Du darfst jetzt loslassen" — Overlay mit Glow mittig über der Kugel
   if (thoughtCounter >= 100 && state === 'shaking') {
@@ -3654,9 +3792,8 @@ function frame() {
     ctx.textAlign = 'start';
   }
 
-  // --- Zurück-Button (✕) für Touch-Geräte (kein ESC verfügbar) ---
-  const isTouchBack = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  if (isTouchBack && state !== 'idle' && state !== 'done') {
+  // --- Zurück-Button (✕) — immer sichtbar im Kugelmodus ---
+  if (state !== 'idle' && state !== 'done') {
     const safeT = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
     const safeL = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sal')) || 0;
     const bSize = 44; // Apple HIG Minimum
