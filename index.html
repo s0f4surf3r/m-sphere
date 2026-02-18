@@ -1106,11 +1106,19 @@ function drawMenu() {
   const linkW = ctx.measureText('jochenhornung.de').width;
   const linkH = subtitleSize;
   menuButtons.link = { x: cx - linkW / 2, y: curY, w: linkW, h: linkH };
-  curY += subtitleSize * 1.2;
-  ctx.fillStyle = 'rgba(240, 236, 230, 0.35)';
-  ctx.font = `${subtitleSize * 0.6}px "Courier New", monospace`;
+  curY += subtitleSize * 1.0;
+  // Mehr Werkzeuge Link
+  ctx.fillStyle = isMobilePortrait ? 'rgba(240, 236, 230, 0.5)' : 'rgba(240, 236, 230, 0.4)';
+  ctx.font = `${subtitleSize * 0.65}px "Courier New", monospace`;
+  ctx.fillText('Mehr Werkzeuge', cx, curY);
+  const toolsW = ctx.measureText('Mehr Werkzeuge').width;
+  const toolsH = subtitleSize * 0.8;
+  menuButtons.tools = { x: cx - toolsW / 2, y: curY, w: toolsW, h: toolsH };
+  curY += subtitleSize * 1.0;
+  ctx.fillStyle = 'rgba(240, 236, 230, 0.25)';
+  ctx.font = `${subtitleSize * 0.5}px "Courier New", monospace`;
   ctx.fillText('v1.5', cx, curY);
-  curY += subtitleSize * 1.2;
+  curY += subtitleSize * 1.0;
   // Spenden-Button
   const donLabel = '♡ Unterstützen ♡';
   const donFont = subtitleSize * 0.85;
@@ -1844,6 +1852,12 @@ function handleMenuClick(x, y) {
   const lnk = menuButtons.link;
   if (lnk && hitBtn(lnk)) {
     window.open('https://jochenhornung.de', '_blank');
+    return true;
+  }
+  // Mehr Werkzeuge Link
+  const tls = menuButtons.tools;
+  if (tls && hitBtn(tls)) {
+    window.open('https://jochenhornung.de/werkzeuge/', '_blank');
     return true;
   }
   // Spenden-Link
