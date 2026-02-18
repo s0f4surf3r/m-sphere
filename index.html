@@ -57,6 +57,135 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 
+// --- Sprache (EN/DE) ---
+let lang = localStorage.getItem('msphere_lang') || 'de';
+const TR = {
+  de: {
+    subtitle: 'INTERAKTIVE MEDITATION',
+    moreTools: 'Mehr Werkzeuge',
+    donate: '♡ Unterstützen ♡',
+    meditationszeit: 'MEDITATIONSZEIT',
+    atemrhythmus: 'ATEMRHYTHMUS',
+    meditationsSound: 'MEDITATIONS-SOUND',
+    gedankenmodus: 'GEDANKENMODUS',
+    gedankenfluss: 'GEDANKENFLUSS',
+    ablenkungen: 'ABLENKUNGEN',
+    deinGesicht: 'DEIN GESICHT',
+    timerAn: '⏱ An',
+    timerAus: '⏱',
+    clickStart: 'Klicke hier um zu starten',
+    tapStart: 'Tippe hier um zu starten',
+    chooseDuration: 'Wähle eine Meditationszeit',
+    hintMobile1: 'Wische schnell über die Kugel',
+    hintMobile2: 'oder schüttle dein Handy.',
+    hintMobile3: '(Handy-Schütteln: Browserzugriff nötig)',
+    hintDesktop1: 'Drücke, halte und schüttle mit der Maus die Kugel,',
+    hintDesktop2: 'bis der Kreis geschlossen ist.',
+    letGo: 'Du darfst jetzt loslassen ...',
+    youAreWater: 'Du bist das Wasser',
+    tapRestart: 'tippe',
+    clickRestart: 'klick',
+    fotoAufnehmen: 'Foto aufnehmen',
+    kameraStartet: 'Kamera wird gestartet...',
+    sendeBild: 'Sende Bild',
+    faceSwapLaeuft: 'Face Swap läuft',
+    gesichtAktiv: '✓ Eigenes Gesicht aktiv',
+    faceSwapFehler: 'Fehler beim Face Swap',
+    faceSwapFertig: 'Face Swap fertig!',
+    speichern: '💾 Speichern',
+    weiter: 'Weiter',
+    ablenkAus: 'Ablenkungen ausblenden',
+    ablenkEin: 'Ablenkungen einblenden',
+    ueberMSphere: 'Die Geschichte dahinter',
+    impressum: 'Impressum',
+    datenschutz: 'Datenschutz',
+    zurueck: '← Zurück',
+    // Optionen
+    aus: 'Aus',
+    ein: 'Ein',
+    rauschen: 'Rauschen',
+    synapsen: 'Synapsen',
+    stimmen: 'Stimmen',
+    metallisch: 'Metallisch',
+    stille: 'Stille',
+    drone: 'Drone',
+    klangschale: 'Klangschale',
+    tanpura: 'Tanpura',
+    binaural: 'Binaural',
+    schweben: 'Schweben',
+    schwebenMitSog: 'Schweben mit Sog',
+    sinken: 'Sinken',
+    reflektieren: 'Reflektieren',
+    foto: 'Foto',
+    webcam: 'Webcam',
+    laden: 'Laden',
+    mediathek: 'Mediathek',
+    kamera: 'Kamera',
+  },
+  en: {
+    subtitle: 'INTERACTIVE MEDITATION',
+    moreTools: 'More Tools',
+    donate: '♡ Support ♡',
+    meditationszeit: 'MEDITATION TIME',
+    atemrhythmus: 'BREATHING',
+    meditationsSound: 'MEDITATION SOUND',
+    gedankenmodus: 'THOUGHT MODE',
+    gedankenfluss: 'THOUGHT FLOW',
+    ablenkungen: 'DISTRACTIONS',
+    deinGesicht: 'YOUR FACE',
+    timerAn: '⏱ On',
+    timerAus: '⏱',
+    clickStart: 'Click here to start',
+    tapStart: 'Tap here to start',
+    chooseDuration: 'Choose a meditation time',
+    hintMobile1: 'Swipe quickly over the sphere',
+    hintMobile2: 'or shake your phone.',
+    hintMobile3: '(Shake: browser permission required)',
+    hintDesktop1: 'Press, hold and shake the sphere with your mouse,',
+    hintDesktop2: 'until the circle is complete.',
+    letGo: 'You may let go now ...',
+    youAreWater: 'You are the water',
+    tapRestart: 'tap',
+    clickRestart: 'click',
+    fotoAufnehmen: 'Take photo',
+    kameraStartet: 'Starting camera...',
+    sendeBild: 'Uploading image',
+    faceSwapLaeuft: 'Face Swap processing',
+    gesichtAktiv: '✓ Custom face active',
+    faceSwapFehler: 'Face Swap error',
+    faceSwapFertig: 'Face Swap done!',
+    speichern: '💾 Save',
+    weiter: 'Continue',
+    ablenkAus: 'Hide distractions',
+    ablenkEin: 'Show distractions',
+    ueberMSphere: 'The Story Behind',
+    impressum: 'Legal Notice',
+    datenschutz: 'Privacy Policy',
+    zurueck: '← Back',
+    aus: 'Off',
+    ein: 'On',
+    rauschen: 'Noise',
+    synapsen: 'Synapses',
+    stimmen: 'Voices',
+    metallisch: 'Metallic',
+    stille: 'Silence',
+    drone: 'Drone',
+    klangschale: 'Singing Bowl',
+    tanpura: 'Tanpura',
+    binaural: 'Binaural',
+    schweben: 'Float',
+    schwebenMitSog: 'Float with Pull',
+    sinken: 'Sink',
+    reflektieren: 'Reflect',
+    foto: 'Photo',
+    webcam: 'Webcam',
+    laden: 'Load',
+    mediathek: 'Library',
+    kamera: 'Camera',
+  }
+};
+function t(key) { return TR[lang][key] || TR.de[key] || key; }
+
 // Safari-Erkennung: Canvas 2D ist deutlich langsamer (radialGradient, compositing)
 const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
@@ -287,19 +416,75 @@ Die Übertragung erfolgt per HTTPS/SSL.
 
 Stand: Februar 2026`;
 
-const ABOUT_TEXT = `ÜBER M-SPHERE
+const ABOUT_TEXT_DE = `DIE GESCHICHTE HINTER M-SPHERE
 
-M-Sphere ist eine interaktive Meditations-Erfahrung,
-inspiriert von Thomas Metzingers Schneekugel-Metapher.
+1. Der Ursprung
+Alles begann mit einem Gespräch zwischen dem Philosophen Thomas Metzinger und Gert Scobel. Metzinger nutzte eine bildhafte Analogie, um einen Zustand des non-dualen Bewusstseins zu beschreiben: Eine Schneekugel.
 
-Schüttle die Kugel, um deine Gedanken aufzuwirbeln.
-Dann lass los — und beobachte, wie sich alles auflöst.
+Er skizzierte die Idee einer Kugel, in deren Mitte ein Meditierender sitzt. Schüttelt man sie, herrscht Chaos — der Sturm unserer Gedanken, Konzepte und Gefühle. Lässt man sie jedoch radikal in Ruhe (Wu Wei), legt sich der Sturm. Metzingers Wunsch war es, dieses Objekt physisch bauen zu lassen, versehen mit einem magischen Detail: Wenn sich alles gesetzt hat, erscheint ein Text, der die wahre Natur des Bewusstseins enthüllt.
 
-Entwicklung:
-Jochen Hornung Dev Studios
-jochenhornung.de
+2. Das Paradox
+Mich faszinierte diese Idee sofort. Schon seit Monaten begleitete mich in meiner eigenen Praxis ein paradoxer Satz:
 
-Version v1.5`;
+"Das Loslassen produzieren."
+
+Wie kann man einen Zustand "machen", der per Definition das Gegenteil von Machen ist? Wie kann man das "Nichts-Tun" sichtbar produzieren? Da eine physische Kugel, in der Text magisch aus dem Nichts erscheint, physikalisch kaum machbar ist, entschied ich mich, sie digital zu bauen.
+
+3. Die Philosophie im Code
+Die M-Sphere ist mehr als nur eine Physik-Simulation. Sie ist eine Allegorie auf unser modernes Ego:
+
+Die Figur: Sie repräsentiert das konstruierte Selbst. Oft starr, golden und "glänzend" — verliebt in die eigene Form und den Status des "Meditierenden".
+
+Der Sturm: Das sind nicht nur weiße Flocken, sondern unsere Gedanken: oft grell, neonfarben und süchtig machend. Wir wirbeln sie ständig auf, weil wir die Agitation gewohnt sind.
+
+Der Glitch: Das Loslassen fühlt sich für das Ego oft an wie ein Fehler im System, ein Rosten, ein kleines Sterben. Die App visualisiert diesen Übergang.
+
+4. Die Erkenntnis
+Das Ziel dieser Erfahrung ist nicht bloße Entspannung, sondern Erkenntnis durch Interaktion (bzw. Nicht-Interaktion). Sie fordert dich auf, das Prinzip des Nicht-Eingreifens anzuwenden. Wenn du aufhörst, die Maus zu bewegen oder das Handy zu schütteln, geschieht das Eigentliche.
+
+Die Figur löst sich auf. Die Gedanken verlieren ihre Härte und werden transparent. Und was übrig bleibt, ist die Botschaft, auf die Thomas Metzinger hinauswollte:
+
+Du bist nicht die Person in der Mitte. Du bist auch nicht der Sturm der Gedanken.
+
+Du bist das Wasser.
+
+Entwicklung: Jochen Hornung Dev Studios
+jochenhornung.de`;
+
+const ABOUT_TEXT_EN = `THE STORY BEHIND M-SPHERE
+
+1. The Origin
+It all began with a conversation between philosopher Thomas Metzinger and Gert Scobel. Metzinger used a vivid analogy to describe a state of non-dual consciousness: A snow globe.
+
+He sketched the idea of a globe with a meditator sitting in the center. Shake it, and chaos reigns — the storm of our thoughts, concepts, and emotions. But leave it radically at rest (Wu Wei), and the storm subsides. Metzinger's wish was to have this object physically built, with a magical detail: once everything has settled, a text appears revealing the true nature of consciousness.
+
+2. The Paradox
+I was immediately fascinated by this idea. For months, a paradoxical phrase had been accompanying my own practice:
+
+"Producing the letting go."
+
+How can you "make" a state that is, by definition, the opposite of making? How can you visibly produce "non-doing"? Since a physical globe where text magically appears from nothing is hardly feasible, I decided to build it digitally.
+
+3. The Philosophy in Code
+M-Sphere is more than just a physics simulation. It is an allegory of our modern ego:
+
+The Figure: It represents the constructed self. Often rigid, golden, and "shiny" — in love with its own form and the status of being a "meditator."
+
+The Storm: These aren't just white flakes but our thoughts: often garish, neon-colored, and addictive. We constantly stir them up because we're used to the agitation.
+
+The Glitch: Letting go often feels to the ego like a system error, a rusting, a small death. The app visualizes this transition.
+
+4. The Realization
+The goal of this experience is not mere relaxation, but realization through interaction (or non-interaction). It challenges you to apply the principle of non-interference. When you stop moving the mouse or shaking your phone, the essential happens.
+
+The figure dissolves. The thoughts lose their hardness and become transparent. And what remains is the message Thomas Metzinger was pointing to:
+
+You are not the person in the center. You are not the storm of thoughts either.
+
+You are the water.
+
+Development: Jochen Hornung Dev Studios
+jochenhornung.de`;
 
 // --- Native Scrolling: Menü scrollt nativ, Spiel fixiert ---
 function enableMenuScroll() {
@@ -1093,7 +1278,7 @@ function drawMenu() {
   ctx.shadowColor = 'rgba(42, 191, 191, 0.4)';
   ctx.shadowBlur = 12;
   ctx.letterSpacing = isMobilePortrait ? '3px' : '8px';
-  ctx.fillText('INTERACTIVE MEDITATION', cx, curY);
+  ctx.fillText(t('subtitle'), cx, curY);
   ctx.letterSpacing = '0px';
   ctx.shadowBlur = 0;
   curY += subtitleSize * 2;
@@ -1110,8 +1295,8 @@ function drawMenu() {
   // Mehr Werkzeuge Link
   ctx.fillStyle = isMobilePortrait ? 'rgba(240, 236, 230, 0.5)' : 'rgba(240, 236, 230, 0.4)';
   ctx.font = `${subtitleSize * 0.65}px "Courier New", monospace`;
-  ctx.fillText('Mehr Werkzeuge', cx, curY);
-  const toolsW = ctx.measureText('Mehr Werkzeuge').width;
+  ctx.fillText(t('moreTools'), cx, curY);
+  const toolsW = ctx.measureText(t('moreTools')).width;
   const toolsH = subtitleSize * 0.8;
   menuButtons.tools = { x: cx - toolsW / 2, y: curY, w: toolsW, h: toolsH };
   curY += subtitleSize * 1.0;
@@ -1120,7 +1305,7 @@ function drawMenu() {
   ctx.fillText('v1.5', cx, curY);
   curY += subtitleSize * 1.0;
   // Spenden-Button
-  const donLabel = '♡ Unterstützen ♡';
+  const donLabel = t('donate');
   const donFont = subtitleSize * 0.85;
   ctx.font = `${donFont}px "Courier New", monospace`;
   const donTxtW = ctx.measureText(donLabel).width;
@@ -1140,7 +1325,37 @@ function drawMenu() {
   ctx.textBaseline = 'middle';
   ctx.fillText(donLabel, cx, donY + donH / 2);
   menuButtons.donate = { x: donX, y: donY, w: donW, h: donH };
-  curY += donH + sectionGap * 2;
+  curY += donH + sectionGap;
+
+  // --- Language Toggle (EN / DE) ---
+  const langFont = subtitleSize * 0.7;
+  ctx.font = `${langFont}px "Courier New", monospace`;
+  ctx.textBaseline = 'middle';
+  const langH = langFont * 1.8;
+  const langLabels = ['DE', 'EN'];
+  const langSel = lang === 'de' ? 0 : 1;
+  const langBtnW = langFont * 2.5;
+  const langGap = langFont * 0.4;
+  const langTotalW = langBtnW * 2 + langGap;
+  const langStartX = cx - langTotalW / 2;
+  menuButtons.langToggle = [];
+  for (let li = 0; li < 2; li++) {
+    const lx = langStartX + li * (langBtnW + langGap);
+    const sel = li === langSel;
+    ctx.beginPath();
+    ctx.roundRect(lx, curY, langBtnW, langH, langH * 0.25);
+    ctx.fillStyle = sel ? 'rgba(42, 191, 191, 0.15)' : 'rgba(26, 58, 92, 0.2)';
+    ctx.fill();
+    ctx.strokeStyle = sel ? 'rgba(42, 191, 191, 0.6)' : 'rgba(88, 130, 160, 0.25)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = sel ? '#2abfbf' : 'rgba(240, 236, 230, 0.5)';
+    ctx.textAlign = 'center';
+    ctx.fillText(langLabels[li], lx + langBtnW / 2, curY + langH / 2);
+    menuButtons.langToggle.push({ x: lx, y: curY, w: langBtnW, h: langH, lang: li === 0 ? 'de' : 'en' });
+  }
+  ctx.textBaseline = 'top';
+  curY += langH + sectionGap;
 
   // --- Hilfsfunktion: Settings-Reihe (Label + Buttons, optional einklappbar) ---
   function drawSettingsRow(label, options, selectedIdx, y, labelColor, collapseKey) {
@@ -1275,9 +1490,9 @@ function drawMenu() {
 
   // --- MEDITATIONSZEIT + TIMER ANZEIGEN (eine Zeile) ---
   const timeLabels = DURATION_OPTIONS.map(d => d.label + ' min');
-  timeLabels.push(timerVisible ? '⏱ An' : '⏱');
+  timeLabels.push(timerVisible ? t('timerAn') : t('timerAus'));
   const timeLabelColor = selectedDurationIdx < 0 ? '#f4a842' : null;
-  const timeRow = drawSettingsRow('MEDITATIONSZEIT', timeLabels, selectedDurationIdx, curY, timeLabelColor);
+  const timeRow = drawSettingsRow(t('meditationszeit'), timeLabels, selectedDurationIdx, curY, timeLabelColor);
   // Letzter Button ist Timer-Toggle (separater Hit-Bereich)
   const timerToggleBtn = timeRow.btns.pop();
   menuButtons.timer = timeRow.btns;
@@ -1294,38 +1509,41 @@ function drawMenu() {
   ctx.font = `${rowFont * 0.85}px "Courier New", monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(timerVisible ? '⏱ An' : '⏱', ttb.x + ttb.w / 2, ttb.y + ttb.h / 2);
+  ctx.fillText(timerVisible ? t('timerAn') : t('timerAus'), ttb.x + ttb.w / 2, ttb.y + ttb.h / 2);
   menuButtons.timerToggle = { x: ttb.x, y: ttb.y, w: ttb.w, h: ttb.h };
   curY = timeRow.bottomY + sectionGap;
 
   // --- ATMEN ---
   menuToggleAreas = {};
-  const breathRow = drawSettingsRow('ATEMRHYTHMUS', BREATHING_MODES, breathingMode, curY, null, 'breathing');
+  const breathLabels = lang === 'de' ? BREATHING_MODES : [t('aus'), 'Coherent 5.5:5.5', 'Calming 4:6', '4-7-8', 'Box 4-4-4-4'];
+  const breathRow = drawSettingsRow(t('atemrhythmus'), breathLabels, breathingMode, curY, null, 'breathing');
   menuButtons.breathing = breathRow.btns;
   curY = breathRow.bottomY + sectionGap;
 
   // --- MEDITATIONS-SOUND ---
-  const medRow = drawSettingsRow('MEDITATIONS-SOUND', MEDITATION_SOUNDS, meditationSoundIdx, curY, null, 'meditation');
+  const medLabels = lang === 'de' ? MEDITATION_SOUNDS : [t('stille'), t('drone'), t('klangschale'), t('tanpura'), '528 Hz', '432 Hz', t('binaural')];
+  const medRow = drawSettingsRow(t('meditationsSound'), medLabels, meditationSoundIdx, curY, null, 'meditation');
   menuButtons.meditation = medRow.btns;
   curY = medRow.bottomY + sectionGap;
 
   // --- GEDANKENMODUS (nur sichtbare Modi) ---
-  const visLabels = THOUGHT_MODES_VISIBLE.map(i => THOUGHT_MODES[i]);
+  const thoughtTR = lang === 'de' ? THOUGHT_MODES : [t('schweben'), 'Float2', 'Float3', t('schwebenMitSog'), t('sinken'), t('reflektieren'), 'Float2'];
+  const visLabels = THOUGHT_MODES_VISIBLE.map(i => thoughtTR[i]);
   const visSelectedIdx = THOUGHT_MODES_VISIBLE.indexOf(thoughtModeIdx);
-  const thoughtRow = drawSettingsRow('GEDANKENMODUS', visLabels, visSelectedIdx, curY, null, 'thoughtMode');
-  // Button-Indizes auf echte THOUGHT_MODES-Indizes mappen
+  const thoughtRow = drawSettingsRow(t('gedankenmodus'), visLabels, visSelectedIdx, curY, null, 'thoughtMode');
   thoughtRow.btns.forEach((btn, i) => { btn.idx = THOUGHT_MODES_VISIBLE[i]; });
   menuButtons.thoughtMode = thoughtRow.btns;
   curY = thoughtRow.bottomY + sectionGap;
 
   // --- GEDANKENFLUSS ---
-  const flowRow = drawSettingsRow('GEDANKENFLUSS', FLOW_LEVELS, flowLevelIdx, curY, null, 'flowLevel');
+  const flowRow = drawSettingsRow(t('gedankenfluss'), FLOW_LEVELS, flowLevelIdx, curY, null, 'flowLevel');
   menuButtons.flowLevel = flowRow.btns;
   curY = flowRow.bottomY + sectionGap;
 
   // --- ABLENKUNGEN (nur wenn via Burger aktiviert) ---
   if (showDistractionInMenu) {
-    const distractRow = drawSettingsRow('ABLENKUNGEN', DISTRACTION_MODES, distractionModeIdx, curY, null, 'distraction');
+    const distractLabels = [t('aus'), t('ein')];
+    const distractRow = drawSettingsRow(t('ablenkungen'), distractLabels, distractionModeIdx, curY, null, 'distraction');
     menuButtons.distractionMode = distractRow.btns;
     curY = distractRow.bottomY + sectionGap;
   } else {
@@ -1333,8 +1551,8 @@ function drawMenu() {
   }
 
   // --- DEIN GESICHT ---
-  const faceMobileLabels = isMobilePortrait ? ['Aus', 'Mediathek', 'Kamera', 'Laden'] : FACE_MODES;
-  const faceRow = drawSettingsRow('DEIN GESICHT', faceMobileLabels, faceModeIdx, curY, null, 'face');
+  const faceMobileLabels = isMobilePortrait ? [t('aus'), t('mediathek'), t('kamera'), t('laden')] : [t('aus'), t('foto'), t('webcam'), t('laden')];
+  const faceRow = drawSettingsRow(t('deinGesicht'), faceMobileLabels, faceModeIdx, curY, null, 'face');
   menuButtons.faceSwap = faceRow.btns;
   curY = faceRow.bottomY;
 
@@ -1380,19 +1598,19 @@ function drawMenu() {
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
-      ctx.fillText('Foto aufnehmen', cx, snapY + snapH / 2 + rowFont * 0.15);
+      ctx.fillText(t('fotoAufnehmen'), cx, snapY + snapH / 2 + rowFont * 0.15);
       menuButtons.webcamSnap = { x: snapX, y: snapY, w: snapW, h: snapH };
       curY = snapY + snapH + rowFont * 0.3;
     } else if (faceModeIdx === 2 && !webcamReady && faceSwapStatus === 'idle') {
       // Webcam wird gestartet...
       ctx.fillStyle = 'rgba(244, 168, 66, 0.9)';
-      ctx.fillText('Kamera wird gestartet...', cx, statusY);
+      ctx.fillText(t('kameraStartet'), cx, statusY);
       curY = statusY + rowFont * 0.8;
       menuButtons.webcamSnap = null;
     } else if (faceSwapStatus === 'uploading' || faceSwapStatus === 'processing') {
       // Animierte Punkte
       const dots = '.'.repeat(Math.floor(Date.now() / 500) % 4);
-      const label = faceSwapStatus === 'uploading' ? 'Sende Bild' : 'Face Swap läuft';
+      const label = faceSwapStatus === 'uploading' ? t('sendeBild') : t('faceSwapLaeuft');
       ctx.fillStyle = 'rgba(244, 168, 66, 0.9)';
       ctx.fillText(label + dots, cx, statusY);
       curY = statusY + rowFont * 0.8;
@@ -1400,12 +1618,12 @@ function drawMenu() {
     } else if (faceSwapStatus === 'done' && faceSwapImg) {
       // Kompakte Vorschau + Häkchen
       ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
-      ctx.fillText('✓ Eigenes Gesicht aktiv', cx, statusY);
+      ctx.fillText(t('gesichtAktiv'), cx, statusY);
       curY = statusY + rowFont * 0.8;
       menuButtons.webcamSnap = null;
     } else if (faceSwapStatus === 'error') {
       ctx.fillStyle = 'rgba(232, 106, 122, 0.9)';
-      const errMsg = faceSwapError || 'Fehler beim Face Swap';
+      const errMsg = faceSwapError || t('faceSwapFehler');
       ctx.fillText(errMsg.length > 40 ? errMsg.substring(0, 37) + '...' : errMsg, cx, statusY);
       curY = statusY + rowFont * 0.8;
       menuButtons.webcamSnap = null;
@@ -1438,8 +1656,8 @@ function drawMenu() {
   }
   const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   const startLabel = canStart
-    ? (isTouchDevice ? 'Tippe hier um zu starten' : 'Klicke hier um zu starten')
-    : 'Wähle eine Meditationszeit';
+    ? (isTouchDevice ? t('tapStart') : t('clickStart'))
+    : t('chooseDuration');
   ctx.font = `${canStart ? '700' : '400'} ${rowFont * 1.4}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -1512,7 +1730,7 @@ function drawMenu() {
     ctx.textBaseline = 'middle';
     ctx.font = `700 ${oFont * 1.3}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
     ctx.fillStyle = '#2abfbf';
-    ctx.fillText('Face Swap fertig!', oCx, oCy - unit * 0.18 * uiScale);
+    ctx.fillText(t('faceSwapFertig'), oCx, oCy - unit * 0.18 * uiScale);
 
     // Kreisvorschau
     const pR = unit * (isMobilePortrait ? 0.2 : 0.1);
@@ -1540,7 +1758,7 @@ function drawMenu() {
     const gap = oFont * 1.5;
 
     // Speichern
-    const sLabel = '💾 Speichern';
+    const sLabel = t('speichern');
     const sW = ctx.measureText(sLabel).width + oFont * 2;
     const sX = oCx - sW - gap / 2;
     ctx.beginPath();
@@ -1555,7 +1773,7 @@ function drawMenu() {
     menuButtons.faceSave = { x: sX, y: ovBtnY, w: sW, h: ovBH };
 
     // Weiter
-    const wLabel = 'Weiter';
+    const wLabel = t('weiter');
     const wW = ctx.measureText(wLabel).width + oFont * 2;
     const wX = oCx + gap / 2;
     ctx.beginPath();
@@ -1627,10 +1845,10 @@ function drawLegalOverlay() {
     legalBackBtn = null;
     const itemFont = Math.max(16, Math.min(W, H) * (isMob ? 0.045 : 0.028));
     const items = [
-      { label: showDistractionInMenu ? 'Ablenkungen ausblenden' : 'Ablenkungen einblenden', target: '_toggleDistraction' },
-      { label: 'Über M-Sphere', target: 'about' },
-      { label: 'Impressum', target: 'impressum' },
-      { label: 'Datenschutz', target: 'datenschutz' }
+      { label: showDistractionInMenu ? t('ablenkAus') : t('ablenkEin'), target: '_toggleDistraction' },
+      { label: t('ueberMSphere'), target: 'about' },
+      { label: t('impressum'), target: 'impressum' },
+      { label: t('datenschutz'), target: 'datenschutz' }
     ];
     const itemH = itemFont * 3;
     const totalH = items.length * itemH;
@@ -1676,13 +1894,14 @@ function drawLegalOverlay() {
   const backX = padding;
   const backY = topPad;
   ctx.font = `${backBtnSize * 0.6}px "Courier New", monospace`;
-  const backTextW = ctx.measureText('← Zurück').width;
+  const backLabel = t('zurueck');
+  const backTextW = ctx.measureText(backLabel).width;
   legalBackBtn = { x: backX, y: backY, w: backTextW + backBtnSize * 0.3, h: backBtnSize };
 
   ctx.fillStyle = 'rgba(42, 191, 191, 0.8)';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.fillText('← Zurück', backX, backY + backBtnSize / 2);
+  ctx.fillText(backLabel, backX, backY + backBtnSize / 2);
 
   // Inhaltsbereich (geclippt)
   const contentTop = topPad + closeBtnSize + fontSize * 0.5;
@@ -1696,7 +1915,7 @@ function drawLegalOverlay() {
   // Text aufbereiten mit Word-Wrap
   const text = legalOverlay === 'impressum' ? IMPRESSUM_TEXT
     : legalOverlay === 'datenschutz' ? DATENSCHUTZ_TEXT
-    : ABOUT_TEXT;
+    : (lang === 'en' ? ABOUT_TEXT_EN : ABOUT_TEXT_DE);
   const rawLines = text.split('\n');
   const firstLine = rawLines[0];
 
@@ -1859,6 +2078,14 @@ function handleMenuClick(x, y) {
   if (tls && hitBtn(tls)) {
     window.open('https://jochenhornung.de/werkzeuge/', '_blank');
     return true;
+  }
+  // Language Toggle
+  for (const btn of menuButtons.langToggle || []) {
+    if (hitBtn(btn)) {
+      lang = btn.lang;
+      localStorage.setItem('msphere_lang', lang);
+      return true;
+    }
   }
   // Spenden-Link
   const don = menuButtons.donate;
@@ -3483,17 +3710,17 @@ function frame() {
     ctx.fillStyle = `rgba(244, 168, 66, ${pulse})`;
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     if (isTouchDevice) {
-      ctx.fillText('Wische schnell über die Kugel', cx, cy - r - hintFontSize * 3.2);
+      ctx.fillText(t('hintMobile1'), cx, cy - r - hintFontSize * 3.2);
       if (deviceMotionGranted) {
-        ctx.fillText('oder schüttle dein Handy.', cx, cy - r - hintFontSize * 1.9);
+        ctx.fillText(t('hintMobile2'), cx, cy - r - hintFontSize * 1.9);
       } else {
         ctx.font = `${hintFontSize * 0.7}px monospace`;
         ctx.fillStyle = `rgba(244, 168, 66, ${pulse * 0.6})`;
-        ctx.fillText('(Handy-Schütteln: Browserzugriff nötig)', cx, cy - r - hintFontSize * 1.9);
+        ctx.fillText(t('hintMobile3'), cx, cy - r - hintFontSize * 1.9);
       }
     } else {
-      ctx.fillText('Drücke, halte und schüttle mit der Maus die Kugel,', cx, cy - r - hintFontSize * 3.2);
-      ctx.fillText('bis der Kreis geschlossen ist.', cx, cy - r - hintFontSize * 1.9);
+      ctx.fillText(t('hintDesktop1'), cx, cy - r - hintFontSize * 3.2);
+      ctx.fillText(t('hintDesktop2'), cx, cy - r - hintFontSize * 1.9);
     }
     ctx.shadowBlur = 0;
     ctx.textAlign = 'start';
@@ -3575,14 +3802,14 @@ function frame() {
         ctx.shadowColor = `rgba(180, 220, 255, ${textFade * textPulse * 0.3})`;
         ctx.shadowBlur = i * 15;
         ctx.fillStyle = `rgba(180, 220, 255, ${textFade * textPulse * 0.05})`;
-        ctx.fillText('Du bist das Wasser', cx, cy);
+        ctx.fillText(t('youAreWater'), cx, cy);
       }
 
       // Haupttext
       ctx.shadowColor = `rgba(200, 235, 255, ${textFade * textPulse * 0.8})`;
       ctx.shadowBlur = 20;
       ctx.fillStyle = `rgba(230, 245, 255, ${textFade * textPulse * 0.7})`;
-      ctx.fillText('Du bist das Wasser', cx, cy);
+      ctx.fillText(t('youAreWater'), cx, cy);
 
       ctx.restore();
     }
@@ -3628,12 +3855,12 @@ function frame() {
       // "klick/tippe" zum Neustart
       const isTouchDone = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
       ctx.fillStyle = `rgba(255,255,255,${hintAlpha})`;
-      ctx.fillText(isTouchDone ? 'tippe' : 'klick', cx, cy + r + 35);
+      ctx.fillText(isTouchDone ? t('tapRestart') : t('clickRestart'), cx, cy + r + 35);
       // Spenden-Button
       const donAlpha = Math.min(0.7, (elapsed - 45) / 6 * 0.7);
       const donFont = hintFont * 1.1;
       ctx.font = `${donFont}px "Courier New", monospace`;
-      const donText = '♡ Unterstützen ♡';
+      const donText = t('donate');
       const donTxtW = ctx.measureText(donText).width;
       const donBtnW = donTxtW + donFont * 2;
       const donBtnH = donFont * 2.2;
@@ -3803,7 +4030,7 @@ function frame() {
     const lcy = cH / 2;
     const losIsMob = cW < 600 && cH > cW;
     const fontSize = Math.min(cW, cH) * (losIsMob ? 0.065 : 0.045);
-    const txt = 'Du darfst jetzt loslassen';
+    const txt = t('letGo');
     ctx.font = `300 ${fontSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
