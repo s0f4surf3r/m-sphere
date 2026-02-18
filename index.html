@@ -1327,35 +1327,7 @@ function drawMenu() {
   menuButtons.donate = { x: donX, y: donY, w: donW, h: donH };
   curY += donH + sectionGap;
 
-  // --- Language Toggle (EN / DE) ---
-  const langFont = subtitleSize * 0.7;
-  ctx.font = `${langFont}px "Courier New", monospace`;
-  ctx.textBaseline = 'middle';
-  const langH = langFont * 1.8;
-  const langLabels = ['DE', 'EN'];
-  const langSel = lang === 'de' ? 0 : 1;
-  const langBtnW = langFont * 2.5;
-  const langGap = langFont * 0.4;
-  const langTotalW = langBtnW * 2 + langGap;
-  const langStartX = cx - langTotalW / 2;
-  menuButtons.langToggle = [];
-  for (let li = 0; li < 2; li++) {
-    const lx = langStartX + li * (langBtnW + langGap);
-    const sel = li === langSel;
-    ctx.beginPath();
-    ctx.roundRect(lx, curY, langBtnW, langH, langH * 0.25);
-    ctx.fillStyle = sel ? 'rgba(42, 191, 191, 0.15)' : 'rgba(26, 58, 92, 0.2)';
-    ctx.fill();
-    ctx.strokeStyle = sel ? 'rgba(42, 191, 191, 0.6)' : 'rgba(88, 130, 160, 0.25)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.fillStyle = sel ? '#2abfbf' : 'rgba(240, 236, 230, 0.5)';
-    ctx.textAlign = 'center';
-    ctx.fillText(langLabels[li], lx + langBtnW / 2, curY + langH / 2);
-    menuButtons.langToggle.push({ x: lx, y: curY, w: langBtnW, h: langH, lang: li === 0 ? 'de' : 'en' });
-  }
-  ctx.textBaseline = 'top';
-  curY += langH + sectionGap;
+  // Language Toggle wird außerhalb des Scroll-Bereichs gezeichnet (siehe unten)
 
   // --- Hilfsfunktion: Settings-Reihe (Label + Buttons, optional einklappbar) ---
   function drawSettingsRow(label, options, selectedIdx, y, labelColor, collapseKey) {
@@ -1692,6 +1664,36 @@ function drawMenu() {
     ctx.stroke();
   }
   ctx.lineCap = 'butt';
+
+  // --- Language Toggle (EN / DE) — oben links, gegenüber Burger ---
+  const langFont = burgerSize * 0.38;
+  ctx.font = `${langFont}px "Courier New", monospace`;
+  const langH = burgerSize * 0.5;
+  const langBtnW = langFont * 2.2;
+  const langGap = langFont * 0.3;
+  const langPad = burgerPad;
+  const langY = burgerY + (burgerSize - langH) / 2;
+  const langLabels = ['DE', 'EN'];
+  const langSel = lang === 'de' ? 0 : 1;
+  menuButtons.langToggle = [];
+  for (let li = 0; li < 2; li++) {
+    const lx = langPad + li * (langBtnW + langGap);
+    const sel = li === langSel;
+    ctx.beginPath();
+    ctx.roundRect(lx, langY, langBtnW, langH, langH * 0.3);
+    ctx.fillStyle = sel ? 'rgba(42, 191, 191, 0.15)' : 'rgba(26, 58, 92, 0.2)';
+    ctx.fill();
+    ctx.strokeStyle = sel ? 'rgba(42, 191, 191, 0.6)' : 'rgba(88, 130, 160, 0.25)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = sel ? '#2abfbf' : 'rgba(240, 236, 230, 0.5)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(langLabels[li], lx + langBtnW / 2, langY + langH / 2);
+    menuButtons.langToggle.push({ x: lx, y: langY, w: langBtnW, h: langH, lang: li === 0 ? 'de' : 'en' });
+  }
+  ctx.textAlign = 'start';
+  ctx.textBaseline = 'alphabetic';
 
   // Scroll-Indikator (animierter Chevron) — Screen-Space
   const maxScroll = Math.max(0, menuContentHeight - H);
