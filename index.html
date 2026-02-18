@@ -1292,14 +1292,6 @@ function drawMenu() {
   const linkH = subtitleSize;
   menuButtons.link = { x: cx - linkW / 2, y: curY, w: linkW, h: linkH };
   curY += subtitleSize * 1.0;
-  // Mehr Werkzeuge Link
-  ctx.fillStyle = isMobilePortrait ? 'rgba(240, 236, 230, 0.5)' : 'rgba(240, 236, 230, 0.4)';
-  ctx.font = `${subtitleSize * 0.65}px "Courier New", monospace`;
-  ctx.fillText(t('moreTools'), cx, curY);
-  const toolsW = ctx.measureText(t('moreTools')).width;
-  const toolsH = subtitleSize * 0.8;
-  menuButtons.tools = { x: cx - toolsW / 2, y: curY, w: toolsW, h: toolsH };
-  curY += subtitleSize * 1.0;
   ctx.fillStyle = 'rgba(240, 236, 230, 0.25)';
   ctx.font = `${subtitleSize * 0.5}px "Courier New", monospace`;
   ctx.fillText('v1.5', cx, curY);
@@ -1849,6 +1841,7 @@ function drawLegalOverlay() {
     const items = [
       { label: showDistractionInMenu ? t('ablenkAus') : t('ablenkEin'), target: '_toggleDistraction' },
       { label: t('ueberMSphere'), target: 'about' },
+      { label: t('moreTools'), target: '_moreTools' },
       { label: t('impressum'), target: 'impressum' },
       { label: t('datenschutz'), target: 'datenschutz' }
     ];
@@ -2002,7 +1995,12 @@ function handleMenuClick(x, y) {
         if (x >= item.x && x <= item.x + item.w && y >= item.y && y <= item.y + item.h) {
           if (item.target === '_toggleDistraction') {
             showDistractionInMenu = !showDistractionInMenu;
-            if (!showDistractionInMenu) distractionModeIdx = 0; // Beim Ausblenden auch deaktivieren
+            if (!showDistractionInMenu) distractionModeIdx = 0;
+            legalOverlay = null;
+            return true;
+          }
+          if (item.target === '_moreTools') {
+            window.open('https://jochenhornung.de/werkzeuge/', '_blank');
             legalOverlay = null;
             return true;
           }
@@ -2073,12 +2071,6 @@ function handleMenuClick(x, y) {
   const lnk = menuButtons.link;
   if (lnk && hitBtn(lnk)) {
     window.open('https://jochenhornung.de', '_blank');
-    return true;
-  }
-  // Mehr Werkzeuge Link
-  const tls = menuButtons.tools;
-  if (tls && hitBtn(tls)) {
-    window.open('https://jochenhornung.de/werkzeuge/', '_blank');
     return true;
   }
   // Language Toggle
