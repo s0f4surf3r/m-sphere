@@ -1637,8 +1637,8 @@ function drawMenu() {
   document.getElementById('menuSpacer').style.height = menuContentHeight + 'px';
 
   // ☰ Burger-Icon oben rechts (Screen-Space, scrollt nicht mit)
-  const burgerSize = unit * 0.04;
-  const burgerPad = unit * 0.03;
+  const burgerSize = unit * (isMobilePortrait ? 0.08 : 0.04);
+  const burgerPad = unit * (isMobilePortrait ? 0.04 : 0.03);
   const burgerX = W - burgerPad - burgerSize;
   const burgerY = Math.max(burgerPad, safeTop + burgerPad * 0.5);
   burgerBtnArea = { x: burgerX, y: burgerY, w: burgerSize, h: burgerSize };
@@ -1658,9 +1658,9 @@ function drawMenu() {
   ctx.lineCap = 'butt';
 
   // --- Language Toggle (EN / DE) — oben links, gegenüber Burger ---
-  const langFont = burgerSize * 0.38;
+  const langFont = burgerSize * (isMobilePortrait ? 0.42 : 0.38);
   ctx.font = `${langFont}px "Courier New", monospace`;
-  const langH = burgerSize * 0.5;
+  const langH = burgerSize * (isMobilePortrait ? 0.55 : 0.5);
   const langBtnW = langFont * 2.2;
   const langGap = langFont * 0.3;
   const langPad = burgerPad;
