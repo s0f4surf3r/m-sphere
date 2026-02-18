@@ -1,0 +1,9 @@
+.DS_Store
+cert.pem
+key.pem
+https_server.py
+faceswap-proxy.py
+faceswap-test.html
+favicon_io_msphere/
+hero_msphere.logoist
+japanese_monk_cyborg_sitting.glb

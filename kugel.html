@@ -3,7 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>M-Sphere</title>
+<title>M-Sphere — Interactive Meditation</title>
+<meta name="description" content="Schüttle die Schneekugel. Lass los. Finde Stille. Eine interaktive Meditations-Erfahrung im Browser.">
+<meta property="og:title" content="M-Sphere — Interactive Meditation">
+<meta property="og:description" content="Schüttle die Schneekugel. Lass los. Finde Stille. Eine interaktive Meditations-Erfahrung im Browser.">
+<meta property="og:image" content="https://s0f4surf3r.github.io/m-sphere/hero_msphere.png">
+<meta property="og:url" content="https://s0f4surf3r.github.io/m-sphere/kugel.html">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="M-Sphere — Interactive Meditation">
+<meta name="twitter:description" content="Schüttle die Schneekugel. Lass los. Finde Stille.">
+<meta name="twitter:image" content="https://s0f4surf3r.github.io/m-sphere/hero_msphere.png">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom); --sal: env(safe-area-inset-left); }
@@ -37,6 +52,7 @@ canvas {
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
@@ -346,9 +362,12 @@ let model3D = null;
 let modelLoaded = false;
 let modelLoadProgress = 0;
 
+const dracoLoader = new DRACOLoader();
+dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/libs/draco/');
 const loader = new GLTFLoader();
+loader.setDRACOLoader(dracoLoader);
 loader.load(
-  'japanese_monk_cyborg_sitting.glb',
+  'monk_compressed.glb',
   (gltf) => {
     model3D = gltf.scene;
     // Modell zentrieren und skalieren
