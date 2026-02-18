@@ -1046,7 +1046,7 @@ function drawMenu() {
   const rowFont = unit * 0.02 * uiScale;
   const btnH = unit * 0.04 * uiScale;
   const btnGap = unit * 0.012 * uiScale;
-  const sectionGap = unit * 0.025 * uiScale;
+  const sectionGap = unit * 0.025 * (isMobilePortrait ? 1.5 : 1);
 
   const safeTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
   let curY = Math.max(H * 0.07, safeTop + unit * 0.02);
