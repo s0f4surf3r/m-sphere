@@ -1234,7 +1234,7 @@ function drawMenu() {
   const sectionGap = unit * 0.025 * (isMobilePortrait ? 1.0 : 1);
 
   const safeTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
-  let curY = Math.max(H * 0.07, safeTop + unit * 0.02);
+  let curY = Math.max(H * (isMobilePortrait ? 0.09 : 0.07), safeTop + unit * (isMobilePortrait ? 0.04 : 0.02));
 
   // Native Scrolling: Gesamten Menü-Inhalt um scrollY nach oben verschieben
   const scrollY = window.scrollY || 0;
@@ -1317,7 +1317,7 @@ function drawMenu() {
   ctx.textBaseline = 'middle';
   ctx.fillText(donLabel, cx, donY + donH / 2);
   menuButtons.donate = { x: donX, y: donY, w: donW, h: donH };
-  curY += donH + sectionGap;
+  curY += donH + sectionGap * (isMobilePortrait ? 2.5 : 1);
 
   // Language Toggle wird außerhalb des Scroll-Bereichs gezeichnet (siehe unten)
 
