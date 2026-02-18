@@ -1227,7 +1227,7 @@ function drawMenu() {
 
   // Vertikales Layout berechnen
   const titleSize = unit * 0.12;
-  const subtitleSize = unit * 0.02 * uiScale;
+  const subtitleSize = unit * (isMobilePortrait ? 0.02 : 0.028) * uiScale;
   const rowFont = unit * 0.02 * uiScale;
   const btnH = unit * 0.04 * uiScale;
   const btnGap = unit * 0.012 * uiScale;
@@ -1270,7 +1270,7 @@ function drawMenu() {
   ctx.letterSpacing = '0px';
   const titleMetrics = ctx.measureText('M-SPHERE');
   const actualTitleH = titleMetrics.actualBoundingBoxDescent || titleSize;
-  curY += actualTitleH + (isMobilePortrait ? unit * 0.015 : unit * 0.008);
+  curY += actualTitleH + (isMobilePortrait ? unit * 0.015 : unit * 0.015);
 
   // Untertitel
   ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 0.75)' : 'rgba(42, 191, 191, 0.55)';
