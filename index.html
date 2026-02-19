@@ -1138,10 +1138,11 @@ function drawParticles() {
     desat = progress;
     medAlpha = Math.pow(1 - progress, 0.5); // Wurzelkurve: länger sichtbar, erst spät weg
   } else if (state === 'done') {
-    // Partikel sind am Ende der Meditation bereits unsichtbar (medAlpha ≈ 0)
+    // Partikel sanft über 2s ausfaden nach Meditationsende
+    const doneFade = Math.max(0, 1 - (Date.now() - doneTime) / 2000);
     desat = 1;
-    medAlpha = 0;
-    particles.length = 0;
+    medAlpha = doneFade * 0.15; // waren am Ende der Meditation schon fast weg
+    if (doneFade <= 0) particles.length = 0;
   }
 
   // Schrumpf-Faktor: nur sanft während Meditation (nicht aggressiv)
@@ -3914,8 +3915,13 @@ function frame() {
       const shrinkScale = shrinkModeIdx === 1 ? (1 - progress) : 1;
       drawModel3D(cx, cy, r, alpha, glitchOffset, Math.min(1, glitchAmount), shrinkScale);
     }
+  } else if (state === 'done') {
+    // Mönch über 2s sanft ausfaden
+    const doneMonkFade = Math.max(0, 1 - (Date.now() - doneTime) / 2000);
+    if (doneMonkFade > 0.01) {
+      drawModel3D(cx, cy, r, doneMonkFade * 0.2, 0, 0.8);
+    }
   }
-  // done: kein Mönch
 
   // Mönch-Kollisionsmaske aktualisieren (NACH dem Zeichnen, VOR den Partikeln)
   monkMaskAge++;
@@ -4030,7 +4036,7 @@ function frame() {
 
     // "Du bist das Wasser" — magischer Satz mit Glow (nach 5s Stille)
     const _voiceRaw = easterEggVoice === 'zoe' ? window._voiceRawBufferZoe : (lang === 'en' ? window._voiceRawBufferEn : window._voiceRawBufferKind);
-    if (elapsed > 5 && !voicePlayed && audioCtx && _voiceRaw) {
+    if (elapsed > 3.5 && !voicePlayed && audioCtx && _voiceRaw) {
       voicePlayed = true;
       // Voice über AudioContext abspielen (kein Autoplay-Block)
       if (!voiceBuffer) {
