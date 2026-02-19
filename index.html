@@ -1138,11 +1138,18 @@ function drawParticles() {
     desat = progress;
     medAlpha = Math.pow(1 - progress, 0.5); // Wurzelkurve: länger sichtbar, erst spät weg
   } else if (state === 'done') {
-    // Partikel sanft über 2s ausfaden nach Meditationsende
-    const doneFade = Math.max(0, 1 - (Date.now() - doneTime) / 2000);
-    desat = 1;
-    medAlpha = doneFade * 0.05; // waren am Ende der Meditation schon fast weg
-    if (doneFade <= 0) particles.length = 0;
+    const doneElapsed = (Date.now() - doneTime) / 1000;
+    if (doneElapsed < 35) {
+      // Erst: alte Meditationspartikel ausfaden
+      const doneFade = Math.max(0, 1 - doneElapsed / 2);
+      desat = 1;
+      medAlpha = doneFade * 0.05;
+      if (doneFade <= 0) particles.length = 0;
+    } else {
+      // Rebirth-Phase: Partikel normal, bunt, voll sichtbar
+      desat = 0;
+      medAlpha = 1;
+    }
   }
 
   // Schrumpf-Faktor: nur sanft während Meditation (nicht aggressiv)
@@ -4081,23 +4088,28 @@ function frame() {
     // Nach 35s: Gedanken kommen sanft zurück — der Kreislauf beginnt von vorn
     if (elapsed > 35) {
       const rebirth = Math.min(1, (elapsed - 35) / 20); // über 20s langsam aufbauen
-      // Sanftes Spawnen aus der Mitte — wie Gedanken die von allein entstehen
+      // Spawnen aus oberer Hälfte — Gedanken fallen herunter
       if (Math.random() < rebirth * 0.3) {
-        const angle = Math.random() * Math.PI * 2;
-        const dist = Math.random() * r * 0.3;
+        const spawnX = cx + (Math.random() - 0.5) * r * 0.8;
+        const spawnY = cy - r * 0.3 - Math.random() * r * 0.4;
         particles.push({
-          x: cx + Math.cos(angle) * dist,
-          y: cy + Math.sin(angle) * dist,
-          vx: (Math.random() - 0.5) * 0.5,
-          vy: (Math.random() - 0.5) * 0.5 - 0.3,
+          x: spawnX,
+          y: spawnY,
+          vx: (Math.random() - 0.5) * 0.3,
+          vy: 0.2 + Math.random() * 0.3,
           life: 1,
-          decay: 0.0004 + Math.random() * 0.0006,
+          decay: 0.0002 + Math.random() * 0.0003,
           size: 1.5 + Math.random() * 3,
           color: NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)],
           age: 0
         });
       }
-      // Partikel updaten und zeichnen
+      // Gravitation auf Rebirth-Partikel anwenden
+      for (const p of particles) {
+        p.vy += 0.003 * lowFpsDt;
+        p.vx *= Math.pow(0.995, lowFpsDt);
+        p.vy *= Math.pow(0.995, lowFpsDt);
+      }
       updateParticles(cx, cy, r);
       ctx.save();
       ctx.beginPath();
