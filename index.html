@@ -3503,6 +3503,10 @@ function startFaceSwap(selfieDataUrl) {
   showPayPalOverlay();
 }
 
+// Payment-State für AUTHORIZE → CAPTURE Flow
+let pendingAuthorizationID = null;
+let pendingPaymentToken = null;
+
 function executeFaceSwap(selfieDataUrl, mode, token) {
   faceSwapStatus = 'uploading';
   faceSwapError = null;
@@ -3517,7 +3521,7 @@ function executeFaceSwap(selfieDataUrl, mode, token) {
   const body = {
     swap_image: selfieDataUrl,
     input_image: monkDataUrl,
-    mode: mode || 'free'
+    mode: mode || 'paid'
   };
   if (token) body.token = token;
 
@@ -3526,19 +3530,13 @@ function executeFaceSwap(selfieDataUrl, mode, token) {
     headers,
     body: JSON.stringify(body)
   })
-  .then(res => {
-    if (res.status === 429) {
-      faceSwapStatus = 'error';
-      faceSwapError = t('faceSwapLimit');
-      return null;
-    }
-    return res.json();
-  })
+  .then(res => res.json())
   .then(data => {
-    if (!data) return;
     if (data.error) {
       faceSwapStatus = 'error';
       faceSwapError = data.error;
+      // Bei Fehler VOR dem Swap: Autorisierung voiden
+      voidPayment();
       return;
     }
     faceSwapPredictionId = data.id;
@@ -3548,7 +3546,38 @@ function executeFaceSwap(selfieDataUrl, mode, token) {
   .catch(err => {
     faceSwapStatus = 'error';
     faceSwapError = err.message;
+    voidPayment();
   });
+}
+
+function capturePayment() {
+  if (!pendingAuthorizationID || !pendingPaymentToken) return;
+  fetch(PAYPAL_API + '/capture-payment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      authorizationID: pendingAuthorizationID,
+      token: pendingPaymentToken
+    })
+  }).then(() => {
+    pendingAuthorizationID = null;
+    pendingPaymentToken = null;
+  }).catch(() => {});
+}
+
+function voidPayment() {
+  if (!pendingAuthorizationID || !pendingPaymentToken) return;
+  fetch(PAYPAL_API + '/void-payment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      authorizationID: pendingAuthorizationID,
+      token: pendingPaymentToken
+    })
+  }).then(() => {
+    pendingAuthorizationID = null;
+    pendingPaymentToken = null;
+  }).catch(() => {});
 }
 
 function loadPayPalSDK() {
@@ -3587,17 +3616,20 @@ function showPayPalOverlay() {
         });
       },
       onApprove: (data) => {
-        return fetch(PAYPAL_API + '/capture-order', {
+        return fetch(PAYPAL_API + '/authorize-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ orderID: data.orderID })
         })
         .then(res => res.json())
-        .then(captureData => {
-          if (captureData.error) throw new Error(captureData.error);
+        .then(authData => {
+          if (authData.error) throw new Error(authData.error);
+          // Autorisierung speichern — Geld wird erst bei Erfolg eingezogen
+          pendingAuthorizationID = authData.authorizationID;
+          pendingPaymentToken = authData.token;
           hidePayPalOverlay();
           if (pendingSelfie) {
-            executeFaceSwap(pendingSelfie, 'paid', captureData.token);
+            executeFaceSwap(pendingSelfie, 'paid', authData.token);
             pendingSelfie = null;
           }
         });
@@ -3622,12 +3654,18 @@ function showPayPalOverlay() {
 window.hidePayPalOverlay = function() {
   document.getElementById('paypalOverlay').style.display = 'none';
   pendingSelfie = null;
+  // Falls schon autorisiert und User bricht ab → Geld freigeben
+  if (pendingAuthorizationID && faceSwapStatus !== 'processing') {
+    voidPayment();
+  }
   // Status zurücksetzen damit User erneut starten kann
-  faceSwapStatus = 'idle';
-  faceSwapError = null;
+  if (faceSwapStatus !== 'uploading' && faceSwapStatus !== 'processing') {
+    faceSwapStatus = 'idle';
+    faceSwapError = null;
+  }
   // Webcam stoppen falls noch aktiv
   if (webcamStream) stopWebcam();
-  faceModeIdx = 0; // zurück auf "Aus"
+  if (faceSwapStatus === 'idle') faceModeIdx = 0;
 };
 
 function pollFaceSwap() {
@@ -3637,24 +3675,23 @@ function pollFaceSwap() {
   .then(res => res.json())
   .then(data => {
     if (data.status === 'succeeded' && data.output) {
-      // Erfolg — Bild laden
+      // Erfolg — Geld einziehen + Bild laden
       clearInterval(faceSwapPollTimer);
       faceSwapPollTimer = null;
+      capturePayment(); // Jetzt erst wird bezahlt!
       const outputUrl = typeof data.output === 'string' ? data.output : data.output[0];
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
-        // Maske anwenden: Hintergrund entfernen
         const masked = applyFaceSwapMask(img);
         faceSwapImg = masked;
         faceSwapStatus = 'done';
-        faceSwapShowSave = true; // Speichern-Overlay zeigen
+        faceSwapShowSave = true;
         markFaceSwapUsed();
-        // In localStorage speichern (als DataURL mit Transparenz)
         try {
           localStorage.setItem('msphere_faceswap', masked.toDataURL('image/png'));
           localStorage.setItem('msphere_facemode', '1');
-        } catch(e) { /* localStorage voll oder CORS */ }
+        } catch(e) {}
       };
       img.onerror = () => {
         faceSwapStatus = 'error';
@@ -3666,11 +3703,13 @@ function pollFaceSwap() {
       faceSwapPollTimer = null;
       faceSwapStatus = 'error';
       faceSwapError = 'Kein Gesicht erkannt';
+      voidPayment(); // Kein Ergebnis → Geld zurück
     } else if (data.status === 'failed' || data.status === 'canceled') {
       clearInterval(faceSwapPollTimer);
       faceSwapPollTimer = null;
       faceSwapStatus = 'error';
       faceSwapError = data.error || 'Face Swap fehlgeschlagen';
+      voidPayment(); // Fehlgeschlagen → Geld zurück
     }
     // 'starting' / 'processing' → weiter pollen
   })
@@ -3679,6 +3718,7 @@ function pollFaceSwap() {
     faceSwapPollTimer = null;
     faceSwapStatus = 'error';
     faceSwapError = err.message;
+    voidPayment(); // Netzwerk-Fehler → Geld zurück
   });
 }
 
