@@ -4148,7 +4148,7 @@ function frame() {
   // Counter-Ring um die Kugel (zeigt thoughtCounter %) — fixe Position, nicht mit Atem
   // Counter-Ring: im done-State über 3s sanft ausfaden
   const ringFade = state === 'done' ? Math.max(0, 1 - (Date.now() - doneTime) / 3000) : 1;
-  if (thoughtCounter > 0 && ringFade > 0.01) {
+  if (thoughtCounter > 0 && ringFade > 0.01 && state !== 'idle') {
     const isFull = thoughtCounter >= 100;
     const angle = (thoughtCounter / 100) * Math.PI * 2;
     const ringPulse = Math.sin(Date.now() * 0.004) * 0.1 + 0.9;
