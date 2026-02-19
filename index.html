@@ -4010,7 +4010,7 @@ function frame() {
     ctx.fill();
 
     // "Du bist das Wasser" — magischer Satz mit Glow (nach 5s Stille)
-    const _voiceRaw = easterEggVoice === 'levi' ? window._voiceRawBufferKind : easterEggVoice === 'zoe' ? window._voiceRawBufferZoe : (lang === 'en' ? window._voiceRawBufferEn : window._voiceRawBufferDe);
+    const _voiceRaw = easterEggVoice === 'zoe' ? window._voiceRawBufferZoe : (lang === 'en' ? window._voiceRawBufferEn : window._voiceRawBufferKind);
     if (elapsed > 5 && !voicePlayed && audioCtx && _voiceRaw) {
       voicePlayed = true;
       // Voice über AudioContext abspielen (kein Autoplay-Block)
@@ -4305,7 +4305,7 @@ function frame() {
       const hcx = cx;
       const hMob = cW < 600 && cH > cW;
       const hFont = Math.min(cW, cH) * (hMob ? 0.045 : 0.03);
-      const hcy = cy - r - hFont * 4.5;
+      const hcy = cy - r - hFont * 6;
       ctx.font = `300 ${hFont}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
