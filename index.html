@@ -1682,7 +1682,7 @@ function drawMenu() {
     ctx.shadowBlur = 10;
     ctx.fillStyle = `rgba(232, 106, 122, ${pulse})`;
   } else {
-    const waber = Math.sin(Date.now() * 0.003) * 0.3 + 0.7;
+    const waber = Math.sin(Date.now() * 0.001) * 0.3 + 0.7;
     ctx.shadowColor = `rgba(244, 168, 66, ${waber * 0.4})`;
     ctx.shadowBlur = 15;
     ctx.fillStyle = `rgba(244, 168, 66, ${waber})`;
@@ -4330,7 +4330,7 @@ function frame() {
       ctx.fillText(isTouchDone ? t('tapRestart') : t('clickRestart'), cx, cy + r + 35);
       // Spenden-Button
       const donAlpha = Math.min(0.9, (elapsed - 45) / 4 * 0.9);
-      const donFont = hintFont * (doneIsMob ? 1.2 : 1.0);
+      const donFont = hintFont * (doneIsMob ? 0.8 : 1.0);
       ctx.font = `${donFont}px "Courier New", monospace`;
       const donText = t('donate');
       const donTxtW = ctx.measureText(donText).width;
