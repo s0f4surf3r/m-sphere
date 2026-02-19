@@ -107,7 +107,7 @@ const TR = {
     faceSwapLimit: 'Face Swap: 1× pro Tag möglich. Morgen wieder!',
     faceSwapFertig: 'Face Swap fertig!',
     faceSwapKaufen: 'Face Swap: 0,10 €',
-    faceSwapTagesLimit: 'Face Swap ist kostenpflichtig.',
+    faceSwapTagesLimit: 'Der Face Swap nutzt einen externen KI-Dienst, dessen Kosten wir weitergeben.',
     paypalFehler: 'Zahlung fehlgeschlagen. Bitte erneut versuchen.',
     abbrechen: 'Abbrechen',
     speichern: '💾 Speichern',
@@ -177,7 +177,7 @@ const TR = {
     faceSwapLimit: 'Face Swap: 1× per day. Try again tomorrow!',
     faceSwapFertig: 'Face Swap done!',
     faceSwapKaufen: 'Face Swap: €0.10',
-    faceSwapTagesLimit: 'Face Swap requires payment.',
+    faceSwapTagesLimit: 'Face Swap uses an external AI service — we pass on the cost.',
     paypalFehler: 'Payment failed. Please try again.',
     abbrechen: 'Cancel',
     speichern: '💾 Save',
@@ -3584,7 +3584,7 @@ function loadPayPalSDK() {
   return new Promise((resolve, reject) => {
     if (paypalSDKLoaded && window.paypal) { resolve(); return; }
     const script = document.createElement('script');
-    script.src = 'https://www.paypal.com/sdk/js?client-id=' + PAYPAL_CLIENT_ID + '&currency=EUR&disable-funding=sepa,card,credit,bancontact,blik,eps,giropay,ideal,mybank,p24,sofort,venmo';
+    script.src = 'https://www.paypal.com/sdk/js?client-id=' + PAYPAL_CLIENT_ID + '&currency=EUR&intent=authorize&disable-funding=sepa,card,credit,bancontact,blik,eps,giropay,ideal,mybank,p24,sofort,venmo';
     script.onload = () => { paypalSDKLoaded = true; resolve(); };
     script.onerror = () => reject(new Error('PayPal SDK failed to load'));
     document.head.appendChild(script);
