@@ -3602,48 +3602,65 @@ function showPayPalOverlay() {
   container.innerHTML = '';
 
   loadPayPalSDK().then(() => {
+    console.log('[PayPal] SDK geladen, rendere Buttons...');
     window.paypal.Buttons({
       style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay', height: 40 },
       createOrder: () => {
+        console.log('[PayPal] createOrder aufgerufen...');
         return fetch(PAYPAL_API + '/create-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' }
         })
         .then(res => res.json())
         .then(data => {
+          console.log('[PayPal] createOrder Antwort:', data);
           if (data.error) throw new Error(data.error);
           return data.orderID;
+        })
+        .catch(err => {
+          console.error('[PayPal] createOrder Fehler:', err);
+          throw err;
         });
       },
-      onApprove: (data) => {
-        return fetch(PAYPAL_API + '/authorize-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderID: data.orderID })
-        })
-        .then(res => res.json())
-        .then(authData => {
-          if (authData.error) throw new Error(authData.error);
-          // Autorisierung speichern — Geld wird erst bei Erfolg eingezogen
-          pendingAuthorizationID = authData.authorizationID;
-          pendingPaymentToken = authData.token;
-          hidePayPalOverlay();
-          if (pendingSelfie) {
-            executeFaceSwap(pendingSelfie, 'paid', authData.token);
-            pendingSelfie = null;
-          }
+      onApprove: (data, actions) => {
+        console.log('[PayPal] onApprove, orderID:', data.orderID);
+        return actions.order.authorize().then(authorization => {
+          console.log('[PayPal] Autorisierung:', authorization);
+          const authDetail = authorization.purchase_units[0].payments.authorizations[0];
+          const authorizationID = authDetail.id;
+          // Token vom Server holen für sicheren Capture/Void
+          return fetch(PAYPAL_API + '/authorize-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderID: data.orderID })
+          })
+          .then(res => res.json())
+          .then(authData => {
+            console.log('[PayPal] Server-Token:', authData);
+            if (authData.error) throw new Error(authData.error);
+            pendingAuthorizationID = authData.authorizationID;
+            pendingPaymentToken = authData.token;
+            hidePayPalOverlay();
+            if (pendingSelfie) {
+              executeFaceSwap(pendingSelfie, 'paid', authData.token);
+              pendingSelfie = null;
+            }
+          });
         });
       },
       onCancel: () => {
+        console.log('[PayPal] Abgebrochen');
         hidePayPalOverlay();
       },
       onError: (err) => {
+        console.error('[PayPal] onError:', err);
         hidePayPalOverlay();
         faceSwapStatus = 'error';
         faceSwapError = t('paypalFehler');
       }
     }).render('#paypal-button-container');
-  }).catch(() => {
+  }).catch(err => {
+    console.error('[PayPal] SDK-Fehler:', err);
     hidePayPalOverlay();
     faceSwapStatus = 'error';
     faceSwapError = t('paypalFehler');
