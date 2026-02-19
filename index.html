@@ -1736,10 +1736,10 @@ function drawMenu() {
     ctx.roundRect(lx, langY, langBtnW, langH, langH * 0.3);
     ctx.fillStyle = sel ? 'rgba(42, 191, 191, 0.15)' : 'rgba(26, 58, 92, 0.2)';
     ctx.fill();
-    ctx.strokeStyle = sel ? 'rgba(42, 191, 191, 0.6)' : 'rgba(88, 130, 160, 0.25)';
+    ctx.strokeStyle = sel ? 'rgba(42, 191, 191, 0.6)' : 'rgba(200, 210, 220, 0.5)';
     ctx.lineWidth = 1;
     ctx.stroke();
-    ctx.fillStyle = sel ? '#2abfbf' : 'rgba(240, 236, 230, 0.5)';
+    ctx.fillStyle = sel ? '#2abfbf' : 'rgba(240, 236, 230, 0.9)';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(langLabels[li], lx + langBtnW / 2, langY + langH / 2);
