@@ -1071,8 +1071,20 @@ function updateParticles(cx, cy, r) {
       const relY = (p.y - monkDrawY) / monkDrawSize;
       const mx = Math.floor(relX * MONK_MASK_SIZE);
       const my = Math.floor(relY * MONK_MASK_SIZE);
+      const maskPad = (cW < 600 && cH > cW) ? 2 : 0; // Mobile: 2px Puffer um Silhouette
       if (mx >= 0 && mx < MONK_MASK_SIZE && my >= 0 && my < MONK_MASK_SIZE) {
-        if (monkMask[my * MONK_MASK_SIZE + mx]) {
+        let inMonk = monkMask[my * MONK_MASK_SIZE + mx];
+        if (!inMonk && maskPad > 0) {
+          // Puffer: auch Nachbar-Pixel prüfen
+          for (let dy2 = -maskPad; dy2 <= maskPad && !inMonk; dy2++) {
+            for (let dx2 = -maskPad; dx2 <= maskPad && !inMonk; dx2++) {
+              const nx2 = mx + dx2, ny2 = my + dy2;
+              if (nx2 >= 0 && nx2 < MONK_MASK_SIZE && ny2 >= 0 && ny2 < MONK_MASK_SIZE
+                  && monkMask[ny2 * MONK_MASK_SIZE + nx2]) inMonk = 1;
+            }
+          }
+        }
+        if (inMonk) {
           // Partikel ist im Mönch! → Nächste freie Stelle finden und dorthin schieben
           const monkCx = monkDrawX + monkDrawSize * 0.5;
           const monkCy = monkDrawY + monkDrawSize * 0.5;
