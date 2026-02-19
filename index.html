@@ -4091,8 +4091,8 @@ function frame() {
     // Hinweis zum Neustart + Spenden-Link (nach 45s)
     if (elapsed > 45) {
       const doneIsMob = cW < 600 && cH > cW;
-      const hintFont = Math.min(cW, cH) * (doneIsMob ? 0.04 : 0.022);
-      const hintAlpha = Math.min(0.55, (elapsed - 45) / 4 * 0.55);
+      const hintFont = Math.min(cW, cH) * (doneIsMob ? 0.055 : 0.028);
+      const hintAlpha = Math.min(0.9, (elapsed - 45) / 3 * 0.9);
       ctx.font = `300 ${hintFont}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
       ctx.textAlign = 'center';
       // "Zurück ins Menü"
@@ -4100,21 +4100,21 @@ function frame() {
       ctx.fillStyle = `rgba(240, 236, 230, ${hintAlpha})`;
       ctx.fillText(isTouchDone ? t('tapRestart') : t('clickRestart'), cx, cy + r + 35);
       // Spenden-Button
-      const donAlpha = Math.min(0.7, (elapsed - 45) / 6 * 0.7);
-      const donFont = hintFont * 1.3;
+      const donAlpha = Math.min(0.9, (elapsed - 45) / 4 * 0.9);
+      const donFont = hintFont * 1.4;
       ctx.font = `${donFont}px "Courier New", monospace`;
       const donText = t('donate');
       const donTxtW = ctx.measureText(donText).width;
       const donBtnW = donTxtW + donFont * 2;
-      const donBtnH = donFont * 2.2;
+      const donBtnH = donFont * 2.4;
       const donBtnX = cx - donBtnW / 2;
       const donBtnY = cy + r + 35 + hintFont * 1.8;
       ctx.beginPath();
       ctx.roundRect(donBtnX, donBtnY, donBtnW, donBtnH, donBtnH * 0.25);
-      ctx.fillStyle = `rgba(232, 106, 122, ${donAlpha * 0.15})`;
+      ctx.fillStyle = `rgba(232, 106, 122, ${donAlpha * 0.25})`;
       ctx.fill();
-      ctx.strokeStyle = `rgba(232, 106, 122, ${donAlpha * 0.6})`;
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = `rgba(232, 106, 122, ${donAlpha * 0.8})`;
+      ctx.lineWidth = 2;
       ctx.stroke();
       ctx.fillStyle = `rgba(232, 106, 122, ${donAlpha})`;
       ctx.textBaseline = 'middle';
