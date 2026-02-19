@@ -1581,8 +1581,8 @@ function drawMenu() {
   menuButtons.faceSwap = faceRow.btns;
   curY = faceRow.bottomY;
 
-  // Status-Anzeige unter den Buttons (Foto- und Webcam-Modus)
-  if (faceModeIdx >= 1) {
+  // Status-Anzeige unter den Buttons (Foto- und Webcam-Modus) — nur wenn aufgeklappt
+  if (faceModeIdx >= 1 && menuExpanded.face) {
     const statusY = curY + rowFont * 1.2;
     ctx.textAlign = 'center';
     ctx.font = `400 ${rowFont * 0.85}px "Courier New", monospace`;
