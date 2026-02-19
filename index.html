@@ -1141,7 +1141,7 @@ function drawParticles() {
     // Partikel sanft über 2s ausfaden nach Meditationsende
     const doneFade = Math.max(0, 1 - (Date.now() - doneTime) / 2000);
     desat = 1;
-    medAlpha = doneFade * 0.15; // waren am Ende der Meditation schon fast weg
+    medAlpha = doneFade * 0.05; // waren am Ende der Meditation schon fast weg
     if (doneFade <= 0) particles.length = 0;
   }
 
@@ -3915,13 +3915,7 @@ function frame() {
       const shrinkScale = shrinkModeIdx === 1 ? (1 - progress) : 1;
       drawModel3D(cx, cy, r, alpha, glitchOffset, Math.min(1, glitchAmount), shrinkScale);
     }
-  } else if (state === 'done') {
-    // Mönch über 2s sanft ausfaden
-    const doneMonkFade = Math.max(0, 1 - (Date.now() - doneTime) / 2000);
-    if (doneMonkFade > 0.01) {
-      drawModel3D(cx, cy, r, doneMonkFade * 0.2, 0, 0.8);
-    }
-  }
+  // done: kein Mönch (war am Ende der Meditation bereits aufgelöst)
 
   // Mönch-Kollisionsmaske aktualisieren (NACH dem Zeichnen, VOR den Partikeln)
   monkMaskAge++;
@@ -4171,45 +4165,7 @@ function frame() {
     relapseFlash *= Math.pow(0.92, lowFpsDt);
   }
 
-  // Counter-Ring um die Kugel (zeigt thoughtCounter %) — fixe Position, nicht mit Atem
-  // Counter-Ring: im done-State über 3s sanft ausfaden
-  const ringFade = state === 'done' ? Math.max(0, 1 - (Date.now() - doneTime) / 3000) : 1;
-  if (thoughtCounter > 0 && ringFade > 0.01 && state !== 'idle') {
-    const isFull = thoughtCounter >= 100;
-    const angle = (thoughtCounter / 100) * Math.PI * 2;
-    const ringPulse = Math.sin(Date.now() * 0.004) * 0.1 + 0.9;
-
-    if (isFull && state === 'shaking') {
-      // 100%: Ring wird Gold + sanftes Pulsieren
-      const goldPulse = Math.sin(Date.now() * 0.006) * 0.15 + 0.85;
-      ctx.beginPath();
-      ctx.arc(cx, cy, rFixed - 3, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(255, 215, 0, ${0.9 * goldPulse})`;
-      ctx.lineWidth = 5;
-      ctx.stroke();
-      // Gold-Glow
-      ctx.beginPath();
-      ctx.arc(cx, cy, rFixed - 3, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(255, 200, 50, ${0.3 * goldPulse})`;
-      ctx.lineWidth = 14;
-      ctx.stroke();
-      // "Loslassen..." Text wird nach ctx.restore() gezeichnet (kein Shake)
-    } else {
-      // Normal: roter Ring (mit ringFade für sanftes Ausblenden)
-      ctx.beginPath();
-      ctx.arc(cx, cy, rFixed - 3, -Math.PI / 2, -Math.PI / 2 + angle);
-      ctx.strokeStyle = `rgba(255, 70, 90, ${(0.7 + thoughtCounter / 150) * ringPulse * ringFade})`;
-      ctx.lineWidth = 4 + ringPulse * 2;
-      ctx.stroke();
-      if (thoughtCounter > 50) {
-        ctx.beginPath();
-        ctx.arc(cx, cy, rFixed - 3, -Math.PI / 2, -Math.PI / 2 + angle);
-        ctx.strokeStyle = `rgba(255, 70, 90, ${(thoughtCounter - 50) / 200 * ringPulse * ringFade})`;
-        ctx.lineWidth = 12;
-        ctx.stroke();
-      }
-    }
-  }
+  // Counter-Ring wird NACH dem Atem-Nebel gezeichnet (siehe unten)
 
   // Gold-Flash bei 100% (einmaliger Blitz)
   if (counterFullFlash > 0.01) {
@@ -4276,6 +4232,41 @@ function frame() {
     }
 
     ctx.restore();
+  }
+
+  // Counter-Ring um die Kugel (zeigt thoughtCounter %) — NACH Atem-Nebel, damit Rot konstant bleibt
+  const ringFade = state === 'done' ? Math.max(0, 1 - (Date.now() - doneTime) / 3000) : 1;
+  if (thoughtCounter > 0 && ringFade > 0.01 && state !== 'idle') {
+    const isFull = thoughtCounter >= 100;
+    const angle = (thoughtCounter / 100) * Math.PI * 2;
+    const ringPulse = Math.sin(Date.now() * 0.004) * 0.1 + 0.9;
+
+    if (isFull && state === 'shaking') {
+      const goldPulse = Math.sin(Date.now() * 0.006) * 0.15 + 0.85;
+      ctx.beginPath();
+      ctx.arc(cx, cy, rFixed - 3, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(255, 215, 0, ${0.9 * goldPulse})`;
+      ctx.lineWidth = 5;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx, cy, rFixed - 3, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(255, 200, 50, ${0.3 * goldPulse})`;
+      ctx.lineWidth = 14;
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.arc(cx, cy, rFixed - 3, -Math.PI / 2, -Math.PI / 2 + angle);
+      ctx.strokeStyle = `rgba(255, 70, 90, ${(0.7 + thoughtCounter / 150) * ringPulse * ringFade})`;
+      ctx.lineWidth = 4 + ringPulse * 2;
+      ctx.stroke();
+      if (thoughtCounter > 50) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, rFixed - 3, -Math.PI / 2, -Math.PI / 2 + angle);
+        ctx.strokeStyle = `rgba(255, 70, 90, ${(thoughtCounter - 50) / 200 * ringPulse * ringFade})`;
+        ctx.lineWidth = 12;
+        ctx.stroke();
+      }
+    }
   }
 
   ctx.restore(); // Schüttel-Translate aufheben
