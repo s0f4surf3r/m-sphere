@@ -3704,7 +3704,7 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
   const drawX = cx - drawSize / 2 + (glitchOffset || 0);
   // Unterseite bleibt fix (Mönch schrumpft an Ort und Stelle, schwebt nicht)
   // Mobile: Mönch etwas tiefer in der Kugel (+ r*0.08)
-  const fullBottom = cy + fullSize * 0.5 + (isMobDisplay ? r * 0.08 : r * 0.04);
+  const fullBottom = cy + fullSize * 0.5 + (isMobDisplay ? r * 0.14 : r * 0.04);
   const drawY = fullBottom - drawSize;
 
   // Globale Mönch-Position für Partikel-Kollision speichern
