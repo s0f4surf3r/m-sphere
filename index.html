@@ -82,6 +82,7 @@ const TR = {
     hintDesktop1: 'Drücke, halte und schüttle mit der Maus die Kugel,',
     hintDesktop2: 'bis der Kreis geschlossen ist.',
     letGo: 'Du darfst jetzt loslassen ...',
+    handyAblegen: 'Lege dein Handy ruhig hin ...',
     youAreWater: 'Du bist das Wasser',
     tapRestart: 'tippe',
     clickRestart: 'klick',
@@ -91,6 +92,7 @@ const TR = {
     faceSwapLaeuft: 'Face Swap läuft',
     gesichtAktiv: '✓ Eigenes Gesicht aktiv',
     faceSwapFehler: 'Fehler beim Face Swap',
+    faceSwapLimit: 'Face Swap: 1× pro Tag möglich. Morgen wieder!',
     faceSwapFertig: 'Face Swap fertig!',
     speichern: '💾 Speichern',
     weiter: 'Weiter',
@@ -144,6 +146,7 @@ const TR = {
     hintDesktop1: 'Press, hold and shake the sphere with your mouse,',
     hintDesktop2: 'until the circle is complete.',
     letGo: 'You may let go now ...',
+    handyAblegen: 'Put your phone down gently ...',
     youAreWater: 'You are the water',
     tapRestart: 'tap',
     clickRestart: 'click',
@@ -153,6 +156,7 @@ const TR = {
     faceSwapLaeuft: 'Face Swap processing',
     gesichtAktiv: '✓ Custom face active',
     faceSwapFehler: 'Face Swap error',
+    faceSwapLimit: 'Face Swap: 1× per day. Try again tomorrow!',
     faceSwapFertig: 'Face Swap done!',
     speichern: '💾 Save',
     weiter: 'Continue',
@@ -702,6 +706,8 @@ function onTouchStart(e) {
   }
   if (state === 'idle') {
     menuTouchDist = 0;
+    titleTouchStartX = tx;
+    titleTouchStartY = ty;
   }
 }
 
@@ -1285,7 +1291,7 @@ function drawMenu() {
     curY += eeSize * 1.1;
     // Widmungstext
     const liebeSize = eeSize * 0.7;
-    const liebeText = easterEggVoice === 'zoe' ? 'In Liebe von deinem Liebling Jochen!' : 'In Liebe von Jochen';
+    const liebeText = easterEggVoice === 'zoe' ? 'In Liebe von deinem Liebling Jochen!' : 'In Liebe von deinem Papa!';
     ctx.font = `300 ${liebeSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
     ctx.fillStyle = `rgba(${eeColor}, 0.7)`;
     ctx.fillText(liebeText, cx, curY);
@@ -1798,16 +1804,21 @@ function drawMenu() {
     ctx.arc(oCx, pCy, pR, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Buttons: Speichern + Weiter
+    // Buttons: Speichern + Weiter (zentriert als Paar)
     ctx.font = `${oFont}px "Courier New", monospace`;
     const ovBtnY = pCy + pR + oFont * 2;
     const ovBH = btnH;
     const gap = oFont * 1.5;
 
-    // Speichern
     const sLabel = t('speichern');
     const sW = ctx.measureText(sLabel).width + oFont * 2;
-    const sX = oCx - sW - gap / 2;
+    const wLabel = t('weiter');
+    const wW = ctx.measureText(wLabel).width + oFont * 2;
+    const totalW = sW + gap + wW;
+    const startX = oCx - totalW / 2;
+
+    // Speichern
+    const sX = startX;
     ctx.beginPath();
     ctx.roundRect(sX, ovBtnY, sW, ovBH, ovBH * 0.2);
     ctx.fillStyle = btnSelFill;
@@ -1820,9 +1831,7 @@ function drawMenu() {
     menuButtons.faceSave = { x: sX, y: ovBtnY, w: sW, h: ovBH };
 
     // Weiter
-    const wLabel = t('weiter');
-    const wW = ctx.measureText(wLabel).width + oFont * 2;
-    const wX = oCx + gap / 2;
+    const wX = startX + sW + gap;
     ctx.beginPath();
     ctx.roundRect(wX, ovBtnY, wW, ovBH, ovBH * 0.2);
     ctx.fillStyle = btnUnselFill;
@@ -2114,33 +2123,20 @@ function handleMenuClick(x, y) {
   function hitBtn(btn) {
     return x >= btn.x && x <= btn.x + btn.w && sy >= btn.y && sy <= btn.y + btn.h;
   }
-  // Easter Egg: 3x Tap → Zoe, 6x Tap → Levi
+  // Easter Egg: 3x Tap → Zoe, Swipe-left auf Titel → Levi (Touch in touchend)
   const ttl = menuButtons.title;
   if (ttl && hitBtn(ttl)) {
     titleTapCount++;
     clearTimeout(titleTapTimer);
     titleTapTimer = setTimeout(() => { titleTapCount = 0; }, 800);
-    if (titleTapCount >= 6) {
+    if (titleTapCount === 3) {
       titleTapCount = 0;
-      easterEggVoice = easterEggVoice === 'levi' ? null : 'levi';
+      easterEggVoice = easterEggVoice === 'zoe' ? null : 'zoe';
       voiceBuffer = null;
       easterEggFlash = 1;
       ensureSound();
       playSparkle();
       return true;
-    }
-    if (titleTapCount === 3) {
-      // Kurz warten ob noch mehr Taps kommen (für Levi)
-      setTimeout(() => {
-        if (titleTapCount === 3) {
-          titleTapCount = 0;
-          easterEggVoice = easterEggVoice === 'zoe' ? null : 'zoe';
-          voiceBuffer = null;
-          easterEggFlash = 1;
-          ensureSound();
-          playSparkle();
-        }
-      }, 400);
     }
   }
 
@@ -2398,6 +2394,22 @@ canvas.addEventListener('touchend', (e) => {
     }
   }
   if (state === 'idle' && e.changedTouches.length > 0) {
+    // Swipe-left über Titel → Levi Easter Egg
+    const ttl = menuButtons.title;
+    if (ttl && titleTouchStartX > 0) {
+      const te = e.changedTouches[0];
+      const [tex] = canvasCoords(te.clientX, te.clientY);
+      const dx = tex - titleTouchStartX;
+      const sy2 = titleTouchStartY + (window.scrollY || 0);
+      if (dx < -40 && sy2 >= ttl.y && sy2 <= ttl.y + ttl.h) {
+        easterEggVoice = easterEggVoice === 'levi' ? null : 'levi';
+        voiceBuffer = null;
+        easterEggFlash = 1;
+        ensureSound();
+        playSparkle();
+        return;
+      }
+    }
     if (menuTouchDist < 10) {
       const t = e.changedTouches[0];
       const [tx, ty] = canvasCoords(t.clientX, t.clientY);
@@ -2425,6 +2437,8 @@ let easterEggBuf = ''; // Tastenpuffer für Codes
 let easterEggFlash = 0; // Visuelle Bestätigung
 let titleTapCount = 0; // Tap-Counter für Easter Eggs
 let titleTapTimer = 0; // Reset-Timer
+let titleTouchStartX = 0; // Swipe-Tracking für Levi Easter Egg
+let titleTouchStartY = 0;
 fetch('dubistdaswasser.m4a')
   .then(r => r.arrayBuffer())
   .then(buf => { window._voiceRawBufferDe = buf; })
@@ -3416,10 +3430,31 @@ function renderMonkForFaceSwap() {
   return dataUrl;
 }
 
+function checkFaceSwapLimit() {
+  try {
+    const last = localStorage.getItem('msphere_faceswap_last');
+    if (last) {
+      const lastDate = new Date(parseInt(last));
+      const now = new Date();
+      if (lastDate.toDateString() === now.toDateString()) return false; // schon heute benutzt
+    }
+    return true;
+  } catch(e) { return true; }
+}
+function markFaceSwapUsed() {
+  try { localStorage.setItem('msphere_faceswap_last', Date.now().toString()); } catch(e) {}
+}
+
 function startFaceSwap(selfieDataUrl) {
   if (!modelLoaded || !model3D) {
     faceSwapStatus = 'error';
     faceSwapError = 'Mönch-Modell noch nicht geladen';
+    return;
+  }
+
+  if (!checkFaceSwapLimit()) {
+    faceSwapStatus = 'error';
+    faceSwapError = t('faceSwapLimit');
     return;
   }
 
@@ -3438,8 +3473,16 @@ function startFaceSwap(selfieDataUrl) {
       input_image: monkDataUrl
     })
   })
-  .then(res => res.json())
+  .then(res => {
+    if (res.status === 429) {
+      faceSwapStatus = 'error';
+      faceSwapError = t('faceSwapLimit');
+      return null;
+    }
+    return res.json();
+  })
   .then(data => {
+    if (!data) return;
     if (data.error) {
       faceSwapStatus = 'error';
       faceSwapError = data.error;
@@ -3475,6 +3518,7 @@ function pollFaceSwap() {
         faceSwapImg = masked;
         faceSwapStatus = 'done';
         faceSwapShowSave = true; // Speichern-Overlay zeigen
+        markFaceSwapUsed();
         // In localStorage speichern (als DataURL mit Transparenz)
         try {
           localStorage.setItem('msphere_faceswap', masked.toDataURL('image/png'));
@@ -4248,6 +4292,27 @@ function frame() {
     ctx.fillText(txt, lcx, lcy);
     ctx.shadowBlur = 0;
     ctx.textAlign = 'start';
+  }
+
+  // --- Mobile Hinweis: "Lege dein Handy ruhig hin" (erste 5s der Meditation) ---
+  if (state === 'meditating' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)) {
+    const medElapsed = (Date.now() - meditationStartTime) / 1000;
+    if (medElapsed < 5) {
+      const fadeAlpha = medElapsed < 3.5 ? 1 : 1 - (medElapsed - 3.5) / 1.5; // 3.5s voll, dann 1.5s ausblenden
+      const hcx = cW / 2;
+      const hcy = cH / 2;
+      const hMob = cW < 600 && cH > cW;
+      const hFont = Math.min(cW, cH) * (hMob ? 0.05 : 0.035);
+      ctx.font = `300 ${hFont}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = `rgba(42, 191, 191, ${0.9 * fadeAlpha})`;
+      ctx.shadowColor = `rgba(42, 191, 191, ${0.4 * fadeAlpha})`;
+      ctx.shadowBlur = 15;
+      ctx.fillText(t('handyAblegen'), hcx, hcy);
+      ctx.shadowBlur = 0;
+      ctx.textAlign = 'start';
+    }
   }
 
   // --- Zurück-Button (✕) — immer sichtbar im Kugelmodus ---
