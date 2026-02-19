@@ -821,7 +821,7 @@ function updateShake() {
 
       if (meditationTimeLeft <= 0) {
         state = 'done';
-        thoughtCounter = 0;
+        // thoughtCounter NICHT auf 0 — faded visuell über ringFade aus
         doneTime = Date.now();
         playEndBell();
         // Partikel nicht hart löschen — im done-State sanft ausfaden lassen
@@ -840,8 +840,9 @@ function updateTemptations() {
   const now = Date.now();
   const progress = 1 - meditationTimeLeft / meditationDuration;
 
-  // Intervall: anfangs alle 8s, später alle 20–40s (seltener aber wirksamer)
-  const interval = 8000 + progress * 30000 + Math.random() * 5000;
+  // Intervall: skaliert mit Meditationsdauer (kurze Meditation = öfter)
+  const durationScale = Math.min(1, meditationDuration / 300); // 0-1: 1min=0.2, 5min=1
+  const interval = (5000 + progress * 15000) * durationScale + 3000 + Math.random() * 4000;
 
   if (now - lastTemptation > interval && !temptationActive) {
     lastTemptation = now;
@@ -852,7 +853,7 @@ function updateTemptations() {
       : ['shimmer', 'sound', 'twitch'];
     const type = triggers[Math.floor(Math.random() * triggers.length)];
 
-    temptationActive = { type, startTime: now, duration: 600 + Math.random() * 800 };
+    temptationActive = { type, startTime: now, duration: 1200 + Math.random() * 1200 };
 
     // Sound-Trigger: kurzer Ping
     if (type === 'sound' && soundInitialized) {
@@ -1231,7 +1232,7 @@ function drawMenu() {
   const rowFont = unit * 0.02 * uiScale;
   const btnH = unit * 0.04 * uiScale;
   const btnGap = unit * 0.012 * uiScale;
-  const sectionGap = unit * 0.025 * (isMobilePortrait ? 1.0 : 1);
+  const sectionGap = unit * 0.025 * (isMobilePortrait ? 1.0 : 0.7);
 
   const safeTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
   let curY = Math.max(H * (isMobilePortrait ? 0.09 : 0.07), safeTop + unit * (isMobilePortrait ? 0.04 : 0.02));
@@ -1240,6 +1241,57 @@ function drawMenu() {
   const scrollY = window.scrollY || 0;
   ctx.save();
   ctx.translate(0, -scrollY);
+
+  // --- Easter Egg: ♡ Name ♡ über dem Titel ---
+  if (easterEggVoice) {
+    const eeSize = subtitleSize * 1.2;
+    const eeName = easterEggVoice === 'levi' ? 'Levi' : 'Zoe';
+    const eeColor = '255, 180, 200';
+    const now = performance.now() * 0.001;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.font = `400 ${eeSize}px "Courier New", monospace`;
+    const eeAlpha = easterEggFlash > 0 ? 1 : 0.85;
+    ctx.fillStyle = `rgba(${eeColor}, ${eeAlpha})`;
+    ctx.shadowColor = `rgba(${eeColor}, 0.5)`;
+    ctx.shadowBlur = 15;
+    ctx.fillText(`\u2661 ${eeName} \u2661`, cx, curY);
+    ctx.shadowBlur = 0;
+    // Funkeln um den Namen — kleine 5-zackige Sterne
+    const nameW = ctx.measureText(`\u2661 ${eeName} \u2661`).width;
+    for (let si = 0; si < 7; si++) {
+      const phase = si * 1.37 + now * 1.5;
+      const sx = cx + (Math.sin(phase * 0.7 + si) * 0.5) * (nameW * 0.7 + eeSize);
+      const sy = curY + eeSize * 0.4 + Math.cos(phase * 0.9 + si * 2.1) * eeSize * 0.6;
+      const sparkleAlpha = (Math.sin(phase) * 0.5 + 0.5) * 0.8;
+      const starR = eeSize * (0.1 + Math.sin(phase * 1.3) * 0.04);
+      ctx.fillStyle = `rgba(255, 220, 240, ${sparkleAlpha})`;
+      ctx.shadowColor = `rgba(255, 200, 220, ${sparkleAlpha * 0.6})`;
+      ctx.shadowBlur = 8;
+      // 5-zackiger Stern
+      ctx.beginPath();
+      const rot = now * 0.3 + si * 0.9;
+      for (let z = 0; z < 10; z++) {
+        const a = rot + z * Math.PI / 5;
+        const r2 = z % 2 === 0 ? starR : starR * 0.4;
+        const px = sx + Math.cos(a) * r2;
+        const py = sy + Math.sin(a) * r2;
+        z === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    curY += eeSize * 1.1;
+    // Widmungstext
+    const liebeSize = eeSize * 0.7;
+    const liebeText = easterEggVoice === 'zoe' ? 'In Liebe von deinem Liebling Jochen!' : 'In Liebe von Jochen';
+    ctx.font = `300 ${liebeSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+    ctx.fillStyle = `rgba(${eeColor}, 0.7)`;
+    ctx.fillText(liebeText, cx, curY);
+    curY += liebeSize * 1.8;
+  }
+  if (easterEggFlash > 0) easterEggFlash = Math.max(0, easterEggFlash - 0.015);
 
   // --- Titel: M-SPHERE mit ZPMA-Glow ---
   ctx.textAlign = 'center';
@@ -1269,7 +1321,10 @@ function drawMenu() {
   ctx.shadowBlur = 0;
   ctx.letterSpacing = '0px';
   const titleMetrics = ctx.measureText('M-SPHERE');
+  const titleW = titleMetrics.width;
   const actualTitleH = titleMetrics.actualBoundingBoxDescent || titleSize;
+  // Titel-Hit-Area für Easter Egg (Triple-Tap / Long-Press)
+  menuButtons.title = { x: cx - titleW / 2, y: curY, w: titleW, h: actualTitleH };
   curY += actualTitleH + (isMobilePortrait ? unit * 0.015 : unit * 0.015);
 
   // Untertitel
@@ -1284,18 +1339,14 @@ function drawMenu() {
   curY += subtitleSize * 2;
 
   // Credits
-  ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 0.9)' : 'rgba(42, 191, 191, 0.75)';
+  ctx.fillStyle = isMobilePortrait ? 'rgba(240, 236, 230, 0.9)' : 'rgba(240, 236, 230, 0.65)';
   ctx.font = `${subtitleSize * 0.8}px "Courier New", monospace`;
   ctx.fillText('jochenhornung.de', cx, curY);
   // Hit-Area für Link speichern
   const linkW = ctx.measureText('jochenhornung.de').width;
   const linkH = subtitleSize;
   menuButtons.link = { x: cx - linkW / 2, y: curY, w: linkW, h: linkH };
-  curY += subtitleSize * 1.0;
-  ctx.fillStyle = 'rgba(240, 236, 230, 0.25)';
-  ctx.font = `${subtitleSize * 0.5}px "Courier New", monospace`;
-  ctx.fillText('v1.5', cx, curY);
-  curY += subtitleSize * 1.0;
+  curY += subtitleSize * 1.6;
   // Spenden-Button
   const donLabel = t('donate');
   const donFont = subtitleSize * 0.85;
@@ -1317,7 +1368,7 @@ function drawMenu() {
   ctx.textBaseline = 'middle';
   ctx.fillText(donLabel, cx, donY + donH / 2);
   menuButtons.donate = { x: donX, y: donY, w: donW, h: donH };
-  curY += donH + sectionGap * (isMobilePortrait ? 2.5 : 1);
+  curY += donH + sectionGap * (isMobilePortrait ? 2.5 : 1.8);
 
   // Language Toggle wird außerhalb des Scroll-Bereichs gezeichnet (siehe unten)
 
@@ -1364,18 +1415,20 @@ function drawMenu() {
     // Expanded: Label + Dreieck ▼ (runterzeigend)
     if (collapseKey) {
       const arrowSize = labelFont * 1.2;
+      ctx.fillStyle = labelColor || (isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.95)');
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      // Label + Dreieck nebeneinander, zentriert
       const labelW = ctx.measureText(label).width;
       const gap = labelFont * 0.6;
       const totalW = labelW + gap + arrowSize;
       const startX = cx - totalW / 2;
-      ctx.fillStyle = labelColor || (isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.95)');
       ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(label, startX, y + labelFont);
+      ctx.fillText(label, startX, y);
       // Dreieck ▼ (runterzeigend)
       ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
       const ax = startX + labelW + gap + arrowSize * 0.3;
-      const ay = y + labelFont;
+      const ay = y + labelFont * 0.5;
       ctx.beginPath();
       ctx.moveTo(ax - arrowSize * 0.4, ay - arrowSize * 0.25);
       ctx.lineTo(ax + arrowSize * 0.4, ay - arrowSize * 0.25);
@@ -1385,7 +1438,7 @@ function drawMenu() {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
       // Hit-Area zum Zuklappen (gleiche Zeile)
-      const lineH = labelFont * 2;
+      const lineH = labelFont * 1.5;
       menuToggleAreas[collapseKey] = { x: cx - W * 0.45, y: y, w: W * 0.9, h: lineH };
     } else {
       // Nicht-klappbar (z.B. MEDITATIONSZEIT): nur Label
@@ -1449,7 +1502,7 @@ function drawMenu() {
       }
       curRowY += rBtnH + btnGap;
     }
-    return { btns, bottomY: curRowY - btnGap };
+    return { btns, bottomY: curRowY - btnGap * (collapseKey ? 1.5 : 1) };
   }
 
   // --- MEDITATIONSZEIT + TIMER ANZEIGEN (eine Zeile) ---
@@ -1876,6 +1929,11 @@ function drawLegalOverlay() {
       ctx.fillText('→', arrowX, iy + itemH / 2);
     }
 
+    // Versionsnummer unten
+    ctx.fillStyle = 'rgba(240, 236, 230, 0.2)';
+    ctx.font = `${itemFont * 0.6}px "Courier New", monospace`;
+    ctx.fillText('v1.5', W / 2, startY + totalH + itemFont * 1.5);
+
     ctx.textAlign = 'start';
     ctx.textBaseline = 'alphabetic';
     return;
@@ -2056,6 +2114,23 @@ function handleMenuClick(x, y) {
   function hitBtn(btn) {
     return x >= btn.x && x <= btn.x + btn.w && sy >= btn.y && sy <= btn.y + btn.h;
   }
+  // Easter Egg: Triple-Tap auf Titel → Levi
+  const ttl = menuButtons.title;
+  if (ttl && hitBtn(ttl)) {
+    titleTapCount++;
+    clearTimeout(titleTapTimer);
+    titleTapTimer = setTimeout(() => { titleTapCount = 0; }, 600);
+    if (titleTapCount >= 3) {
+      titleTapCount = 0;
+      easterEggVoice = easterEggVoice === 'levi' ? null : 'levi';
+      voiceBuffer = null;
+      easterEggFlash = 1;
+      ensureSound();
+      playSparkle();
+      return true;
+    }
+  }
+
   // Sektions-Header Toggle — Klick klappt auf/zu
   for (const [key, area] of Object.entries(menuToggleAreas)) {
     if (area && x >= area.x && x <= area.x + area.w && sy >= area.y && sy <= area.y + area.h) {
@@ -2078,6 +2153,7 @@ function handleMenuClick(x, y) {
     if (hitBtn(btn)) {
       lang = btn.lang;
       localStorage.setItem('msphere_lang', lang);
+      voiceBuffer = null;
       return true;
     }
   }
@@ -2223,7 +2299,15 @@ function returnToMenu() {
   counterFullPlayed = false;
   particles.length = 0;
   doneTime = 0; voicePlayed = false; breathDoneFinished = false;
+  voiceBuffer = null;
   shakeIntensity = 0;
+  // Alle Audio-Ramps canceln damit beim nächsten Schütteln keine alten Ramps blockieren
+  if (audioCtx) {
+    const t = audioCtx.currentTime;
+    [noiseGain, ...droneGains, ...bowlGains, ...tanpuraGains, ...hz528Gains, ...hz432Gains, ...binauralGains, ...synapsenGains, ...stimmenGains, ...metallGains, ...tanpura2Gains].forEach(g => {
+      if (g && g.gain) { g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(0, t); }
+    });
+  }
   mouseDown = false;
   selectedDurationIdx = -1;
   if (faceSwapPollTimer) { clearInterval(faceSwapPollTimer); faceSwapPollTimer = null; }
@@ -2241,7 +2325,64 @@ window.addEventListener('keydown', (e) => {
     if (legalOverlay) { legalOverlay = null; legalScrollY = 0; return; }
     if (state !== 'idle') returnToMenu();
   }
+  // Easter Egg: Geheimcodes im Menü tippen → Stimme toggle
+  if (state === 'idle') {
+    easterEggBuf += e.key.toUpperCase();
+    if (easterEggBuf.length > 4) easterEggBuf = easterEggBuf.slice(-4);
+    const codes = { LEVI: 'levi', _ZOE: 'zoe' };
+    const tail3 = easterEggBuf.slice(-3);
+    const tail4 = easterEggBuf.slice(-4);
+    let matched = null;
+    if (tail4 === 'LEVI') matched = 'levi';
+    else if (tail3 === 'ZOE') matched = 'zoe';
+    if (matched) {
+      easterEggVoice = easterEggVoice === matched ? null : matched;
+      voiceBuffer = null;
+      easterEggBuf = '';
+      easterEggFlash = 1;
+      ensureSound();
+      playSparkle();
+    }
+  }
 });
+
+// Easter Egg: Long-Press auf Titel → Zoe
+function titleHit(ex, ey) {
+  const ttl = menuButtons.title;
+  if (!ttl) return false;
+  const [tx, ty] = canvasCoords(ex, ey);
+  const sy = ty + (window.scrollY || 0);
+  return tx >= ttl.x && tx <= ttl.x + ttl.w && sy >= ttl.y && sy <= ttl.y + ttl.h;
+}
+canvas.addEventListener('mousedown', (e) => {
+  if (state !== 'idle' || legalOverlay) return;
+  if (titleHit(e.clientX, e.clientY)) {
+    titleLongPressTimer = setTimeout(() => {
+      easterEggVoice = easterEggVoice === 'zoe' ? null : 'zoe';
+      voiceBuffer = null;
+      easterEggFlash = 1;
+      titleTapCount = 0; // Triple-Tap zurücksetzen
+      ensureSound();
+      playSparkle();
+    }, 1500);
+  }
+});
+canvas.addEventListener('mouseup', () => { clearTimeout(titleLongPressTimer); });
+canvas.addEventListener('touchstart', (e) => {
+  if (state !== 'idle' || legalOverlay || !e.touches.length) return;
+  if (titleHit(e.touches[0].clientX, e.touches[0].clientY)) {
+    titleLongPressTimer = setTimeout(() => {
+      easterEggVoice = easterEggVoice === 'zoe' ? null : 'zoe';
+      voiceBuffer = null;
+      easterEggFlash = 1;
+      titleTapCount = 0;
+      ensureSound();
+      playSparkle();
+    }, 1500);
+  }
+}, { passive: true });
+canvas.addEventListener('touchend', () => { clearTimeout(titleLongPressTimer); });
+canvas.addEventListener('touchmove', () => { clearTimeout(titleLongPressTimer); }, { passive: true });
 
 canvas.addEventListener('click', (e) => {
   ensureSound();
@@ -2304,9 +2445,28 @@ canvas.addEventListener('touchend', (e) => {
 // --- Voice: "Du bist das Wasser" ---
 let voiceBuffer = null;
 let voicePlayed = false;
+let easterEggVoice = null; // Easter Egg: null | 'levi' | 'zoe'
+let easterEggBuf = ''; // Tastenpuffer für Codes
+let easterEggFlash = 0; // Visuelle Bestätigung
+let titleTapCount = 0; // Triple-Tap Counter für Levi
+let titleTapTimer = 0; // Reset-Timer
+let titleLongPress = 0; // Long-Press Start-Timestamp für Zoe
+let titleLongPressTimer = null; // Timer-ID
 fetch('dubistdaswasser.m4a')
   .then(r => r.arrayBuffer())
-  .then(buf => { window._voiceRawBuffer = buf; })
+  .then(buf => { window._voiceRawBufferDe = buf; })
+  .catch(() => {});
+fetch('dubistdaswassereng.m4a')
+  .then(r => r.arrayBuffer())
+  .then(buf => { window._voiceRawBufferEn = buf; })
+  .catch(() => {});
+fetch('dubistdaswasser_kind.m4a')
+  .then(r => r.arrayBuffer())
+  .then(buf => { window._voiceRawBufferKind = buf; })
+  .catch(() => {});
+fetch('dubistdaswasserzoe.m4a')
+  .then(r => r.arrayBuffer())
+  .then(buf => { window._voiceRawBufferZoe = buf; })
   .catch(() => {});
 
 // --- Sound (Web Audio API) ---
@@ -2596,6 +2756,39 @@ function playTingsha() {
   });
 }
 
+function playSparkle() {
+  if (!soundInitialized) return;
+  const t = audioCtx.currentTime;
+  // Aufsteigende Glöckchen-Kaskade
+  const notes = [1200, 1600, 2000, 2400, 3000, 3600, 4200];
+  notes.forEach((freq, i) => {
+    const delay = i * 0.06;
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, t + delay);
+    osc.frequency.exponentialRampToValueAtTime(freq * 1.02, t + delay + 0.4);
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0, t + delay);
+    gain.gain.linearRampToValueAtTime(0.018 * (1 - i * 0.1), t + delay + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + delay + 1.2);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(t + delay);
+    osc.stop(t + delay + 1.5);
+  });
+  // Sanfter Schimmer-Hintergrund
+  const shimmer = audioCtx.createOscillator();
+  shimmer.type = 'triangle';
+  shimmer.frequency.value = 5000;
+  const shimGain = audioCtx.createGain();
+  shimGain.gain.setValueAtTime(0.008, t);
+  shimGain.gain.exponentialRampToValueAtTime(0.001, t + 2);
+  shimmer.connect(shimGain);
+  shimGain.connect(audioCtx.destination);
+  shimmer.start(t);
+  shimmer.stop(t + 2.5);
+}
+
 function playBowlStrike() {
   if (!soundInitialized) return;
   const t = audioCtx.currentTime;
@@ -2876,8 +3069,36 @@ function updateSound() {
   } else if (state === 'meditating') {
     const progress = 1 - meditationTimeLeft / meditationDuration;
     updateMeditationSound(t, progress);
+  } else if (state === 'done') {
+    // Sanftes Ausfaden über 5 Sekunden — NICHT updateMeditationSound aufrufen
+    // (das würde Shake-Sound-Gains mit linearRamp kollidieren lassen)
+    const doneFadeDur = 5;
+    const doneElapsed = (Date.now() - doneTime) / 1000;
+    if (doneElapsed < doneFadeDur) {
+      const fade = 1 - doneElapsed / doneFadeDur;
+      // Atem-Rauschen ausfaden
+      noiseGain.gain.setTargetAtTime(noiseGain.gain.value * fade * 0.5, t, 0.3);
+      // Meditations-Sounds sanft ausfaden
+      [droneGains, bowlGains, tanpuraGains, hz528Gains, hz432Gains, binauralGains].forEach(group => {
+        group.forEach(g => {
+          if (g.gain.value > 0.001) g.gain.setTargetAtTime(g.gain.value * fade, t, 0.5);
+        });
+      });
+    } else {
+      muteGroup([noiseGain], t, 0.3);
+      muteGroup(droneGains, t, 0.3);
+      muteGroup(bowlGains, t, 0.3);
+      muteGroup(tanpuraGains, t, 0.3);
+      muteGroup(hz528Gains, t, 0.3);
+      muteGroup(hz432Gains, t, 0.3);
+      muteGroup(binauralGains, t, 0.3);
+    }
+    muteGroup(synapsenGains, t);
+    muteGroup(stimmenGains, t);
+    muteGroup(metallGains, t);
+    muteGroup(tanpura2Gains, t);
   } else {
-    // idle / ready / done: alles leise
+    // idle / ready: alles leise
     muteGroup([noiseGain], t);
     muteGroup(synapsenGains, t);
     muteGroup(stimmenGains, t);
@@ -3540,9 +3761,11 @@ function frame() {
   if (bt && (state === 'meditating' || (state === 'done' && !breathDoneFinished))) {
     breathTime = (Date.now() - meditationStartTime) / 1000;
     breathWave = calcBreathWave(bt, breathTime);
-    // Im Done-State: Atem-Zyklus zu Ende atmen, dann stoppen
+    // Im Done-State: Atem-Zyklus sanft zu Ende atmen
     if (state === 'done') {
-      if (breathWave <= -0.9) breathDoneFinished = true;
+      const breathFadeDone = Math.max(0, 1 - (Date.now() - doneTime) / 4000);
+      r *= 1 + breathWave * 0.032 * breathFadeDone;
+      if (breathWave <= -0.9 || breathFadeDone <= 0) breathDoneFinished = true;
     } else {
       r *= 1 + breathWave * 0.032; // ±3.2% Radius (nur während Meditation)
     }
@@ -3763,11 +3986,12 @@ function frame() {
     ctx.fill();
 
     // "Du bist das Wasser" — magischer Satz mit Glow (nach 5s Stille)
-    if (elapsed > 5 && !voicePlayed && audioCtx && window._voiceRawBuffer) {
+    const _voiceRaw = easterEggVoice === 'levi' ? window._voiceRawBufferKind : easterEggVoice === 'zoe' ? window._voiceRawBufferZoe : (lang === 'en' ? window._voiceRawBufferEn : window._voiceRawBufferDe);
+    if (elapsed > 5 && !voicePlayed && audioCtx && _voiceRaw) {
       voicePlayed = true;
       // Voice über AudioContext abspielen (kein Autoplay-Block)
       if (!voiceBuffer) {
-        audioCtx.decodeAudioData(window._voiceRawBuffer.slice(0)).then(decoded => {
+        audioCtx.decodeAudioData(_voiceRaw.slice(0)).then(decoded => {
           voiceBuffer = decoded;
           const src = audioCtx.createBufferSource();
           src.buffer = voiceBuffer;
@@ -3897,7 +4121,9 @@ function frame() {
   }
 
   // Counter-Ring um die Kugel (zeigt thoughtCounter %) — fixe Position, nicht mit Atem
-  if (thoughtCounter > 0 && state !== 'done') {
+  // Counter-Ring: im done-State über 3s sanft ausfaden
+  const ringFade = state === 'done' ? Math.max(0, 1 - (Date.now() - doneTime) / 3000) : 1;
+  if (thoughtCounter > 0 && ringFade > 0.01) {
     const isFull = thoughtCounter >= 100;
     const angle = (thoughtCounter / 100) * Math.PI * 2;
     const ringPulse = Math.sin(Date.now() * 0.004) * 0.1 + 0.9;
@@ -3918,16 +4144,16 @@ function frame() {
       ctx.stroke();
       // "Loslassen..." Text wird nach ctx.restore() gezeichnet (kein Shake)
     } else {
-      // Normal: roter Ring
+      // Normal: roter Ring (mit ringFade für sanftes Ausblenden)
       ctx.beginPath();
       ctx.arc(cx, cy, rFixed - 3, -Math.PI / 2, -Math.PI / 2 + angle);
-      ctx.strokeStyle = `rgba(255, 70, 90, ${(0.7 + thoughtCounter / 150) * ringPulse})`;
+      ctx.strokeStyle = `rgba(255, 70, 90, ${(0.7 + thoughtCounter / 150) * ringPulse * ringFade})`;
       ctx.lineWidth = 4 + ringPulse * 2;
       ctx.stroke();
       if (thoughtCounter > 50) {
         ctx.beginPath();
         ctx.arc(cx, cy, rFixed - 3, -Math.PI / 2, -Math.PI / 2 + angle);
-        ctx.strokeStyle = `rgba(255, 70, 90, ${(thoughtCounter - 50) / 200 * ringPulse})`;
+        ctx.strokeStyle = `rgba(255, 70, 90, ${(thoughtCounter - 50) / 200 * ringPulse * ringFade})`;
         ctx.lineWidth = 12;
         ctx.stroke();
       }
