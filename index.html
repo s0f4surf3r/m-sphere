@@ -88,6 +88,7 @@ const TR = {
     tapRestart: 'Zurück ins Menü',
     clickRestart: 'Zurück ins Menü',
     fotoAufnehmen: 'Foto aufnehmen',
+    kameraTipp: 'Tipp: Brille & Kopfbedeckung ablegen, gutes Licht',
     kameraStartet: 'Kamera wird gestartet...',
     sendeBild: 'Sende Bild',
     faceSwapLaeuft: 'Face Swap läuft',
@@ -153,6 +154,7 @@ const TR = {
     tapRestart: 'Back to menu',
     clickRestart: 'Back to menu',
     fotoAufnehmen: 'Take photo',
+    kameraTipp: 'Tip: Remove glasses & headwear, good lighting',
     kameraStartet: 'Starting camera...',
     sendeBild: 'Uploading image',
     faceSwapLaeuft: 'Face Swap processing',
@@ -1596,9 +1598,13 @@ function drawMenu() {
     ctx.font = `400 ${rowFont * 0.85}px "Courier New", monospace`;
 
     if (faceModeIdx === 2 && webcamReady && faceSwapStatus === 'idle') {
+      // Tipp: Brille ablegen etc.
+      ctx.fillStyle = 'rgba(240, 236, 230, 0.6)';
+      ctx.font = `300 ${rowFont * 0.7}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+      ctx.fillText(t('kameraTipp'), cx, statusY);
       // Webcam-Vorschau: Kreis mit Live-Video + Auslöse-Button
       const previewR = rowFont * 2.5;
-      const previewCy = statusY + previewR;
+      const previewCy = statusY + rowFont * 1.2 + previewR;
       const video = document.getElementById('webcamVideo');
       ctx.save();
       ctx.beginPath();
