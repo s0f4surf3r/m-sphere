@@ -106,8 +106,8 @@ const TR = {
     faceSwapFehler: 'Fehler beim Face Swap',
     faceSwapLimit: 'Face Swap: 1× pro Tag möglich. Morgen wieder!',
     faceSwapFertig: 'Face Swap fertig!',
-    faceSwapKaufen: 'Weiterer Face Swap: 1,00 €',
-    faceSwapTagesLimit: 'Dein kostenloser Face Swap für heute ist aufgebraucht.',
+    faceSwapKaufen: 'Face Swap: 1,00 €',
+    faceSwapTagesLimit: 'Face Swap ist kostenpflichtig.',
     paypalFehler: 'Zahlung fehlgeschlagen. Bitte erneut versuchen.',
     abbrechen: 'Abbrechen',
     speichern: '💾 Speichern',
@@ -176,8 +176,8 @@ const TR = {
     faceSwapFehler: 'Face Swap error',
     faceSwapLimit: 'Face Swap: 1× per day. Try again tomorrow!',
     faceSwapFertig: 'Face Swap done!',
-    faceSwapKaufen: 'Another Face Swap: €1.00',
-    faceSwapTagesLimit: 'Your free Face Swap for today has been used.',
+    faceSwapKaufen: 'Face Swap: €1.00',
+    faceSwapTagesLimit: 'Face Swap requires payment.',
     paypalFehler: 'Payment failed. Please try again.',
     abbrechen: 'Cancel',
     speichern: '💾 Save',
@@ -3492,19 +3492,13 @@ function startFaceSwap(selfieDataUrl) {
     return;
   }
 
-  // Zoe-Modus: immer kostenlos, kein Limit
+  // Zoe-Modus: immer kostenlos
   if (easterEggVoice === 'zoe') {
     executeFaceSwap(selfieDataUrl, 'zoe');
     return;
   }
 
-  // Free-Modus: erster Swap des Tages
-  if (checkFaceSwapLimit()) {
-    executeFaceSwap(selfieDataUrl, 'free');
-    return;
-  }
-
-  // Rate-Limit erschöpft → PayPal-Overlay zeigen
+  // Alle anderen: PayPal-Zahlung erforderlich
   pendingSelfie = selfieDataUrl;
   showPayPalOverlay();
 }
