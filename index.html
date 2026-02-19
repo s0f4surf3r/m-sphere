@@ -1209,13 +1209,13 @@ function drawMenu() {
 
   // Mobile: Kontrast boosten (kleine Screens, helles Umgebungslicht)
   const menuBg = 'rgba(0, 0, 0, 1)';
-  const btnUnselFill = isMobilePortrait ? 'rgba(35, 72, 115, 0.6)' : 'rgba(26, 58, 92, 0.4)';
-  const btnUnselStroke = isMobilePortrait ? 'rgba(120, 165, 195, 0.75)' : 'rgba(88, 130, 160, 0.5)';
-  const btnSelFill = isMobilePortrait ? 'rgba(42, 191, 191, 0.3)' : 'rgba(42, 191, 191, 0.15)';
-  const btnSelStroke = isMobilePortrait ? 'rgba(42, 191, 191, 0.9)' : 'rgba(42, 191, 191, 0.6)';
+  const btnUnselFill = isMobilePortrait ? 'rgba(35, 72, 115, 0.7)' : 'rgba(26, 58, 92, 0.4)';
+  const btnUnselStroke = isMobilePortrait ? 'rgba(140, 185, 215, 1.0)' : 'rgba(88, 130, 160, 0.5)';
+  const btnSelFill = isMobilePortrait ? 'rgba(42, 191, 191, 0.35)' : 'rgba(42, 191, 191, 0.15)';
+  const btnSelStroke = isMobilePortrait ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.6)';
   const btnTextDim = isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.9)';
-  const donBtnFill = isMobilePortrait ? 'rgba(232, 106, 122, 0.25)' : 'rgba(232, 106, 122, 0.12)';
-  const donBtnStroke = isMobilePortrait ? 'rgba(232, 106, 122, 0.75)' : 'rgba(232, 106, 122, 0.5)';
+  const donBtnFill = isMobilePortrait ? 'rgba(232, 106, 122, 0.3)' : 'rgba(232, 106, 122, 0.12)';
+  const donBtnStroke = isMobilePortrait ? 'rgba(232, 106, 122, 1.0)' : 'rgba(232, 106, 122, 0.5)';
 
   // Dunkler Overlay-Hintergrund
   ctx.fillStyle = menuBg;
@@ -1336,7 +1336,7 @@ function drawMenu() {
   curY += actualTitleH + (isMobilePortrait ? unit * 0.015 : unit * 0.015);
 
   // Untertitel
-  ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 0.75)' : 'rgba(42, 191, 191, 0.55)';
+  ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.55)';
   ctx.font = `400 ${subtitleSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
   ctx.shadowColor = 'rgba(42, 191, 191, 0.4)';
   ctx.shadowBlur = 12;
@@ -1347,7 +1347,7 @@ function drawMenu() {
   curY += subtitleSize * 2;
 
   // Credits
-  ctx.fillStyle = isMobilePortrait ? 'rgba(240, 236, 230, 0.9)' : 'rgba(240, 236, 230, 0.65)';
+  ctx.fillStyle = isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.65)';
   ctx.font = `${subtitleSize * 0.8}px "Courier New", monospace`;
   ctx.fillText('jochenhornung.de', cx, curY);
   // Hit-Area für Link speichern
@@ -1371,7 +1371,7 @@ function drawMenu() {
   ctx.strokeStyle = donBtnStroke;
   ctx.lineWidth = isMobilePortrait ? 2 : 1.5;
   ctx.stroke();
-  ctx.fillStyle = isMobilePortrait ? 'rgba(232, 106, 122, 1.0)' : 'rgba(232, 106, 122, 0.85)';
+  ctx.fillStyle = isMobilePortrait ? 'rgba(255, 130, 145, 1.0)' : 'rgba(232, 106, 122, 0.85)';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(donLabel, cx, donY + donH / 2);
@@ -1622,7 +1622,7 @@ function drawMenu() {
       ctx.roundRect(snapX, snapY, snapW, snapH, snapH * 0.2);
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
+      ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.9)';
       ctx.fillText(t('fotoAufnehmen'), cx, snapY + snapH / 2 + rowFont * 0.15);
       menuButtons.webcamSnap = { x: snapX, y: snapY, w: snapW, h: snapH };
       curY = snapY + snapH + rowFont * 0.3;
@@ -1642,12 +1642,12 @@ function drawMenu() {
       menuButtons.webcamSnap = null;
     } else if (faceSwapStatus === 'done' && faceSwapImg) {
       // Kompakte Vorschau + Häkchen
-      ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
+      ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.9)';
       ctx.fillText(t('gesichtAktiv'), cx, statusY);
       curY = statusY + rowFont * 0.8;
       menuButtons.webcamSnap = null;
     } else if (faceSwapStatus === 'error') {
-      ctx.fillStyle = 'rgba(232, 106, 122, 0.9)';
+      ctx.fillStyle = isMobilePortrait ? 'rgba(255, 130, 145, 1.0)' : 'rgba(232, 106, 122, 0.9)';
       const errMsg = faceSwapError || t('faceSwapFehler');
       ctx.fillText(errMsg.length > 40 ? errMsg.substring(0, 37) + '...' : errMsg, cx, statusY);
       curY = statusY + rowFont * 0.8;
