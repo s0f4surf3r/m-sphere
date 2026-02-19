@@ -1243,7 +1243,7 @@ function drawMenu() {
   const sectionGap = unit * 0.025 * (isMobilePortrait ? 1.0 : 0.7);
 
   const safeTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
-  let curY = Math.max(H * (isMobilePortrait ? 0.09 : 0.07), safeTop + unit * (isMobilePortrait ? 0.04 : 0.02));
+  let curY = Math.max(H * (isMobilePortrait ? 0.07 : 0.05), safeTop + unit * (isMobilePortrait ? 0.03 : 0.015));
 
   // Native Scrolling: Gesamten Menü-Inhalt um scrollY nach oben verschieben
   const scrollY = window.scrollY || 0;
@@ -4305,7 +4305,7 @@ function frame() {
       const hcx = cx;
       const hMob = cW < 600 && cH > cW;
       const hFont = Math.min(cW, cH) * (hMob ? 0.045 : 0.03);
-      const hcy = cy - r - hFont * 3.2;
+      const hcy = cy - r - hFont * 4.5;
       ctx.font = `300 ${hFont}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
