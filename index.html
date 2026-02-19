@@ -48,7 +48,6 @@ canvas {
 <div id="menuSpacer" style="width:1px;height:0;pointer-events:none"></div>
 <input type="file" id="faceInput" accept="image/*" capture="user" style="display:none">
 <input type="file" id="faceLoadInput" accept="image/*" style="display:none">
-<video id="webcamVideo" autoplay playsinline style="display:none"></video>
 <div id="paypalOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,22,40,0.92);
   align-items:center;justify-content:center;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">
   <div style="background:#1a2a3c;border-radius:16px;padding:28px 24px;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
@@ -57,6 +56,21 @@ canvas {
     <div id="paypal-button-container" style="min-height:50px"></div>
     <button id="paypalCancel" onclick="hidePayPalOverlay()" style="margin-top:14px;background:none;border:1px solid rgba(240,236,230,0.3);
       color:#f0ece6;padding:8px 24px;border-radius:8px;font-size:14px;cursor:pointer"></button>
+  </div>
+</div>
+<div id="cameraOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,22,40,0.92);
+  align-items:center;justify-content:center;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">
+  <div style="background:#1a2a3c;border-radius:16px;padding:28px 24px;max-width:360px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+    <div id="cameraTipp" style="color:rgba(240,236,230,0.6);font-size:13px;margin-bottom:16px"></div>
+    <div style="width:200px;height:200px;margin:0 auto 18px;border-radius:50%;overflow:hidden;border:2px solid rgba(42,191,191,0.5);position:relative">
+      <video id="cameraPreviewVideo" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1)"></video>
+    </div>
+    <button id="cameraSnapBtn" style="display:block;width:100%;padding:10px 0;margin-bottom:10px;background:rgba(42,191,191,0.15);
+      border:1px solid rgba(42,191,191,0.5);color:rgba(42,191,191,0.95);border-radius:8px;font-size:15px;cursor:pointer;
+      font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
+    <button id="cameraCancelBtn" style="display:block;width:100%;padding:8px 0;background:none;
+      border:1px solid rgba(240,236,230,0.3);color:#f0ece6;border-radius:8px;font-size:14px;cursor:pointer;
+      font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
   </div>
 </div>
 <script type="module">
@@ -1267,7 +1281,7 @@ function drawMenu() {
     ctx.fillRect(sx, sy, 1.5, 1.5);
   }
 
-  menuButtons = { timer: [], breathing: [], timerToggle: null, shake: [], meditation: [], start: null, faceSwap: [], webcamSnap: null, faceSave: null };
+  menuButtons = { timer: [], breathing: [], timerToggle: null, shake: [], meditation: [], start: null, faceSwap: [], faceSave: null };
 
   // Vertikales Layout berechnen
   const titleSize = unit * 0.12;
@@ -1625,77 +1639,23 @@ function drawMenu() {
     ctx.textAlign = 'center';
     ctx.font = `400 ${rowFont * 0.85}px "Courier New", monospace`;
 
-    if (faceModeIdx === 2 && webcamReady && faceSwapStatus === 'idle') {
-      // Tipp: Brille ablegen etc.
-      ctx.fillStyle = 'rgba(240, 236, 230, 0.6)';
-      ctx.font = `300 ${rowFont * 0.7}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
-      ctx.fillText(t('kameraTipp'), cx, statusY);
-      // Webcam-Vorschau: Kreis mit Live-Video + Auslöse-Button
-      const previewR = rowFont * 2.5;
-      const previewCy = statusY + rowFont * 1.2 + previewR;
-      const video = document.getElementById('webcamVideo');
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(cx, previewCy, previewR, 0, Math.PI * 2);
-      ctx.clip();
-      // Video-Frame zentriert in Kreis zeichnen
-      const vw = video.videoWidth || 1;
-      const vh = video.videoHeight || 1;
-      const vAspect = vw / vh;
-      const drawW = previewR * 2 * Math.max(1, vAspect);
-      const drawH = previewR * 2 * Math.max(1, 1 / vAspect);
-      ctx.drawImage(video, cx - drawW / 2, previewCy - drawH / 2, drawW, drawH);
-      ctx.restore();
-      // Kreis-Rand
-      ctx.strokeStyle = 'rgba(42, 191, 191, 0.5)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(cx, previewCy, previewR, 0, Math.PI * 2);
-      ctx.stroke();
-      // Auslöse-Button darunter
-      const snapY = previewCy + previewR + rowFont * 0.8;
-      const snapW = rowFont * 8;
-      const snapH = btnH;
-      const snapX = cx - snapW / 2;
-      ctx.fillStyle = btnSelFill;
-      ctx.strokeStyle = btnSelStroke;
-      ctx.lineWidth = isMobilePortrait ? 2 : 1;
-      ctx.beginPath();
-      ctx.roundRect(snapX, snapY, snapW, snapH, snapH * 0.2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.9)';
-      ctx.fillText(t('fotoAufnehmen'), cx, snapY + snapH / 2 + rowFont * 0.15);
-      menuButtons.webcamSnap = { x: snapX, y: snapY, w: snapW, h: snapH };
-      curY = snapY + snapH + rowFont * 0.3;
-    } else if (faceModeIdx === 2 && !webcamReady && faceSwapStatus === 'idle') {
-      // Webcam wird gestartet...
-      ctx.fillStyle = 'rgba(244, 168, 66, 0.9)';
-      ctx.fillText(t('kameraStartet'), cx, statusY);
-      curY = statusY + rowFont * 0.8;
-      menuButtons.webcamSnap = null;
-    } else if (faceSwapStatus === 'uploading' || faceSwapStatus === 'processing') {
+    if (faceSwapStatus === 'uploading' || faceSwapStatus === 'processing') {
       // Animierte Punkte
       const dots = '.'.repeat(Math.floor(Date.now() / 500) % 4);
       const label = faceSwapStatus === 'uploading' ? t('sendeBild') : t('faceSwapLaeuft');
       ctx.fillStyle = 'rgba(244, 168, 66, 0.9)';
       ctx.fillText(label + dots, cx, statusY);
       curY = statusY + rowFont * 0.8;
-      menuButtons.webcamSnap = null;
     } else if (faceSwapStatus === 'done' && faceSwapImg) {
       // Kompakte Vorschau + Häkchen
       ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.9)';
       ctx.fillText(t('gesichtAktiv'), cx, statusY);
       curY = statusY + rowFont * 0.8;
-      menuButtons.webcamSnap = null;
     } else if (faceSwapStatus === 'error') {
       ctx.fillStyle = isMobilePortrait ? 'rgba(255, 130, 145, 1.0)' : 'rgba(232, 106, 122, 0.9)';
       const errMsg = faceSwapError || t('faceSwapFehler');
       ctx.fillText(errMsg.length > 40 ? errMsg.substring(0, 37) + '...' : errMsg, cx, statusY);
       curY = statusY + rowFont * 0.8;
-      menuButtons.webcamSnap = null;
-    } else {
-      menuButtons.webcamSnap = null;
     }
 
     ctx.textAlign = 'start';
@@ -2312,12 +2272,6 @@ function handleMenuClick(x, y) {
       return true;
     }
   }
-  // Webcam Snapshot
-  const snap = menuButtons.webcamSnap;
-  if (snap && hitBtn(snap)) {
-    captureWebcamSnapshot();
-    return true;
-  }
   // Timer-Toggle
   const t = menuButtons.timerToggle;
   if (t && x >= t.x && x <= t.x + t.w && sy >= t.y && sy <= t.y + t.h) {
@@ -2376,6 +2330,7 @@ let backBtnArea = null;
 
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    if (document.getElementById('cameraOverlay').style.display !== 'none') { hideCameraOverlay(); faceModeIdx = 0; return; }
     if (legalOverlay) { legalOverlay = null; legalScrollY = 0; return; }
     if (state !== 'idle') returnToMenu();
   }
@@ -3804,6 +3759,26 @@ function saveFaceSwapImage() {
   a.click();
 }
 
+// Camera-Overlay Funktionen
+function showCameraOverlay() {
+  const overlay = document.getElementById('cameraOverlay');
+  document.getElementById('cameraTipp').textContent = t('kameraTipp');
+  document.getElementById('cameraSnapBtn').textContent = t('fotoAufnehmen');
+  document.getElementById('cameraCancelBtn').textContent = t('abbrechen');
+  overlay.style.display = 'flex';
+}
+function hideCameraOverlay() {
+  document.getElementById('cameraOverlay').style.display = 'none';
+  stopWebcam();
+}
+document.getElementById('cameraSnapBtn').addEventListener('click', () => {
+  captureWebcamSnapshot();
+});
+document.getElementById('cameraCancelBtn').addEventListener('click', () => {
+  hideCameraOverlay();
+  faceModeIdx = 0;
+});
+
 // Webcam-Funktionen
 function startWebcam() {
   webcamReady = false;
@@ -3812,12 +3787,12 @@ function startWebcam() {
     faceSwapError = 'Kamera benötigt HTTPS';
     return;
   }
-  const video = document.getElementById('webcamVideo');
+  const video = document.getElementById('cameraPreviewVideo');
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 512, height: 512 } })
   .then(stream => {
     webcamStream = stream;
     video.srcObject = stream;
-    video.onloadedmetadata = () => { webcamReady = true; menuExpanded.face = true; };
+    video.onloadedmetadata = () => { webcamReady = true; showCameraOverlay(); };
   })
   .catch(err => {
     faceSwapStatus = 'error';
@@ -3831,12 +3806,13 @@ function stopWebcam() {
     webcamStream = null;
   }
   webcamReady = false;
-  const video = document.getElementById('webcamVideo');
+  const video = document.getElementById('cameraPreviewVideo');
   video.srcObject = null;
+  document.getElementById('cameraOverlay').style.display = 'none';
 }
 
 function captureWebcamSnapshot() {
-  const video = document.getElementById('webcamVideo');
+  const video = document.getElementById('cameraPreviewVideo');
   if (!video.videoWidth) return;
   const c = document.createElement('canvas');
   c.width = video.videoWidth;
