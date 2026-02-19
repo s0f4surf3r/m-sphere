@@ -3704,7 +3704,7 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
   const drawX = cx - drawSize / 2 + (glitchOffset || 0);
   // Unterseite bleibt fix (Mönch schrumpft an Ort und Stelle, schwebt nicht)
   // Mobile: Mönch etwas tiefer in der Kugel (+ r*0.08)
-  const fullBottom = cy + fullSize * 0.5 + (isMobDisplay ? r * 0.02 : r * 0.04);
+  const fullBottom = cy + fullSize * 0.5 + (isMobDisplay ? r * 0.08 : r * 0.04);
   const drawY = fullBottom - drawSize;
 
   // Globale Mönch-Position für Partikel-Kollision speichern
@@ -3943,7 +3943,7 @@ function frame() {
     const pulse = Math.sin(Date.now() * 0.0015) * 0.15 + 0.85;
     const hUnit = Math.min(cW, cH);
     const isMobReady = cW < 600 && cH > cW;
-    const hintFontSize = hUnit * (isMobReady ? 0.04 : 0.02);
+    const hintFontSize = hUnit * (isMobReady ? 0.048 : 0.02);
     ctx.font = `${hintFontSize}px monospace`;
     ctx.textAlign = 'center';
     ctx.shadowColor = `rgba(244, 168, 66, ${pulse * 0.3})`;
@@ -3951,9 +3951,9 @@ function frame() {
     ctx.fillStyle = `rgba(244, 168, 66, ${pulse})`;
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     if (isTouchDevice) {
-      ctx.fillText(t('hintMobile1'), cx, cy - r - hintFontSize * 3.2);
+      ctx.fillText(t('hintMobile1'), cx, cy - r - hintFontSize * 3.8);
       if (deviceMotionGranted) {
-        ctx.fillText(t('hintMobile2'), cx, cy - r - hintFontSize * 1.9);
+        ctx.fillText(t('hintMobile2'), cx, cy - r - hintFontSize * 2.4);
       } else {
         ctx.font = `${hintFontSize * 0.7}px monospace`;
         ctx.fillStyle = `rgba(244, 168, 66, ${pulse * 0.6})`;
@@ -4305,7 +4305,7 @@ function frame() {
       const hcx = cx;
       const hMob = cW < 600 && cH > cW;
       const hFont = Math.min(cW, cH) * (hMob ? 0.045 : 0.03);
-      const hcy = cy - r - hFont * 6;
+      const hcy = cy - r - hFont * 5;
       ctx.font = `300 ${hFont}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
