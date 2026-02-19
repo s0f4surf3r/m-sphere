@@ -1584,7 +1584,7 @@ function drawMenu() {
   }
 
   // --- DEIN GESICHT ---
-  const faceMobileLabels = isMobilePortrait ? [t('aus'), t('mediathek'), t('kamera'), t('laden')] : [t('aus'), t('foto'), t('webcam'), t('laden')];
+  const faceMobileLabels = [t('aus'), t('mediathek'), t('kamera'), t('laden')];
   const faceRow = drawSettingsRow(t('deinGesicht'), faceMobileLabels, faceModeIdx, curY, null, 'face');
   menuButtons.faceSwap = faceRow.btns;
   curY = faceRow.bottomY;
@@ -3624,7 +3624,7 @@ function startWebcam() {
   .then(stream => {
     webcamStream = stream;
     video.srcObject = stream;
-    video.onloadedmetadata = () => { webcamReady = true; };
+    video.onloadedmetadata = () => { webcamReady = true; menuExpanded.face = true; };
   })
   .catch(err => {
     faceSwapStatus = 'error';
