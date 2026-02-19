@@ -275,7 +275,7 @@ const BREATHING_TIMING = [
   { in: 4, holdIn: 7, out: 8, holdOut: 0 },     // 4-7-8: Einatmen, Halten, Langsam ausatmen
   { in: 4, holdIn: 4, out: 4, holdOut: 4 },      // Box: Einatmen, Halten, Ausatmen, Halten
 ];
-let breathingMode = 1; // default: Kohärent
+let breathingMode = parseInt(localStorage.getItem('msphere_breathing')) || 1;
 
 // Atem-Welle berechnen: unterstützt Hold-Phasen (4-7-8, Box)
 // Gibt -1 (voll ausgeatmet) → +1 (voll eingeatmet) zurück, 0 bei Aus
@@ -299,7 +299,7 @@ function calcBreathWave(bt, elapsedSec) {
   }
 }
 
-let timerVisible = false; // Timer unter Kugel an/aus
+let timerVisible = localStorage.getItem('msphere_timer') === 'true';
 let meditationDuration = 60;
 let meditationTimeLeft = 0;
 let meditationStartTime = 0;
@@ -307,25 +307,25 @@ let meditationStartTime = 0;
 // Sound-Presets
 const SHAKE_SOUNDS = ['Rauschen', 'Synapsen', 'Stimmen', 'Metallisch'];
 const MEDITATION_SOUNDS = ['Stille', 'Drone', 'Klangschale', 'Tanpura', '528 Hz', '432 Hz', 'Binaural'];
-let shakeSoundIdx = 0; // default: Rauschen
-let meditationSoundIdx = 0; // default: Stille
+let shakeSoundIdx = parseInt(localStorage.getItem('msphere_shake')) || 0;
+let meditationSoundIdx = parseInt(localStorage.getItem('msphere_medsound')) || 0;
 
 // Gedankenmodus: 0=Schweben, 1=alt-Schweben2 (eingefroren!), 2=alt-Schweben3 (eingefroren!), 3=Schweben mit Sog, 4=Sinken, 5=Reflektieren, 6=Schweben2 (Kollision ohne Sog)
 const THOUGHT_MODES = ['Schweben', 'Schweben2', 'Schweben3', 'Schweben mit Sog', 'Sinken', 'Reflektieren', 'Schweben2'];
 const THOUGHT_MODES_VISIBLE = [0, 6, 3, 4, 5]; // Nur diese im Menü anzeigen
-let thoughtModeIdx = 3; // default: Schweben mit Sog
+let thoughtModeIdx = parseInt(localStorage.getItem('msphere_thought')) || 3;
 
 // Gedankenfluss: Intensitätsstufe der Partikel (1x–5x)
 const FLOW_LEVELS = ['0.5x', '1x', '2x', '3x', '4x', '5x'];
 const FLOW_VALUES = [0.5, 1, 2, 3, 4, 5];
-let flowLevelIdx = 1; // default: 1x
+let flowLevelIdx = parseInt(localStorage.getItem('msphere_flow')) || 1;
 
 // Mönch-Schrumpfen: immer aktiv
 const shrinkModeIdx = 1;
 
 // Ablenkungen: 0=Aus, 1=Ein
 const DISTRACTION_MODES = ['Aus', 'Ein'];
-let distractionModeIdx = 0; // default: Aus
+let distractionModeIdx = parseInt(localStorage.getItem('msphere_distraction')) || 0;
 let showDistractionInMenu = false; // Erst via Burger-Menü aktivierbar
 
 // Face Swap
@@ -2186,6 +2186,7 @@ function handleMenuClick(x, y) {
   for (const btn of menuButtons.breathing || []) {
     if (hitBtn(btn)) {
       breathingMode = btn.idx;
+      localStorage.setItem('msphere_breathing', breathingMode);
       menuExpanded.breathing = false;
       return true;
     }
@@ -2194,6 +2195,7 @@ function handleMenuClick(x, y) {
   for (const btn of menuButtons.meditation || []) {
     if (hitBtn(btn)) {
       meditationSoundIdx = btn.idx;
+      localStorage.setItem('msphere_medsound', meditationSoundIdx);
       menuExpanded.meditation = false;
       return true;
     }
@@ -2202,6 +2204,7 @@ function handleMenuClick(x, y) {
   for (const btn of menuButtons.thoughtMode || []) {
     if (hitBtn(btn)) {
       thoughtModeIdx = btn.idx;
+      localStorage.setItem('msphere_thought', thoughtModeIdx);
       menuExpanded.thoughtMode = false;
       return true;
     }
@@ -2210,6 +2213,7 @@ function handleMenuClick(x, y) {
   for (const btn of menuButtons.flowLevel || []) {
     if (hitBtn(btn)) {
       flowLevelIdx = btn.idx;
+      localStorage.setItem('msphere_flow', flowLevelIdx);
       menuExpanded.flowLevel = false;
       return true;
     }
@@ -2218,6 +2222,7 @@ function handleMenuClick(x, y) {
   for (const btn of menuButtons.distractionMode || []) {
     if (hitBtn(btn)) {
       distractionModeIdx = btn.idx;
+      localStorage.setItem('msphere_distraction', distractionModeIdx);
       menuExpanded.distraction = false;
       return true;
     }
@@ -2280,6 +2285,7 @@ function handleMenuClick(x, y) {
   const t = menuButtons.timerToggle;
   if (t && x >= t.x && x <= t.x + t.w && sy >= t.y && sy <= t.y + t.h) {
     timerVisible = !timerVisible;
+    localStorage.setItem('msphere_timer', timerVisible);
     return true;
   }
   // Start-Button
