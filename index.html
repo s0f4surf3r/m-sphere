@@ -92,7 +92,8 @@ const TR = {
     hintDesktop1: 'Drücke, halte und schüttle mit der Maus die Kugel,',
     hintDesktop2: 'bis der Kreis geschlossen ist.',
     letGo: 'Du darfst jetzt loslassen ...',
-    relapseHint: 'Schüttle weiter — bis der Kreis wieder voll ist.',
+    relapseHint1: 'Schüttle weiter —',
+    relapseHint2: 'bis der Kreis wieder voll ist.',
     handyAblegen: 'Lege dein Handy ruhig hin ...',
     handyAblegen2: '... wenn du es kannst ;)',
     youAreWater: 'Du bist das Wasser',
@@ -163,7 +164,8 @@ const TR = {
     hintDesktop1: 'Press, hold and shake the sphere with your mouse,',
     hintDesktop2: 'until the circle is complete.',
     letGo: 'You may let go now ...',
-    relapseHint: 'Keep shaking — until the circle is full again.',
+    relapseHint1: 'Keep shaking —',
+    relapseHint2: 'until the circle is full again.',
     handyAblegen: 'Put your phone down gently ...',
     handyAblegen2: '... if you can ;)',
     youAreWater: 'You are the water',
@@ -4194,7 +4196,8 @@ function frame() {
     ctx.shadowColor = `rgba(255, 80, 80, ${pulse * 0.3})`;
     ctx.shadowBlur = 12;
     ctx.fillStyle = `rgba(255, 120, 100, ${pulse})`;
-    ctx.fillText(t('relapseHint'), cx, cy - r - hintFS * 2.5);
+    ctx.fillText(t('relapseHint1'), cx, cy - r - hintFS * 3.5);
+    ctx.fillText(t('relapseHint2'), cx, cy - r - hintFS * 2.0);
     ctx.shadowBlur = 0;
     ctx.textAlign = 'start';
   }
