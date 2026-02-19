@@ -2187,7 +2187,6 @@ function handleMenuClick(x, y) {
     if (hitBtn(btn)) {
       breathingMode = btn.idx;
       localStorage.setItem('msphere_breathing', breathingMode);
-      menuExpanded.breathing = false;
       return true;
     }
   }
@@ -2196,7 +2195,6 @@ function handleMenuClick(x, y) {
     if (hitBtn(btn)) {
       meditationSoundIdx = btn.idx;
       localStorage.setItem('msphere_medsound', meditationSoundIdx);
-      menuExpanded.meditation = false;
       return true;
     }
   }
@@ -2205,7 +2203,6 @@ function handleMenuClick(x, y) {
     if (hitBtn(btn)) {
       thoughtModeIdx = btn.idx;
       localStorage.setItem('msphere_thought', thoughtModeIdx);
-      menuExpanded.thoughtMode = false;
       return true;
     }
   }
@@ -2214,7 +2211,6 @@ function handleMenuClick(x, y) {
     if (hitBtn(btn)) {
       flowLevelIdx = btn.idx;
       localStorage.setItem('msphere_flow', flowLevelIdx);
-      menuExpanded.flowLevel = false;
       return true;
     }
   }
@@ -2223,7 +2219,6 @@ function handleMenuClick(x, y) {
     if (hitBtn(btn)) {
       distractionModeIdx = btn.idx;
       localStorage.setItem('msphere_distraction', distractionModeIdx);
-      menuExpanded.distraction = false;
       return true;
     }
   }
