@@ -48,12 +48,12 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Timing**: Anfangs ~8s, später 20–40s (seltener aber subtiler)
 
 ### 5. Ende (Leere)
-- **0–5s**: Stille, leere Kugel
-- **5–10s**: "Du bist das Wasser" blendet ein (Georgia serif, mehrschichtiger blau-weißer Glow) + Voice-Audio (M4A via AudioContext)
+- **0–4s**: Stille, leere Kugel, Partikel sofort unsichtbar (medAlpha=0)
+- **4s**: "Du bist das Wasser" Text beginnt einzufaden (Georgia serif, mehrschichtiger blau-weißer Glow)
+- **4.5s**: Voice startet (`dubistdaswasser_kind.m4a` für DE, `dubistdaswasser.m4a` für EN)
 - **Tempel-Gong** auch am Ende (gleicher Sound wie bei Start)
-- **Voice**: `dubistdaswasser.m4a` — wird per fetch vorgeladen, via AudioContext decodiert und abgespielt
-- **35s+**: Partikel kehren langsam aus der Mitte zurück (Symbol: ewiger Kreislauf)
-- **45s+**: Dezenter "klick"-Hinweis zum Neustart
+- **35s+**: Rebirth-Partikel spawnen oben, fallen mit Gravitation (0.003), prallen an Kugelwand ab — ewiger Kreislauf
+- **45s+**: "Zurück ins Menü" + "♡ Unterstützen ♡" Button
 - Klick → zurück zum Overlay-Menü (`selectedDurationIdx` wird zurückgesetzt)
 
 ## Sound-Design
@@ -74,7 +74,7 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 ### Interaction-Sounds
 - **Tingsha**: Zwei leicht verstimmte hohe Sinus-Töne (2637/2673 Hz, 1.8s Decay) — bei Menü-Klicks
 - **Tempel-Gong**: Tiefer Gong (72 Hz Basis, 5 inharmonische Partials mit Shimmer-Partnern, 12s Decay) — bei Meditationsstart UND -ende
-- **Voice**: `dubistdaswasser.m4a` — bei "Du bist das Wasser" Einblendung (nach 5s Done)
+- **Voice**: `dubistdaswasser_kind.m4a` (Levi, DE default) / `dubistdaswasser.m4a` (EN) / `dubistdaswasser_zoe.m4a` (Zoe Easter Egg) — bei 4.5s Done
 
 ### Gemeinsame Sounds
 - **Meditation**: Gedanken-Noise löst sich immer auf (unabhängig vom Shake-Modus)
@@ -148,11 +148,14 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 3. Sterne
 4. Kugel (Wasser, Glasrand, Glanzpunkt)
 5. Kaustiken (geclippt)
-6. **Mönch** (3D-Modell, via drawModel3D) — nicht im idle-State
+6. **Mönch** (3D-Modell, via drawModel3D) — nicht im idle/done-State
 7. **Partikel** (ÜBER dem Mönch — verdecken ihn bei vollem Counter)
-8. **Overlay-Menü** (nur idle) / Hint-Text (nur ready) / Timer / Done-Effekte
-9. Vignette, Rückfall-Flash, Counter-Ring (rot→gold bei 100%), Gold-Flash, Atem-Nebel
-10. **ctx.restore()** — Schüttel-Translate aufheben
+8. **Mobile Mönch-Overlay** (35% Alpha, über Partikeln — damit Mönch auf Mobile sichtbar bleibt)
+9. **Overlay-Menü** (nur idle) / Hint-Text (nur ready) / Timer / Done-Effekte
+10. Vignette, Rückfall-Flash, Gold-Flash
+11. **Atem-Nebel** (Cyan, nur außerhalb der Kugel)
+12. **Counter-Ring** (rot, voll opak — NACH Atem-Nebel damit Rot konstant bleibt)
+13. **ctx.restore()** — Schüttel-Translate aufheben
 
 ### Shake Detection
 - **Maus**: Nur bei `mouseDown=true` — Bewegung ohne Klick wird ignoriert
@@ -170,13 +173,16 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **10 Neon-Farben**, Glow per RadialGradient, Spawn-Blitz (weißer Kern, 4 Frames)
 - **Meditation**: Brownsche Bewegung (0.15→0 linear), Reibung (0.99→0.97 linear), verblassen mit sqrt-Kurve (`Math.pow(1-progress, 0.5)`), Farben → Aschgrau
 - **Kugelwand**: Harte Wand, Partikel prallen ab. Desktop: 0.95r, Mobile: 0.88r. Dämpfung 0.6/0.2
-- **Gedankenmodus** (6 Modi):
-  - **Schweben** (Default, idx=0): Null Gravitation, gleichmäßige Verteilung, Brownsche Bewegung
-  - **Schweben2** (idx=1, EINGEFROREN): Wie Schweben + pixelgenaue Mönch-Silhouetten-Abstoßung (48×48 Maske via gl.readPixels), sanfter Sog zum Mönch (progress*0.01), Brownsche Bewegung
-  - **Schweben3** (idx=2, EINGEFROREN): Wie Schweben2, identische Physik
-  - **Schweben4** (idx=3, experimentell): Wie Schweben2/3 aber Mönch-Maske via Haupt-Canvas getImageData (Safari-kompatibel, Brightness-Threshold >180)
-  - **Sinken** (idx=4): Gravitation 0.003 (Shaking) / 0.002 (Meditation), Partikel sinken langsam ab
+- **Gedankenmodus** (7 interne Modi, 4 sichtbar):
+  - **Schweben2** (idx=0, AUSGEBLENDET): Ohne Kollision, nur Brownsche Bewegung
+  - **Schweben2-alt** (idx=1, EINGEFROREN): gl.readPixels-Kollision + Sog
+  - **Schweben3-alt** (idx=2, EINGEFROREN): Wie idx=1
+  - **Schweben mit Sog** (idx=3): Kollision + Sog zum Mönch (progress*0.01)
+  - **Sinken** (idx=4): Gravitation 0.003 (Shaking) / 0.002 (Meditation)
   - **Reflektieren** (idx=5): Wie Schweben, Rand-Reflexion immer aktiv
+  - **Schweben** (idx=6, DEFAULT): Kollision ohne Sog, bester Modus
+  - **Sichtbar im Menü**: `THOUGHT_MODES_VISIBLE = [6, 3, 4, 5]`
+  - **Migration**: Gespeicherter idx=0 wird automatisch auf idx=6 umgeleitet
 - **Mönch-Kollisionsmaske**: 48×48 Uint8Array, Update alle 30 Frames. Chrome: gl.readPixels. Safari: ctx.getImageData vom Haupt-Canvas (Brightness >180). Partikel werden radial zur nächsten freien Stelle geschoben.
 - **Physik**: Desktop leichte Reibung (0.995), Mobile stärkere Reibung (0.98) + Gravitation (0.002)
 
@@ -238,14 +244,45 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **iOS Stumm-Schalter**: `navigator.audioSession.type = 'playback'` (Safari 16.4+) + Silent-Audio-Fallback → Sound spielt auch bei stummgeschaltetem iPhone
 - ESC-Taste als universeller Abbruch → zurück ins Menü
 - Ring wechselt bei 100% zu Gold + "Du darfst jetzt loslassen ..." als Feedback
-- Gedankenmodus: 6 Modi (Schweben, Schweben2, Schweben3, Schweben4, Sinken, Reflektieren)
-- **Schweben2 + Schweben3 sind EINGEFROREN** — nicht verändern ohne ausdrückliche User-Anweisung
+- Gedankenmodus: 7 interne Modi, 4 sichtbar. Default: Schweben (idx=6, mit Kollision)
+- **Schweben2-alt (idx=1) + Schweben3-alt (idx=2) sind EINGEFROREN** — nicht verändern ohne ausdrückliche User-Anweisung
+- **Schweben2 (idx=0) ist AUSGEBLENDET** — nur versteckt, nicht gelöscht
 - Mönch-Silhouetten-Abstoßung: Pixelgenaue 48×48 Kollisionsmaske, Safari-Fallback via Haupt-Canvas
 - DPR-Skalierung: cW/cH globale CSS-Dimensionen, dpr=1 (deaktiviert für Performance)
 - Meditation: Alles linear (Verblassen sqrt-Kurve, Reibung, Brownsche Bewegung, Sog)
 - Counter-Rate: Desktop 0.55, Mobile 0.35
 
+## Persistenz (localStorage)
+Folgende Keys werden gespeichert:
+- `msphere_lang` — Sprache (de/en)
+- `msphere_breathing` — Atemrhythmus (0-4)
+- `msphere_medsound` — Meditations-Sound (0-6)
+- `msphere_thought` — Gedankenmodus (idx)
+- `msphere_flow` — Gedankenfluss (0-5)
+- `msphere_timer` — Timer-Anzeige (true/false)
+- `msphere_distraction` — Ablenkungen (0/1)
+- `msphere_faceswap` — Face-Swap-Bild (data URL)
+- `msphere_facemode` — Face-Modus (idx)
+- `msphere_faceswap_last` — Letzte Faceswap-Nutzung (Timestamp, für Rate-Limiting)
+- **NICHT gespeichert**: Meditationszeit (wird jedes Mal neu gewählt)
+
+## Easter Eggs
+- **Levi**: Swipe-Links auf "M-SPHERE" Titel → `easterEggVoice = 'levi'`, Text "In Liebe von deinem Papa!"
+- **Zoe**: 3× Tap auf "M-SPHERE" Titel → `easterEggVoice = 'zoe'`, Text "Für Zoe ♡"
+- **Levi-Voice ist DE-Default**: `dubistdaswasser_kind.m4a` spielt immer für DE (nicht nur im Easter-Egg)
+
+## Face Swap
+- **API**: Replicate (Modell `278a81e...`), Proxy via Vercel Serverless (`/Users/joho21/Projekte/m-sphere-api/api/faceswap.js`)
+- **Rate-Limiting**: 1× pro Tag pro IP (Server-seitig in-memory Map) + Client-seitig localStorage
+- **Labels**: Aus / Mediathek / Kamera / Laden (einheitlich auf allen Geräten)
+- **Kamera-Bug-Fix**: Nach Chrome-Permission-Dialog wird `menuExpanded.face = true` gesetzt
+- **Menü-Verhalten**: Einklapp-Menüs bleiben nach Auswahl offen, schließen nur bei anderer Kategorie oder manuellem Zuklappen
+- **TODO**: Bezahlfunktion für Face Swap (Zoe-Modus soll kostenlos bleiben)
+
+## Sicherungs-Tags
+- `v1.0-pre-payment` — Snapshot vor Payment-Feature (alle Fixes fertig)
+
 ## Offene Fragen / Nächste Schritte
+- **Payment-Feature** für Face Swap (Stripe?) — Zoe-Modus bleibt kostenlos
 - Partikel-Formen variieren (nicht nur Kreise — Icons, Symbole?)
 - Wasser-Visualisierung im Done-State verbessern
-- Mobile-Testing: Alle Schweben-Modi auf iPhone verifizieren
