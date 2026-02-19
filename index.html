@@ -2114,13 +2114,13 @@ function handleMenuClick(x, y) {
   function hitBtn(btn) {
     return x >= btn.x && x <= btn.x + btn.w && sy >= btn.y && sy <= btn.y + btn.h;
   }
-  // Easter Egg: Triple-Tap auf Titel → Levi
+  // Easter Egg: 3x Tap → Zoe, 6x Tap → Levi
   const ttl = menuButtons.title;
   if (ttl && hitBtn(ttl)) {
     titleTapCount++;
     clearTimeout(titleTapTimer);
-    titleTapTimer = setTimeout(() => { titleTapCount = 0; }, 600);
-    if (titleTapCount >= 3) {
+    titleTapTimer = setTimeout(() => { titleTapCount = 0; }, 800);
+    if (titleTapCount >= 6) {
       titleTapCount = 0;
       easterEggVoice = easterEggVoice === 'levi' ? null : 'levi';
       voiceBuffer = null;
@@ -2128,6 +2128,19 @@ function handleMenuClick(x, y) {
       ensureSound();
       playSparkle();
       return true;
+    }
+    if (titleTapCount === 3) {
+      // Kurz warten ob noch mehr Taps kommen (für Levi)
+      setTimeout(() => {
+        if (titleTapCount === 3) {
+          titleTapCount = 0;
+          easterEggVoice = easterEggVoice === 'zoe' ? null : 'zoe';
+          voiceBuffer = null;
+          easterEggFlash = 1;
+          ensureSound();
+          playSparkle();
+        }
+      }, 400);
     }
   }
 
@@ -2346,44 +2359,6 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// Easter Egg: Long-Press auf Titel → Zoe
-function titleHit(ex, ey) {
-  const ttl = menuButtons.title;
-  if (!ttl) return false;
-  const [tx, ty] = canvasCoords(ex, ey);
-  const sy = ty + (window.scrollY || 0);
-  return tx >= ttl.x && tx <= ttl.x + ttl.w && sy >= ttl.y && sy <= ttl.y + ttl.h;
-}
-canvas.addEventListener('mousedown', (e) => {
-  if (state !== 'idle' || legalOverlay) return;
-  if (titleHit(e.clientX, e.clientY)) {
-    titleLongPressTimer = setTimeout(() => {
-      easterEggVoice = easterEggVoice === 'zoe' ? null : 'zoe';
-      voiceBuffer = null;
-      easterEggFlash = 1;
-      titleTapCount = 0; // Triple-Tap zurücksetzen
-      ensureSound();
-      playSparkle();
-    }, 1500);
-  }
-});
-canvas.addEventListener('mouseup', () => { clearTimeout(titleLongPressTimer); });
-canvas.addEventListener('touchstart', (e) => {
-  if (state !== 'idle' || legalOverlay || !e.touches.length) return;
-  if (titleHit(e.touches[0].clientX, e.touches[0].clientY)) {
-    titleLongPressTimer = setTimeout(() => {
-      easterEggVoice = easterEggVoice === 'zoe' ? null : 'zoe';
-      voiceBuffer = null;
-      easterEggFlash = 1;
-      titleTapCount = 0;
-      ensureSound();
-      playSparkle();
-    }, 1500);
-  }
-}, { passive: true });
-canvas.addEventListener('touchend', () => { clearTimeout(titleLongPressTimer); });
-canvas.addEventListener('touchmove', () => { clearTimeout(titleLongPressTimer); }, { passive: true });
-
 canvas.addEventListener('click', (e) => {
   ensureSound();
   const [cx, cy] = canvasCoords(e.clientX, e.clientY);
@@ -2448,10 +2423,8 @@ let voicePlayed = false;
 let easterEggVoice = null; // Easter Egg: null | 'levi' | 'zoe'
 let easterEggBuf = ''; // Tastenpuffer für Codes
 let easterEggFlash = 0; // Visuelle Bestätigung
-let titleTapCount = 0; // Triple-Tap Counter für Levi
+let titleTapCount = 0; // Tap-Counter für Easter Eggs
 let titleTapTimer = 0; // Reset-Timer
-let titleLongPress = 0; // Long-Press Start-Timestamp für Zoe
-let titleLongPressTimer = null; // Timer-ID
 fetch('dubistdaswasser.m4a')
   .then(r => r.arrayBuffer())
   .then(buf => { window._voiceRawBufferDe = buf; })
