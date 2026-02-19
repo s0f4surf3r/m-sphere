@@ -4031,7 +4031,7 @@ function frame() {
 
     // "Du bist das Wasser" — magischer Satz mit Glow (nach 5s Stille)
     const _voiceRaw = easterEggVoice === 'zoe' ? window._voiceRawBufferZoe : (lang === 'en' ? window._voiceRawBufferEn : window._voiceRawBufferKind);
-    if (elapsed > 3.5 && !voicePlayed && audioCtx && _voiceRaw) {
+    if (elapsed > 4.5 && !voicePlayed && audioCtx && _voiceRaw) {
       voicePlayed = true;
       // Voice über AudioContext abspielen (kein Autoplay-Block)
       if (!voiceBuffer) {
