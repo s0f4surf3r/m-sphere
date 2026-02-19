@@ -3610,7 +3610,9 @@ function showPayPalOverlay() {
             pendingAuthorizationID = authData.authorizationID;
             pendingPaymentToken = authData.token;
             const selfie = pendingSelfie;
-            hidePayPalOverlay();
+            // Overlay schließen OHNE voidPayment (Zahlung ist gültig!)
+            document.getElementById('paypalOverlay').style.display = 'none';
+            pendingSelfie = null;
             if (selfie) {
               executeFaceSwap(selfie, 'paid', authData.token);
             }
