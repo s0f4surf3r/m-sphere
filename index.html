@@ -49,6 +49,16 @@ canvas {
 <input type="file" id="faceInput" accept="image/*" capture="user" style="display:none">
 <input type="file" id="faceLoadInput" accept="image/*" style="display:none">
 <video id="webcamVideo" autoplay playsinline style="display:none"></video>
+<div id="paypalOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,22,40,0.92);
+  align-items:center;justify-content:center;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">
+  <div style="background:#1a2a3c;border-radius:16px;padding:28px 24px;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+    <div id="paypalTitle" style="color:#f0ece6;font-size:18px;font-weight:700;margin-bottom:8px"></div>
+    <div id="paypalSubtitle" style="color:#8aa;font-size:14px;margin-bottom:20px"></div>
+    <div id="paypal-button-container" style="min-height:50px"></div>
+    <button id="paypalCancel" onclick="hidePayPalOverlay()" style="margin-top:14px;background:none;border:1px solid rgba(240,236,230,0.3);
+      color:#f0ece6;padding:8px 24px;border-radius:8px;font-size:14px;cursor:pointer"></button>
+  </div>
+</div>
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -96,6 +106,10 @@ const TR = {
     faceSwapFehler: 'Fehler beim Face Swap',
     faceSwapLimit: 'Face Swap: 1× pro Tag möglich. Morgen wieder!',
     faceSwapFertig: 'Face Swap fertig!',
+    faceSwapKaufen: 'Weiterer Face Swap: 1,00 €',
+    faceSwapTagesLimit: 'Dein kostenloser Face Swap für heute ist aufgebraucht.',
+    paypalFehler: 'Zahlung fehlgeschlagen. Bitte erneut versuchen.',
+    abbrechen: 'Abbrechen',
     speichern: '💾 Speichern',
     weiter: 'Weiter',
     ablenkAus: 'Ablenkungen ausblenden',
@@ -162,6 +176,10 @@ const TR = {
     faceSwapFehler: 'Face Swap error',
     faceSwapLimit: 'Face Swap: 1× per day. Try again tomorrow!',
     faceSwapFertig: 'Face Swap done!',
+    faceSwapKaufen: 'Another Face Swap: €1.00',
+    faceSwapTagesLimit: 'Your free Face Swap for today has been used.',
+    paypalFehler: 'Payment failed. Please try again.',
+    abbrechen: 'Cancel',
     speichern: '💾 Save',
     weiter: 'Continue',
     ablenkAus: 'Hide distractions',
@@ -3370,6 +3388,11 @@ function drawStatue(cx, cy, r) {
 
 // --- Face Swap ---
 const FACESWAP_API = 'https://m-sphere-api.vercel.app/api/faceswap';
+const PAYPAL_API = 'https://m-sphere-api.vercel.app/api/paypal';
+const PAYPAL_CLIENT_ID = 'AYRyFFZ-1ZJcUBFwz6F5nXhI7cZHGM8MbSAa7lkTMJe6wOnuX3aeW3Yhd-Nj_-02SNsKI0g64WEoQvWR';
+const ZOE_SECRET = 'zoe-loves-papa-2024';
+let pendingSelfie = null; // Zwischengespeichertes Selfie für PayPal-Flow
+let paypalSDKLoaded = false;
 
 function applyFaceSwapMask(img) {
   // Face-Swap-Ergebnis mit Transparenz-Maske kombinieren → transparenter Hintergrund
@@ -3469,26 +3492,45 @@ function startFaceSwap(selfieDataUrl) {
     return;
   }
 
-  if (!checkFaceSwapLimit()) {
-    faceSwapStatus = 'error';
-    faceSwapError = t('faceSwapLimit');
+  // Zoe-Modus: immer kostenlos, kein Limit
+  if (easterEggVoice === 'zoe') {
+    executeFaceSwap(selfieDataUrl, 'zoe');
     return;
   }
 
+  // Free-Modus: erster Swap des Tages
+  if (checkFaceSwapLimit()) {
+    executeFaceSwap(selfieDataUrl, 'free');
+    return;
+  }
+
+  // Rate-Limit erschöpft → PayPal-Overlay zeigen
+  pendingSelfie = selfieDataUrl;
+  showPayPalOverlay();
+}
+
+function executeFaceSwap(selfieDataUrl, mode, token) {
   faceSwapStatus = 'uploading';
   faceSwapError = null;
 
-  // Mönch-Closeup rendern
   const monkDataUrl = renderMonkForFaceSwap();
 
-  // An API senden
+  const headers = { 'Content-Type': 'application/json' };
+  if (mode === 'zoe') {
+    headers['X-Zoe-Secret'] = ZOE_SECRET;
+  }
+
+  const body = {
+    swap_image: selfieDataUrl,
+    input_image: monkDataUrl,
+    mode: mode || 'free'
+  };
+  if (token) body.token = token;
+
   fetch(FACESWAP_API, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      swap_image: selfieDataUrl,
-      input_image: monkDataUrl
-    })
+    headers,
+    body: JSON.stringify(body)
   })
   .then(res => {
     if (res.status === 429) {
@@ -3507,7 +3549,6 @@ function startFaceSwap(selfieDataUrl) {
     }
     faceSwapPredictionId = data.id;
     faceSwapStatus = 'processing';
-    // Polling starten (alle 3s)
     faceSwapPollTimer = setInterval(pollFaceSwap, 3000);
   })
   .catch(err => {
@@ -3515,6 +3556,79 @@ function startFaceSwap(selfieDataUrl) {
     faceSwapError = err.message;
   });
 }
+
+function loadPayPalSDK() {
+  return new Promise((resolve, reject) => {
+    if (paypalSDKLoaded && window.paypal) { resolve(); return; }
+    const script = document.createElement('script');
+    script.src = 'https://www.paypal.com/sdk/js?client-id=' + PAYPAL_CLIENT_ID + '&currency=EUR';
+    script.onload = () => { paypalSDKLoaded = true; resolve(); };
+    script.onerror = () => reject(new Error('PayPal SDK failed to load'));
+    document.head.appendChild(script);
+  });
+}
+
+function showPayPalOverlay() {
+  const overlay = document.getElementById('paypalOverlay');
+  document.getElementById('paypalTitle').textContent = t('faceSwapKaufen');
+  document.getElementById('paypalSubtitle').textContent = t('faceSwapTagesLimit');
+  document.getElementById('paypalCancel').textContent = t('abbrechen');
+  overlay.style.display = 'flex';
+
+  const container = document.getElementById('paypal-button-container');
+  container.innerHTML = '';
+
+  loadPayPalSDK().then(() => {
+    window.paypal.Buttons({
+      style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay', height: 40 },
+      createOrder: () => {
+        return fetch(PAYPAL_API + '/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) throw new Error(data.error);
+          return data.orderID;
+        });
+      },
+      onApprove: (data) => {
+        return fetch(PAYPAL_API + '/capture-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderID: data.orderID })
+        })
+        .then(res => res.json())
+        .then(captureData => {
+          if (captureData.error) throw new Error(captureData.error);
+          hidePayPalOverlay();
+          if (pendingSelfie) {
+            executeFaceSwap(pendingSelfie, 'paid', captureData.token);
+            pendingSelfie = null;
+          }
+        });
+      },
+      onCancel: () => {
+        hidePayPalOverlay();
+      },
+      onError: (err) => {
+        hidePayPalOverlay();
+        faceSwapStatus = 'error';
+        faceSwapError = t('paypalFehler');
+      }
+    }).render('#paypal-button-container');
+  }).catch(() => {
+    hidePayPalOverlay();
+    faceSwapStatus = 'error';
+    faceSwapError = t('paypalFehler');
+  });
+}
+
+// Global für onclick im HTML
+window.hidePayPalOverlay = function() {
+  document.getElementById('paypalOverlay').style.display = 'none';
+  pendingSelfie = null;
+};
 
 function pollFaceSwap() {
   if (!faceSwapPredictionId) return;
