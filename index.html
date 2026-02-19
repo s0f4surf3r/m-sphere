@@ -468,22 +468,22 @@ Die Übertragung erfolgt per HTTPS/SSL.
 
 Stand: Februar 2026`;
 
-const ABOUT_TEXT_DE = `ÜBER M-SPHERE
+const ABOUT_TEXT_DE = `1. Der Ursprung
 
-Der Ursprung
 Alles begann mit einem Gespräch zwischen dem Philosophen Thomas Metzinger und Gert Scobel. Metzinger nutzte eine bildhafte Analogie, um einen Zustand des non-dualen Bewusstseins zu beschreiben: Eine Schneekugel.
 
 Er skizzierte die Idee einer Kugel, in deren Mitte ein Meditierender sitzt. Schüttelt man sie, herrscht Chaos – der Sturm unserer Gedanken, Konzepte und Gefühle. Lässt man sie jedoch radikal in Ruhe (Wu Wei), legt sich der Sturm. Metzingers Wunsch war es, dieses Objekt physisch bauen zu lassen, versehen mit einem magischen Detail: Wenn sich alles gesetzt hat, erscheint ein Text, der die wahre Natur des Bewusstseins enthüllt.
 
-Das Paradox
+2. Das Paradox
+
 Mich faszinierte diese Idee sofort. Schon seit Monaten begleitete mich in meiner eigenen Praxis ein paradoxer Satz:
 
 "Das Loslassen produzieren."
 
-Wie kann man einen Zustand "machen", der per Definition das Gegenteil von Machen ist? Wie kann man das "Nichts-Tun" sichtbar produzieren?
-Da eine physische Kugel, in der Text magisch aus dem Nichts erscheint, physikalisch kaum machbar ist (oder reine Science-Fiction wäre), entschied ich mich, sie in meiner eigenen kleinen "Denkfabrik" digital zu bauen.
+Wie kann man einen Zustand "machen", der per Definition das Gegenteil von Machen ist? Wie kann man das "Nichts-Tun" sichtbar produzieren? Da eine physische Kugel, in der Text magisch aus dem Nichts erscheint, physikalisch kaum machbar ist (oder reine Science-Fiction wäre), entschied ich mich, sie digital zu bauen.
 
-Die Philosophie im Code
+3. Die Philosophie im Code
+
 Die M-Sphere ist mehr als nur eine Physik-Simulation. Sie ist eine Allegorie auf unser modernes Ego:
 
 Die Figur: Sie repräsentiert das konstruierte Selbst. Oft starr, golden und "glänzend" – verliebt in die eigene Form und den Status des "Meditierenden".
@@ -492,7 +492,8 @@ Der Sturm: Das sind nicht nur weiße Flocken, sondern unsere Gedanken: oft grell
 
 Der Glitch: Das Loslassen fühlt sich für das Ego oft an wie ein Fehler im System, ein Rosten, ein kleines Sterben. Die App visualisiert diesen Übergang.
 
-Die Erkenntnis
+4. Die Erkenntnis
+
 Das Ziel dieser Erfahrung ist nicht bloße Entspannung, sondern Erkenntnis durch Interaktion (bzw. Nicht-Interaktion). Sie fordert dich auf, das Prinzip des Nicht-Eingreifens anzuwenden. Wenn du aufhörst, die Maus zu bewegen oder das Handy zu schütteln, geschieht das Eigentliche.
 
 Die Figur löst sich auf. Die Gedanken verlieren ihre Härte und werden transparent. Und was übrig bleibt, ist die Botschaft, auf die Thomas Metzinger hinauswollte:
@@ -501,14 +502,14 @@ Du bist nicht die Person in der Mitte. Du bist auch nicht der Sturm der Gedanken
 
 Du bist das Wasser.`;
 
-const ABOUT_TEXT_EN = `THE STORY BEHIND M-SPHERE
+const ABOUT_TEXT_EN = `1. The Origin
 
-1. The Origin
 It all began with a conversation between philosopher Thomas Metzinger and Gert Scobel. Metzinger used a vivid analogy to describe a state of non-dual consciousness: A snow globe.
 
 He sketched the idea of a globe with a meditator sitting in the center. Shake it, and chaos reigns — the storm of our thoughts, concepts, and emotions. But leave it radically at rest (Wu Wei), and the storm subsides. Metzinger's wish was to have this object physically built, with a magical detail: once everything has settled, a text appears revealing the true nature of consciousness.
 
 2. The Paradox
+
 I was immediately fascinated by this idea. For months, a paradoxical phrase had been accompanying my own practice:
 
 "Producing the letting go."
@@ -516,6 +517,7 @@ I was immediately fascinated by this idea. For months, a paradoxical phrase had 
 How can you "make" a state that is, by definition, the opposite of making? How can you visibly produce "non-doing"? Since a physical globe where text magically appears from nothing is hardly feasible, I decided to build it digitally.
 
 3. The Philosophy in Code
+
 M-Sphere is more than just a physics simulation. It is an allegory of our modern ego:
 
 The Figure: It represents the constructed self. Often rigid, golden, and "shiny" — in love with its own form and the status of being a "meditator."
@@ -525,6 +527,7 @@ The Storm: These aren't just white flakes but our thoughts: often garish, neon-c
 The Glitch: Letting go often feels to the ego like a system error, a rusting, a small death. The app visualizes this transition.
 
 4. The Realization
+
 The goal of this experience is not mere relaxation, but realization through interaction (or non-interaction). It challenges you to apply the principle of non-interference. When you stop moving the mouse or shaking your phone, the essential happens.
 
 The figure dissolves. The thoughts lose their hardness and become transparent. And what remains is the message Thomas Metzinger was pointing to:
@@ -1884,11 +1887,11 @@ function drawLegalOverlay() {
   ctx.fillRect(0, 0, W, H);
 
   const isMob = W < 600 && H > W;
-  const padding = W * (isMob ? 0.06 : 0.1);
   const topPad = H * 0.06;
-  const fontSize = Math.max(12, Math.min(W, H) * (isMob ? 0.032 : 0.02));
-  const lineHeight = fontSize * 1.6;
-  const maxTextWidth = W - padding * 2;
+  const fontSize = Math.max(12, Math.min(W, H) * (isMob ? 0.032 : 0.022));
+  const lineHeight = fontSize * 1.7;
+  const maxTextWidth = isMob ? W * 0.88 : Math.min(560, W * 0.55);
+  const padding = (W - maxTextWidth) / 2;
 
   // Schließen-Button (✕) oben rechts
   const closeBtnSize = fontSize * 2.5;
@@ -1987,6 +1990,8 @@ function drawLegalOverlay() {
     : (lang === 'en' ? ABOUT_TEXT_EN : ABOUT_TEXT_DE);
   const rawLines = text.split('\n');
   const firstLine = rawLines[0];
+  const isAbout = legalOverlay === 'about';
+  const fontFamily = isAbout ? 'Georgia, "Times New Roman", serif' : '"Courier New", monospace';
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
@@ -1995,15 +2000,15 @@ function drawLegalOverlay() {
   for (const raw of rawLines) {
     if (raw === '') {
       wrappedLines.push({ text: '', style: 'blank' });
-    } else if (raw === firstLine) {
-      wrappedLines.push({ text: raw, style: 'title' });
     } else if (/^\d+\./.test(raw)) {
-      ctx.font = `bold ${fontSize}px "Courier New", monospace`;
-      const wrapped = wrapLegalText(ctx, raw, maxTextWidth);
+      // Heading: Nummer entfernen, nur Text behalten
+      const headingText = isAbout ? raw.replace(/^\d+\.\s*/, '') : raw;
+      ctx.font = `bold ${fontSize * (isAbout ? 1.2 : 1)}px ${fontFamily}`;
+      const wrapped = wrapLegalText(ctx, headingText, maxTextWidth);
       for (const w of wrapped) wrappedLines.push({ text: w, style: 'heading' });
-      ctx.font = `${fontSize}px "Courier New", monospace`;
+      ctx.font = `${fontSize}px ${fontFamily}`;
     } else {
-      ctx.font = `${fontSize}px "Courier New", monospace`;
+      ctx.font = `${fontSize}px ${fontFamily}`;
       const wrapped = wrapLegalText(ctx, raw, maxTextWidth);
       for (const w of wrapped) wrappedLines.push({ text: w, style: 'normal' });
     }
@@ -2017,16 +2022,11 @@ function drawLegalOverlay() {
 
   for (const line of wrappedLines) {
     if (y + lineHeight > contentTop && y < contentTop + contentHeight) {
-      if (line.style === 'title') {
-        ctx.fillStyle = '#2abfbf';
-        ctx.font = `bold ${fontSize * 1.4}px "Courier New", monospace`;
+      if (line.style === 'heading') {
+        ctx.fillStyle = isAbout ? '#f0ece6' : 'rgba(42, 191, 191, 0.9)';
+        ctx.font = `bold ${fontSize * (isAbout ? 1.2 : 1)}px ${fontFamily}`;
         ctx.fillText(line.text, padding, y);
-        ctx.font = `${fontSize}px "Courier New", monospace`;
-      } else if (line.style === 'heading') {
-        ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
-        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
-        ctx.fillText(line.text, padding, y);
-        ctx.font = `${fontSize}px "Courier New", monospace`;
+        ctx.font = `${fontSize}px ${fontFamily}`;
       } else if (line.style === 'normal') {
         ctx.fillStyle = 'rgba(240, 236, 230, 0.85)';
         ctx.fillText(line.text, padding, y);
