@@ -92,6 +92,7 @@ const TR = {
     hintDesktop1: 'Drücke, halte und schüttle mit der Maus die Kugel,',
     hintDesktop2: 'bis der Kreis geschlossen ist.',
     letGo: 'Du darfst jetzt loslassen ...',
+    relapseHint: 'Schüttle weiter — bis der Kreis wieder voll ist.',
     handyAblegen: 'Lege dein Handy ruhig hin ...',
     handyAblegen2: '... wenn du es kannst ;)',
     youAreWater: 'Du bist das Wasser',
@@ -162,6 +163,7 @@ const TR = {
     hintDesktop1: 'Press, hold and shake the sphere with your mouse,',
     hintDesktop2: 'until the circle is complete.',
     letGo: 'You may let go now ...',
+    relapseHint: 'Keep shaking — until the circle is full again.',
     handyAblegen: 'Put your phone down gently ...',
     handyAblegen2: '... if you can ;)',
     youAreWater: 'You are the water',
@@ -232,6 +234,7 @@ let shakeIntensity = 0; // aktuelle Schüttel-Stärke (0–1)
 let doneTime = 0; // Zeitpunkt des done-States
 let breathDoneFinished = false; // Atem-Zyklus nach Meditation beendet
 let relapseFlash = 0; // Rückfall-Blitz (0–1, decays)
+let wasRelapse = false; // Rückfall-Modus (zeigt Hint-Text)
 let donateHitArea = null; // PayPal-Spenden-Link Hit-Area
 let counterFullFlash = 0; // Gold-Flash bei 100% Counter
 
@@ -813,6 +816,7 @@ function updateShake() {
     }
     if (state === 'meditating') {
       relapseFlash = 1;
+      wasRelapse = true;
     }
     if (state === 'ready') {
       state = 'shaking';
@@ -833,6 +837,7 @@ function updateShake() {
       meditationStartTime = Date.now();
       bowlStrikeTime = Date.now() / 1000; // Erster Anschlag sofort
       counterFullPlayed = false;
+      wasRelapse = false;
       // Audio-Session auf "playback" → ignoriert iPhone-Stumm-Schalter für Meditation
       if (navigator.audioSession) {
         try { navigator.audioSession.type = 'playback'; } catch(e) {}
@@ -1449,22 +1454,23 @@ function drawMenu() {
     }
 
     // Expanded: Label + Dreieck ▼ (runterzeigend)
+    // Label-Zentrierung identisch wie collapsed (gleiche lineH-Box)
+    const lineH = labelFont * 2;
     if (collapseKey) {
       const arrowSize = labelFont * 1.2;
       ctx.fillStyle = labelColor || (isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.95)');
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
+      ctx.textBaseline = 'middle';
       // Label + Dreieck nebeneinander, zentriert
       const labelW = ctx.measureText(label).width;
       const gap = labelFont * 0.6;
       const totalW = labelW + gap + arrowSize;
       const startX = cx - totalW / 2;
       ctx.textAlign = 'left';
-      ctx.fillText(label, startX, y);
+      ctx.fillText(label, startX, y + lineH / 2);
       // Dreieck ▼ (runterzeigend)
       ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
       const ax = startX + labelW + gap + arrowSize * 0.3;
-      const ay = y + labelFont * 0.5;
+      const ay = y + lineH / 2;
       ctx.beginPath();
       ctx.moveTo(ax - arrowSize * 0.4, ay - arrowSize * 0.25);
       ctx.lineTo(ax + arrowSize * 0.4, ay - arrowSize * 0.25);
@@ -1474,7 +1480,6 @@ function drawMenu() {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
       // Hit-Area zum Zuklappen (gleiche Zeile)
-      const lineH = labelFont * 1.5;
       menuToggleAreas[collapseKey] = { x: cx - W * 0.45, y: y, w: W * 0.9, h: lineH };
     } else {
       // Nicht-klappbar (z.B. MEDITATIONSZEIT): nur Label
@@ -1482,8 +1487,8 @@ function drawMenu() {
       ctx.fillText(label, cx, y);
     }
 
-    // Buttons zeichnen
-    const rowY = y + labelFont + btnGap * 1.2;
+    // Buttons zeichnen (klappbare Kategorien haben höhere Label-Box)
+    const rowY = collapseKey ? y + lineH + btnGap * 0.5 : y + labelFont + btnGap * 1.2;
     const rBtnH = btnH * 0.9;
     ctx.font = `${rowFont * 0.85}px "Courier New", monospace`;
 
@@ -4169,6 +4174,22 @@ function frame() {
       ctx.fillText(t('hintDesktop1'), cx, cy - r - hintFontSize * 3.2);
       ctx.fillText(t('hintDesktop2'), cx, cy - r - hintFontSize * 1.9);
     }
+    ctx.shadowBlur = 0;
+    ctx.textAlign = 'start';
+  }
+
+  // Hinweis nach Rückfall (Meditation durch Schütteln unterbrochen)
+  if (state === 'shaking' && wasRelapse && thoughtCounter < 100) {
+    const pulse = Math.sin(Date.now() * 0.002) * 0.15 + 0.85;
+    const hUnit = Math.min(cW, cH);
+    const isMobR = cW < 600 && cH > cW;
+    const hintFS = hUnit * (isMobR ? 0.042 : 0.018);
+    ctx.font = `${hintFS}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.shadowColor = `rgba(255, 80, 80, ${pulse * 0.3})`;
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = `rgba(255, 120, 100, ${pulse})`;
+    ctx.fillText(t('relapseHint'), cx, cy - r - hintFS * 2.5);
     ctx.shadowBlur = 0;
     ctx.textAlign = 'start';
   }
