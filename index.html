@@ -1029,8 +1029,7 @@ function updateParticles(cx, cy, r) {
       p.x += p.vx * lowFpsDt;
       p.y += p.vy * lowFpsDt;
       // Gravitation je nach Gedankenmodus
-      const grav = isMobPhys ? 0.002
-        : thoughtModeIdx === 4 ? 0.003   // Sinken: spürbar
+      const grav = thoughtModeIdx === 4 ? (isMobPhys ? 0.002 : 0.003)   // Sinken: spürbar
         : 0;                              // Schweben/Reflektieren: null Gravitation
       if (grav > 0) p.vy += grav * lowFpsDt;
       p.life -= p.decay * lowFpsDt;
