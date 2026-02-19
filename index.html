@@ -1382,7 +1382,7 @@ function drawMenu() {
 
   // --- Hilfsfunktion: Settings-Reihe (Label + Buttons, optional einklappbar) ---
   function drawSettingsRow(label, options, selectedIdx, y, labelColor, collapseKey) {
-    const labelFont = isMobilePortrait ? rowFont * 0.85 : rowFont;
+    const labelFont = rowFont;
     const isCollapsed = collapseKey && !menuExpanded[collapseKey];
     const selectedLabel = selectedIdx >= 0 && selectedIdx < options.length ? options[selectedIdx] : '';
 
