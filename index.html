@@ -83,6 +83,7 @@ const TR = {
     hintDesktop2: 'bis der Kreis geschlossen ist.',
     letGo: 'Du darfst jetzt loslassen ...',
     handyAblegen: 'Lege dein Handy ruhig hin ...',
+    handyAblegen2: '... wenn du es kannst ;)',
     youAreWater: 'Du bist das Wasser',
     tapRestart: 'tippe',
     clickRestart: 'klick',
@@ -147,6 +148,7 @@ const TR = {
     hintDesktop2: 'until the circle is complete.',
     letGo: 'You may let go now ...',
     handyAblegen: 'Put your phone down gently ...',
+    handyAblegen2: '... if you can ;)',
     youAreWater: 'You are the water',
     tapRestart: 'tap',
     clickRestart: 'click',
@@ -4303,7 +4305,7 @@ function frame() {
       const hcx = cx;
       const hMob = cW < 600 && cH > cW;
       const hFont = Math.min(cW, cH) * (hMob ? 0.045 : 0.03);
-      const hcy = cy - r - hFont * 2;
+      const hcy = cy - r - hFont * 3.2;
       ctx.font = `300 ${hFont}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -4314,11 +4316,13 @@ function frame() {
       ctx.shadowColor = `rgba(0, 0, 0, ${0.6 * fadeAlpha})`;
       ctx.shadowBlur = 10;
       ctx.strokeText(t('handyAblegen'), hcx, hcy);
+      ctx.strokeText(t('handyAblegen2'), hcx, hcy + hFont * 1.4);
       // Heller Text
       ctx.shadowColor = `rgba(240, 236, 230, ${0.5 * fadeAlpha})`;
       ctx.shadowBlur = 20;
       ctx.fillStyle = `rgba(240, 236, 230, ${0.95 * fadeAlpha})`;
       ctx.fillText(t('handyAblegen'), hcx, hcy);
+      ctx.fillText(t('handyAblegen2'), hcx, hcy + hFont * 1.4);
       ctx.shadowBlur = 0;
       ctx.textAlign = 'start';
     }
