@@ -340,10 +340,12 @@ let thoughtModeIdx = parseInt(localStorage.getItem('msphere_thought')) || 6;
 // Migration: wer noch alten idx=0 gespeichert hat → auf 6 (neues Schweben) umleiten
 if (thoughtModeIdx === 0) { thoughtModeIdx = 6; localStorage.setItem('msphere_thought', 6); }
 
-// Gedankenfluss: Intensitätsstufe der Partikel (1x–5x)
+// Gedankenfluss: Intensitätsstufe der Partikel (0.5x–5x, 4x/5x ausgeblendet)
 const FLOW_LEVELS = ['0.5x', '1x', '2x', '3x', '4x', '5x'];
 const FLOW_VALUES = [0.5, 1, 2, 3, 4, 5];
+const FLOW_VISIBLE = [0, 1, 2, 3]; // Indices: 0.5x, 1x, 2x, 3x
 let flowLevelIdx = parseInt(localStorage.getItem('msphere_flow')) || 1;
+if (flowLevelIdx > 3) flowLevelIdx = 3; // Migration: 4x/5x → 3x
 
 // Mönch-Schrumpfen: immer aktiv
 const shrinkModeIdx = 1;
@@ -1593,8 +1595,11 @@ function drawMenu() {
   menuButtons.thoughtMode = thoughtRow.btns;
   curY = thoughtRow.bottomY + sectionGap;
 
-  // --- GEDANKENFLUSS ---
-  const flowRow = drawSettingsRow(t('gedankenfluss'), FLOW_LEVELS, flowLevelIdx, curY, null, 'flowLevel');
+  // --- GEDANKENFLUSS (4x/5x ausgeblendet) ---
+  const visFlowLabels = FLOW_VISIBLE.map(i => FLOW_LEVELS[i]);
+  const visFlowSelectedIdx = FLOW_VISIBLE.indexOf(flowLevelIdx);
+  const flowRow = drawSettingsRow(t('gedankenfluss'), visFlowLabels, visFlowSelectedIdx, curY, null, 'flowLevel');
+  flowRow.btns.forEach((btn, i) => { btn.idx = FLOW_VISIBLE[i]; });
   menuButtons.flowLevel = flowRow.btns;
   curY = flowRow.bottomY + sectionGap;
 
@@ -4287,8 +4292,12 @@ function frame() {
     // Nach 35s: Gedanken kommen sanft zurück — der Kreislauf beginnt von vorn
     if (elapsed > 35) {
       const rebirth = Math.min(1, (elapsed - 35) / 20); // über 20s langsam aufbauen
+      const isMobRebirth = cW < 600 && cH > cW;
+      const spawnRate = isMobRebirth ? rebirth * 0.3 : rebirth * 0.8;
+      const pSize = isMobRebirth ? 1.5 + Math.random() * 3 : 3 + Math.random() * 5;
+      const rebirthAlpha = isMobRebirth ? rebirth * 0.6 : rebirth * 0.85;
       // Spawnen aus oberer Hälfte — Gedanken fallen herunter
-      if (Math.random() < rebirth * 0.3) {
+      if (Math.random() < spawnRate) {
         const spawnX = cx + (Math.random() - 0.5) * r * 0.8;
         const spawnY = cy - r * 0.3 - Math.random() * r * 0.4;
         particles.push({
@@ -4297,8 +4306,8 @@ function frame() {
           vx: (Math.random() - 0.5) * 0.3,
           vy: 0.2 + Math.random() * 0.3,
           life: 1,
-          decay: 0.0002 + Math.random() * 0.0003,
-          size: 1.5 + Math.random() * 3,
+          decay: 0.0001 + Math.random() * 0.0002,
+          size: pSize,
           color: NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)],
           age: 0
         });
@@ -4314,7 +4323,7 @@ function frame() {
       ctx.beginPath();
       ctx.arc(cx, cy, r * 0.95, 0, Math.PI * 2);
       ctx.clip();
-      ctx.globalAlpha = rebirth * 0.6; // sanft einblenden
+      ctx.globalAlpha = rebirthAlpha; // sanft einblenden
       drawParticles();
       ctx.globalAlpha = 1;
       ctx.restore();
