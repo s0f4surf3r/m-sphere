@@ -311,9 +311,11 @@ let shakeSoundIdx = parseInt(localStorage.getItem('msphere_shake')) || 0;
 let meditationSoundIdx = parseInt(localStorage.getItem('msphere_medsound')) || 0;
 
 // Gedankenmodus: 0=Schweben, 1=alt-Schweben2 (eingefroren!), 2=alt-Schweben3 (eingefroren!), 3=Schweben mit Sog, 4=Sinken, 5=Reflektieren, 6=Schweben2 (Kollision ohne Sog)
-const THOUGHT_MODES = ['Schweben', 'Schweben2', 'Schweben3', 'Schweben mit Sog', 'Sinken', 'Reflektieren', 'Schweben2'];
-const THOUGHT_MODES_VISIBLE = [0, 6, 3, 4, 5]; // Nur diese im Menü anzeigen
-let thoughtModeIdx = parseInt(localStorage.getItem('msphere_thought')) || 3;
+const THOUGHT_MODES = ['Schweben2', 'Schweben2-alt', 'Schweben3-alt', 'Schweben mit Sog', 'Sinken', 'Reflektieren', 'Schweben'];
+const THOUGHT_MODES_VISIBLE = [6, 3, 4, 5]; // idx=0 (alt-Schweben2) ausgeblendet
+let thoughtModeIdx = parseInt(localStorage.getItem('msphere_thought')) || 6;
+// Migration: wer noch alten idx=0 gespeichert hat → auf 6 (neues Schweben) umleiten
+if (thoughtModeIdx === 0) { thoughtModeIdx = 6; localStorage.setItem('msphere_thought', 6); }
 
 // Gedankenfluss: Intensitätsstufe der Partikel (1x–5x)
 const FLOW_LEVELS = ['0.5x', '1x', '2x', '3x', '4x', '5x'];
@@ -1140,11 +1142,10 @@ function drawParticles() {
   } else if (state === 'done') {
     const doneElapsed = (Date.now() - doneTime) / 1000;
     if (doneElapsed < 35) {
-      // Erst: alte Meditationspartikel ausfaden
-      const doneFade = Math.max(0, 1 - doneElapsed / 2);
+      // Sofort unsichtbar — waren am Ende der Meditation bereits bei alpha 0
       desat = 1;
-      medAlpha = doneFade * 0.05;
-      if (doneFade <= 0) particles.length = 0;
+      medAlpha = 0;
+      if (doneElapsed > 0.1) particles.length = 0;
     } else {
       // Rebirth-Phase: Partikel normal, bunt, voll sichtbar
       desat = 0;
@@ -1559,7 +1560,7 @@ function drawMenu() {
   curY = medRow.bottomY + sectionGap;
 
   // --- GEDANKENMODUS (nur sichtbare Modi) ---
-  const thoughtTR = lang === 'de' ? THOUGHT_MODES : [t('schweben'), 'Float2', 'Float3', t('schwebenMitSog'), t('sinken'), t('reflektieren'), 'Float2'];
+  const thoughtTR = lang === 'de' ? THOUGHT_MODES : ['Float2', 'Float2-old', 'Float3-old', t('schwebenMitSog'), t('sinken'), t('reflektieren'), t('schweben')];
   const visLabels = THOUGHT_MODES_VISIBLE.map(i => thoughtTR[i]);
   const visSelectedIdx = THOUGHT_MODES_VISIBLE.indexOf(thoughtModeIdx);
   const thoughtRow = drawSettingsRow(t('gedankenmodus'), visLabels, visSelectedIdx, curY, null, 'thoughtMode');
