@@ -3931,6 +3931,26 @@ function frame() {
   drawParticles();
   ctx.restore();
 
+  // Mobile: Mönch halbtransparent ÜBER Partikeln (damit er sichtbar bleibt)
+  if ((cW < 600 && cH > cW) && state !== 'idle' && state !== 'done') {
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    if (state === 'ready' || state === 'shaking') {
+      drawModel3D(cx, cy, r, 1, 0, 0);
+    } else if (state === 'meditating') {
+      const progress = 1 - meditationTimeLeft / meditationDuration;
+      const alpha = Math.pow(1 - progress, 0.5);
+      if (alpha > 0.01) {
+        const glitchAmount = distractionModeIdx === 1
+          ? Math.max(0, progress - 0.3) * 1.2
+          : Math.max(0, progress - 0.5) * 0.6;
+        const shrinkScale = shrinkModeIdx === 1 ? (1 - progress) : 1;
+        drawModel3D(cx, cy, r, alpha, 0, Math.min(1, glitchAmount), shrinkScale);
+      }
+    }
+    ctx.restore();
+  }
+
   // Overlay-Menü im idle-State
   if (state === 'idle') {
     drawMenu();
@@ -4090,7 +4110,7 @@ function frame() {
     // Hinweis zum Neustart + Spenden-Link (nach 45s)
     if (elapsed > 45) {
       const doneIsMob = cW < 600 && cH > cW;
-      const hintFont = Math.min(cW, cH) * (doneIsMob ? 0.055 : 0.028);
+      const hintFont = Math.min(cW, cH) * (doneIsMob ? 0.055 : 0.022);
       const hintAlpha = Math.min(0.9, (elapsed - 45) / 3 * 0.9);
       ctx.font = `300 ${hintFont}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
       ctx.textAlign = 'center';
@@ -4100,12 +4120,13 @@ function frame() {
       ctx.fillText(isTouchDone ? t('tapRestart') : t('clickRestart'), cx, cy + r + 35);
       // Spenden-Button
       const donAlpha = Math.min(0.9, (elapsed - 45) / 4 * 0.9);
-      const donFont = hintFont * 1.4;
+      const donFont = hintFont * (doneIsMob ? 1.2 : 1.0);
       ctx.font = `${donFont}px "Courier New", monospace`;
       const donText = t('donate');
       const donTxtW = ctx.measureText(donText).width;
-      const donBtnW = donTxtW + donFont * 2;
-      const donBtnH = donFont * 2.4;
+      const donBtnWRaw = donTxtW + donFont * 2;
+      const donBtnW = doneIsMob ? Math.min(donBtnWRaw, r * 2) : donBtnWRaw;
+      const donBtnH = donFont * 2.2;
       const donBtnX = cx - donBtnW / 2;
       const donBtnY = cy + r + 35 + hintFont * 1.8;
       ctx.beginPath();
