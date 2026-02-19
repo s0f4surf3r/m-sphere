@@ -3555,7 +3555,7 @@ function loadPayPalSDK() {
   return new Promise((resolve, reject) => {
     if (paypalSDKLoaded && window.paypal) { resolve(); return; }
     const script = document.createElement('script');
-    script.src = 'https://www.paypal.com/sdk/js?client-id=' + PAYPAL_CLIENT_ID + '&currency=EUR';
+    script.src = 'https://www.paypal.com/sdk/js?client-id=' + PAYPAL_CLIENT_ID + '&currency=EUR&disable-funding=sepa,card,credit,bancontact,blik,eps,giropay,ideal,mybank,p24,sofort,venmo';
     script.onload = () => { paypalSDKLoaded = true; resolve(); };
     script.onerror = () => reject(new Error('PayPal SDK failed to load'));
     document.head.appendChild(script);
@@ -3622,6 +3622,12 @@ function showPayPalOverlay() {
 window.hidePayPalOverlay = function() {
   document.getElementById('paypalOverlay').style.display = 'none';
   pendingSelfie = null;
+  // Status zurücksetzen damit User erneut starten kann
+  faceSwapStatus = 'idle';
+  faceSwapError = null;
+  // Webcam stoppen falls noch aktiv
+  if (webcamStream) stopWebcam();
+  faceModeIdx = 0; // zurück auf "Aus"
 };
 
 function pollFaceSwap() {
