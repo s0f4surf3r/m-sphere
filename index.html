@@ -55,7 +55,7 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
   <div style="background:#1a2a3c;border-radius:16px;padding:28px 24px;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
     <div id="paypalTitle" style="color:#f0ece6;font-size:18px;font-weight:700;margin-bottom:8px"></div>
     <div id="paypalSubtitle" style="color:#8aa;font-size:14px;margin-bottom:12px"></div>
-    <div id="paypalHinweis" style="color:rgba(240,236,230,0.55);font-size:12px;line-height:1.5;margin-bottom:16px;text-align:left"></div>
+    <div id="paypalHinweis" style="color:rgba(240,236,230,0.55);font-size:12px;line-height:1.5;margin-bottom:16px;text-align:left;white-space:pre-line"></div>
     <div id="paypal-button-container" style="min-height:50px"></div>
     <button id="paypalCancel" onclick="hidePayPalOverlay()" style="margin-top:14px;background:none;border:1px solid rgba(240,236,230,0.3);
       color:#f0ece6;padding:8px 24px;border-radius:8px;font-size:14px;cursor:pointer"></button>
@@ -146,7 +146,7 @@ const TR = {
     faceSwapFertig: 'Face Swap fertig!',
     faceSwapKaufen: 'Face Swap: 0,50 €',
     faceSwapTagesLimit: 'Nettes Gimmick: Dein Gesicht auf dem Mönch!',
-    faceSwapHinweis: 'Dein Bild wird nur lokal im Browser gespeichert — bei Cache-Leerung ist es weg. Du kannst es aber über „Speichern" sichern und später über „Laden" wieder einfügen. Also bitte ned bös sei, wenn die 50 Cent zum Fenschder naus gschmissa sind — so sind mir Schwoba halt. 😄 (Und ja, mir isch bewussd, dass davon ca. 39 Cent an Elon & Friends gehed. Aber solang mer no drüber lacha ka, isch alles gut. Sonschd hämmer ja nix meh.) Ach ja, no ebbes: Wenn du des Ding bloß ufm Handy nutza duasch, dann lass es lieber — sieht mer eh ned gscheid.',
+    faceSwapHinweis: 'Dein Bild wird nur lokal im Browser gespeichert — bei Cache-Leerung ist es weg. Du kannst es aber über „Speichern" sichern und später über „Laden" wieder einfügen.\n\nAlso bitte ned bös sei, wenn die 50 Cent zum Fenschder naus gschmissa sind — so sind mir Schwoba halt. 😄 (Und ja, mir isch bewussd, dass davon ca. 39 Cent an Elon & Friends gehed. Aber solang mer no drüber lacha ka, isch alles gut. Sonschd hämmer ja nix meh.)\n\nAch ja, no ebbes: Wenn du des Ding bloß ufm Handy nutza duasch, dann lass es lieber — sieht mer eh ned gscheid, gell.',
     paypalFehler: 'Zahlung fehlgeschlagen. Bitte erneut versuchen.',
     abbrechen: 'Abbrechen',
     speichern: '💾 Speichern',
@@ -219,7 +219,7 @@ const TR = {
     faceSwapFertig: 'Face Swap done!',
     faceSwapKaufen: 'Face Swap: €0.50',
     faceSwapTagesLimit: 'Fun gimmick: Your face on the monk!',
-    faceSwapHinweis: 'Your image is stored locally in your browser only — clearing cache will remove it. You can save it via "Save" and reload it later via "Load". So please don\'t be mad if the 50 cents feel a bit... generous for a browser gimmick. We\'re Swabian — we know the value of money. 😄 (And yes, roughly 39 cents of that go straight to Elon & friends. But hey — as long as we can still laugh about it, right? What else do we have left?) Oh, one more thing: if you\'re only using this on your phone, don\'t bother — you can barely see it anyway.',
+    faceSwapHinweis: 'Your image is stored locally in your browser only — clearing cache will remove it. You can save it via "Save" and reload it later via "Load".\n\nSo please don\'t be mad if the 50 cents feel a bit... generous for a browser gimmick. We\'re Swabian — we know the value of money. 😄 (And yes, roughly 39 cents of that go straight to Elon & friends. But hey — as long as we can still laugh about it, right? What else do we have left?)\n\nOh, one more thing: if you\'re only using this on your phone, don\'t bother — you can barely see it anyway, right.',
     paypalFehler: 'Payment failed. Please try again.',
     abbrechen: 'Cancel',
     speichern: '💾 Save',
