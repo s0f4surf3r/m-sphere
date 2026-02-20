@@ -532,74 +532,14 @@ function ensureSettingsDial(key, numItems, currentVisibleIdx) {
 }
 
 function applyDialSelection(key, visibleIdx, isFinal) {
-  switch(key) {
-    case 'breathing':
-      breathingMode = visibleIdx;
-      localStorage.setItem('msphere_breathing', breathingMode);
-      break;
-    case 'meditation':
-      meditationSoundIdx = MED_VISIBLE[visibleIdx];
-      localStorage.setItem('msphere_medsound', meditationSoundIdx);
-      break;
-    case 'thoughtMode':
-      thoughtModeIdx = THOUGHT_MODES_VISIBLE[visibleIdx];
-      localStorage.setItem('msphere_thought', thoughtModeIdx);
-      break;
-    case 'flowLevel':
-      if (visibleIdx >= FLOW_VISIBLE.length) {
-        // Custom-Position (✎)
-        flowLevelIdx = 99;
-        localStorage.setItem('msphere_flow', 99);
-      } else {
-        flowLevelIdx = FLOW_VISIBLE[visibleIdx];
-        localStorage.setItem('msphere_flow', flowLevelIdx);
-      }
-      break;
-    case 'face':
-      if (isFinal) handleFaceDialSelection(visibleIdx);
-      break;
-  }
-}
-
-function handleFaceDialSelection(visibleIdx) {
-  const isMob = cW < 600 && cH > cW;
-  const newMode = (isMob && visibleIdx === 1) ? 3 : visibleIdx;
-  if (newMode === faceModeIdx) return;
-  const prevMode = faceModeIdx;
-  faceModeIdx = newMode;
-  localStorage.setItem('msphere_facemode', faceModeIdx);
-  if (faceModeIdx === 0) {
-    faceSwapImg = null;
-    faceSwapStatus = 'idle';
-    faceSwapError = null;
-    if (faceSwapPollTimer) { clearInterval(faceSwapPollTimer); faceSwapPollTimer = null; }
-    faceSwapPredictionId = null;
-    stopWebcam();
-    localStorage.removeItem('msphere_faceswap');
-    localStorage.removeItem('msphere_facemode');
-  } else if (faceModeIdx === 1) {
-    stopWebcam();
-    if (faceSwapStatus === 'idle') {
-      const fi = document.getElementById('faceInput');
-      fi.removeAttribute('capture');
-      fi.click();
+  if (key === 'flowLevel') {
+    if (visibleIdx >= FLOW_VISIBLE.length) {
+      flowLevelIdx = 99;
+      localStorage.setItem('msphere_flow', 99);
+    } else {
+      flowLevelIdx = FLOW_VISIBLE[visibleIdx];
+      localStorage.setItem('msphere_flow', flowLevelIdx);
     }
-  } else if (faceModeIdx === 2) {
-    if (isMob) {
-      stopWebcam();
-      if (faceSwapStatus === 'idle') {
-        const fi = document.getElementById('faceInput');
-        fi.setAttribute('capture', 'user');
-        fi.click();
-      }
-    } else if (prevMode !== 2) {
-      faceSwapStatus = 'idle';
-      faceSwapError = null;
-      startWebcam();
-    }
-  } else if (faceModeIdx === 3) {
-    stopWebcam();
-    document.getElementById('faceLoadInput').click();
   }
 }
 
@@ -3771,7 +3711,6 @@ function drawLegalOverlay() {
     : isLiteratur ? (lang === 'en' ? LITERATUR_TEXT_EN : LITERATUR_TEXT_DE)
     : (lang === 'en' ? ABOUT_TEXT_EN : ABOUT_TEXT_DE);
   const rawLines = text.split('\n');
-  const firstLine = rawLines[0];
   const isAbout = legalOverlay === 'about' || isLiteratur;
   const fontFamily = isAbout ? 'Georgia, "Times New Roman", serif' : '"Courier New", monospace';
 
@@ -4093,7 +4032,6 @@ function handleMenuClick(x, y) {
           fi.click();
         }
       } else if (faceModeIdx === 2) {
-        const isMob = cW < 600 && cH > cW;
         if (isMob) {
           stopWebcam();
           if (faceSwapStatus === 'idle') {
@@ -5957,8 +5895,7 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
   monkDrawX = drawX;
   monkDrawY = drawY;
   monkDrawSize = drawSize;
-  // Maske-Alter zählen (Update passiert jetzt direkt nach renderer.render())
-  monkMaskAge++;
+  // monkMaskAge wird in frame() inkrementiert (nicht hier, sonst doppelt)
 
   ctx.save();
   ctx.globalAlpha = alpha;
