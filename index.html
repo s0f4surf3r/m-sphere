@@ -4911,7 +4911,8 @@ function frame() {
       let toastAlpha = 1;
       if (toastElapsed < 300) toastAlpha = toastElapsed / 300;
       else if (toastElapsed > 4000) toastAlpha = 1 - (toastElapsed - 4000) / 1000;
-      const toastFont = Math.max(15, Math.min(cW, cH) * (isMobilePortrait ? 0.035 : 0.022));
+      const toastMobile = cW < 600 && cH > cW;
+      const toastFont = Math.max(15, Math.min(cW, cH) * (toastMobile ? 0.035 : 0.022));
       ctx.font = `400 ${toastFont}px "Courier New", monospace`;
       // Word-wrap für lange Texte auf Mobile
       const maxTW = cW * 0.85;
