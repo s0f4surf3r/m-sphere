@@ -2796,6 +2796,10 @@ function handleMenuClick(x, y) {
   function hitBtn(btn) {
     return x >= btn.x && x <= btn.x + btn.w && sy >= btn.y && sy <= btn.y + btn.h;
   }
+  // Footer/Burger/Lang-Toggle: Screen-Space (nicht scroll-korrigiert)
+  function hitScreenBtn(btn) {
+    return x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h;
+  }
   // Easter Egg: 3x Tap → Zoe, Swipe-left auf Titel → Levi (Touch in touchend)
   const ttl = menuButtons.title;
   if (ttl && hitBtn(ttl)) {
@@ -2824,21 +2828,21 @@ function handleMenuClick(x, y) {
       return true;
     }
   }
-  // Gefühlskompass-Link (unten links)
+  // Gefühlskompass-Link (unten links, Screen-Space)
   const gk = menuButtons.gkLink;
-  if (gk && hitBtn(gk)) {
+  if (gk && hitScreenBtn(gk)) {
     window.open('https://gefuehlskompass.vercel.app/de', '_blank');
     return true;
   }
-  // Link
+  // Link (Screen-Space)
   const lnk = menuButtons.link;
-  if (lnk && hitBtn(lnk)) {
+  if (lnk && hitScreenBtn(lnk)) {
     window.open('https://jochenhornung.de', '_blank');
     return true;
   }
-  // Lotus-Toggle (Ablenkungen)
+  // Lotus-Toggle (Ablenkungen, Screen-Space)
   const lotus = menuButtons.lotus;
-  if (lotus && hitBtn(lotus)) {
+  if (lotus && hitScreenBtn(lotus)) {
     distractionModeIdx = distractionModeIdx === 1 ? 0 : 1;
     localStorage.setItem('msphere_distraction', distractionModeIdx);
     toastMsg = distractionModeIdx === 1
@@ -2849,9 +2853,9 @@ function handleMenuClick(x, y) {
     playTingsha();
     return true;
   }
-  // Language Toggle
+  // Language Toggle (Screen-Space)
   for (const btn of menuButtons.langToggle || []) {
-    if (hitBtn(btn)) {
+    if (hitScreenBtn(btn)) {
       lang = btn.lang;
       localStorage.setItem('msphere_lang', lang);
       voiceBuffer = null;
