@@ -2261,16 +2261,11 @@ function drawMenu() {
     const iconLeftX = isMobilePortrait ? 20 : titleLeftX;
     const iconRightX = isMobilePortrait ? W - 20 - iconSize : titleRightX - iconSize;
 
-    // Links: Gefühlskompass-Icon (Link) — abgerundete Ecken
+    // Links: Gefühlskompass Check-in Button (Link)
     if (gkIconReady) {
-      ctx.save();
       ctx.globalAlpha = iconAlpha;
-      const cornerR = iconSize * 0.22;
-      ctx.beginPath();
-      ctx.roundRect(iconLeftX, iconY, iconSize, iconSize, cornerR);
-      ctx.clip();
       ctx.drawImage(gkIcon, iconLeftX, iconY, iconSize, iconSize);
-      ctx.restore();
+      ctx.globalAlpha = 1;
     }
     menuButtons.gkLink = { x: iconLeftX, y: iconY, w: iconSize, h: iconSize };
 
