@@ -2304,8 +2304,9 @@ function drawMenu() {
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
 
-    // Hover-Tooltip (nur Desktop)
-    if (hoverLotus && !isMobilePortrait) {
+    // Hover-Tooltip (nur Desktop, nicht während Toast aktiv)
+    const toastActive = toastMsg && Date.now() - toastStart < 5000;
+    if (hoverLotus && !isMobilePortrait && !toastActive) {
       const tipFont = Math.max(13, unit * 0.018);
       const tipText = lotusActive
         ? (lang === 'de' ? 'Ablenkungen deaktivieren' : 'Disable distractions')
@@ -2369,8 +2370,8 @@ function drawMenu() {
       ctx.globalAlpha = 1;
     }
 
-    // Hit-Area (etwas größer für Touch)
-    const hitPadLotus = isMobilePortrait ? 8 : 0;
+    // Hit-Area (großzügig für Touch und Desktop)
+    const hitPadLotus = isMobilePortrait ? 12 : 6;
     menuButtons.lotus = { x: iconRightX - hitPadLotus, y: iconY - hitPadLotus, w: iconSize + hitPadLotus * 2, h: iconSize + hitPadLotus * 2 };
   }
 
