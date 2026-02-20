@@ -33,6 +33,8 @@ canvas {
   top: 0;
   left: 0;
 }
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 </style>
 <script type="importmap">
 {
@@ -74,6 +76,25 @@ canvas {
       font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
   </div>
 </div>
+<div id="customTimeOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,22,40,0.92);
+  align-items:center;justify-content:center;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">
+  <div style="background:#1a2a3c;border-radius:16px;padding:32px 28px;max-width:300px;width:85%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+    <div style="color:rgba(240,236,230,0.7);font-size:14px;margin-bottom:20px;font-family:'Courier New',monospace">MEDITATIONSZEIT</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:24px">
+      <input id="customTimeInput" type="number" min="1" max="180" value="8" step="1"
+        style="width:80px;padding:10px;font-size:28px;font-weight:300;text-align:center;background:rgba(42,191,191,0.08);
+        border:1px solid rgba(42,191,191,0.4);border-radius:10px;color:#f0ece6;outline:none;
+        font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif;-moz-appearance:textfield">
+      <span style="color:rgba(240,236,230,0.5);font-size:16px;font-family:'Courier New',monospace">min</span>
+    </div>
+    <button id="customTimeOk" style="display:block;width:100%;padding:10px 0;margin-bottom:10px;background:rgba(42,191,191,0.15);
+      border:1px solid rgba(42,191,191,0.5);color:rgba(42,191,191,0.95);border-radius:8px;font-size:15px;cursor:pointer;
+      font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">OK</button>
+    <button id="customTimeCancel" style="display:block;width:100%;padding:8px 0;background:none;
+      border:1px solid rgba(240,236,230,0.2);color:rgba(240,236,230,0.6);border-radius:8px;font-size:14px;cursor:pointer;
+      font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">Abbrechen</button>
+  </div>
+</div>
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -100,7 +121,7 @@ const TR = {
     timerAus: '⏱',
     clickStart: 'Klicke hier um zu starten',
     tapStart: 'Tippe hier um zu starten',
-    chooseDuration: 'Wähle eine Meditationszeit',
+    chooseDuration: 'Wähle deine Meditationszeit',
     hintMobile1: 'Wische schnell über die Kugel',
     hintMobile2: 'oder schüttle dein Handy.',
     hintMobile3: '(Handy-Schütteln: Browserzugriff nötig)',
@@ -125,7 +146,7 @@ const TR = {
     faceSwapFertig: 'Face Swap fertig!',
     faceSwapKaufen: 'Face Swap: 0,50 €',
     faceSwapTagesLimit: 'Nettes Gimmick: Dein Gesicht auf dem Mönch!',
-    faceSwapHinweis: 'Dein Bild wird nur lokal im Browser gespeichert — bei Cache-Leerung ist es weg. Du kannst es aber über „Speichern" sichern und später über „Laden" wieder einfügen. Also bitte ned bös sei, wenn die 50 Cent zum Fenschder naus gschmissa sind — so sind mir Schwoba halt. 😄 (Und ja, mir isch bewussd, dass davon ca. 39 Cent an Elon & Friends gehed. Aber solang mer no drüber lacha ka, isch alles gut. Sonschd hämmer ja nix meh.)',
+    faceSwapHinweis: 'Dein Bild wird nur lokal im Browser gespeichert — bei Cache-Leerung ist es weg. Du kannst es aber über „Speichern" sichern und später über „Laden" wieder einfügen. Also bitte ned bös sei, wenn die 50 Cent zum Fenschder naus gschmissa sind — so sind mir Schwoba halt. 😄 (Und ja, mir isch bewussd, dass davon ca. 39 Cent an Elon & Friends gehed. Aber solang mer no drüber lacha ka, isch alles gut. Sonschd hämmer ja nix meh.) Ach ja, no ebbes: Wenn du des Ding bloß ufm Handy nutza duasch, dann lass es lieber — sieht mer eh ned gscheid.',
     paypalFehler: 'Zahlung fehlgeschlagen. Bitte erneut versuchen.',
     abbrechen: 'Abbrechen',
     speichern: '💾 Speichern',
@@ -173,7 +194,7 @@ const TR = {
     timerAus: '⏱',
     clickStart: 'Click here to start',
     tapStart: 'Tap here to start',
-    chooseDuration: 'Choose a meditation time',
+    chooseDuration: 'Choose your meditation time',
     hintMobile1: 'Swipe quickly over the sphere',
     hintMobile2: 'or shake your phone.',
     hintMobile3: '(Shake: browser permission required)',
@@ -198,7 +219,7 @@ const TR = {
     faceSwapFertig: 'Face Swap done!',
     faceSwapKaufen: 'Face Swap: €0.50',
     faceSwapTagesLimit: 'Fun gimmick: Your face on the monk!',
-    faceSwapHinweis: 'Your image is stored locally in your browser only — clearing cache will remove it. You can save it via "Save" and reload it later via "Load". So please don\'t be mad if the 50 cents feel a bit... generous for a browser gimmick. We\'re Swabian — we know the value of money. 😄 (And yes, roughly 39 cents of that go straight to Elon & friends. But hey — as long as we can still laugh about it, right? What else do we have left?)',
+    faceSwapHinweis: 'Your image is stored locally in your browser only — clearing cache will remove it. You can save it via "Save" and reload it later via "Load". So please don\'t be mad if the 50 cents feel a bit... generous for a browser gimmick. We\'re Swabian — we know the value of money. 😄 (And yes, roughly 39 cents of that go straight to Elon & friends. But hey — as long as we can still laugh about it, right? What else do we have left?) Oh, one more thing: if you\'re only using this on your phone, don\'t bother — you can barely see it anyway.',
     paypalFehler: 'Payment failed. Please try again.',
     abbrechen: 'Cancel',
     speichern: '💾 Save',
@@ -355,7 +376,8 @@ let meditationSoundIdx = parseInt(localStorage.getItem('msphere_medsound')) || 0
 // Gedankenmodus: 0=Schweben, 1=alt-Schweben2 (eingefroren!), 2=alt-Schweben3 (eingefroren!), 3=Schweben mit Sog, 4=Sinken, 5=Reflektieren, 6=Schweben2 (Kollision ohne Sog)
 const THOUGHT_MODES = ['Schweben2', 'Schweben2-alt', 'Schweben3-alt', 'Schweben mit Sog', 'Sinken', 'Reflektieren', 'Schweben'];
 const THOUGHT_MODES_VISIBLE = [6, 3, 4, 5]; // idx=0 (alt-Schweben2) ausgeblendet
-let thoughtModeIdx = parseInt(localStorage.getItem('msphere_thought')) || 6;
+const _thoughtStored = localStorage.getItem('msphere_thought');
+let thoughtModeIdx = _thoughtStored !== null ? parseInt(_thoughtStored) : 3;
 // Migration: wer noch alten idx=0 gespeichert hat → auf 6 (neues Schweben) umleiten
 if (thoughtModeIdx === 0) { thoughtModeIdx = 6; localStorage.setItem('msphere_thought', 6); }
 
@@ -363,7 +385,8 @@ if (thoughtModeIdx === 0) { thoughtModeIdx = 6; localStorage.setItem('msphere_th
 const FLOW_LEVELS = ['0.5x', '1x', '2x', '3x', '4x', '5x'];
 const FLOW_VALUES = [0.5, 1, 2, 3, 4, 5];
 const FLOW_VISIBLE = [0, 1, 2, 3]; // Indices: 0.5x, 1x, 2x, 3x
-let flowLevelIdx = parseInt(localStorage.getItem('msphere_flow')) || 1;
+const _flowStored = localStorage.getItem('msphere_flow');
+let flowLevelIdx = _flowStored !== null ? parseInt(_flowStored) : 1;
 if (flowLevelIdx > 3) flowLevelIdx = 3; // Migration: 4x/5x → 3x
 
 // Mönch-Schrumpfen: immer aktiv
@@ -444,7 +467,7 @@ kontakt@jochenhornung.de
 Diese Webapp wird über GitHub Pages (GitHub Inc., USA) bereitgestellt. Beim Aufruf werden Server-Logdaten (IP-Adresse, Zugriffszeit, Browser) erfasst. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.
 
 2. LOKALE DATENSPEICHERUNG
-M-Sphere speichert Einstellungen und das Face-Swap-Ergebnis im localStorage deines Browsers. Diese Daten verlassen dein Gerät nicht und können jederzeit über die Browsereinstellungen gelöscht werden.
+M-Sphäre speichert Einstellungen und das Face-Swap-Ergebnis im localStorage deines Browsers. Diese Daten verlassen dein Gerät nicht und können jederzeit über die Browsereinstellungen gelöscht werden.
 
 3. FACE SWAP (GESICHTSTAUSCH)
 Wenn du die Face-Swap-Funktion nutzt, wird dein Selfie zusammen mit einem gerenderten 3D-Modell an folgende Dienste übermittelt:
@@ -452,11 +475,12 @@ Wenn du die Face-Swap-Funktion nutzt, wird dein Selfie zusammen mit einem gerend
 - Replicate Inc. (USA): KI-Bildverarbeitung (temporäre Speicherung während der Verarbeitung)
 Die Übermittlung erfolgt verschlüsselt (HTTPS). Rechtsgrundlage: Art. 6 Abs. 1 lit. a DSGVO (Einwilligung durch aktive Nutzung der Funktion). Die Bilder werden nicht dauerhaft auf den Servern gespeichert.
 
-4. SPENDEN (PAYPAL)
-Der Spenden-Button leitet zu PayPal weiter. Dort gelten die Datenschutzbestimmungen von PayPal.
+4. ZAHLUNG (PAYPAL)
+Für die Face-Swap-Funktion wird PayPal als Zahlungsdienstleister genutzt (Autorisierung, 0,50 €). Dabei werden Daten an PayPal (Europe) S.à r.l. et Cie, S.C.A. übermittelt. Es gelten die Datenschutzbestimmungen von PayPal. Die Zahlungsabwicklung erfolgt über einen API-Proxy bei Vercel Inc. (USA). Der Spenden-Button leitet ebenfalls zu PayPal weiter.
+Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung).
 
 5. COOKIES
-M-Sphere verwendet keine Cookies und keine Tracking- oder Analyse-Tools.
+M-Sphäre verwendet keine Cookies und keine Tracking- oder Analyse-Tools.
 
 6. DEINE RECHTE
 Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch. Beschwerden kannst du an die zuständige Aufsichtsbehörde richten:
@@ -478,15 +502,15 @@ Er skizzierte die Idee einer Kugel, in deren Mitte ein Meditierender sitzt. Sch�
 
 Mich faszinierte diese Idee sofort. Schon seit Monaten begleitete mich in meiner eigenen Praxis ein paradoxer Satz:
 
-"Das Loslassen produzieren."
+„Das Loslassen produzieren."
 
-Wie kann man einen Zustand "machen", der per Definition das Gegenteil von Machen ist? Wie kann man das "Nichts-Tun" sichtbar produzieren? Da eine physische Kugel, in der Text magisch aus dem Nichts erscheint, physikalisch kaum machbar ist (oder reine Science-Fiction wäre), entschied ich mich, sie digital zu bauen.
+Wie kann man einen Zustand „machen", der per Definition das Gegenteil von Machen ist? Wie kann man das „Nichts-Tun" sichtbar produzieren? Da eine physische Kugel, in der Text magisch aus dem Nichts erscheint, physikalisch kaum machbar ist (oder reine Science-Fiction wäre), entschied ich mich, sie digital zu bauen.
 
 3. Die Philosophie im Code
 
-Die M-Sphere ist mehr als nur eine Physik-Simulation. Sie ist eine Allegorie auf unser modernes Ego:
+Die M-Sphäre ist mehr als nur eine Physik-Simulation. Sie ist eine Allegorie auf unser modernes Ego:
 
-Die Figur: Sie repräsentiert das konstruierte Selbst. Oft starr, golden und "glänzend" – verliebt in die eigene Form und den Status des "Meditierenden".
+Die Figur: Sie repräsentiert das konstruierte Selbst. Oft starr, golden und „glänzend" – verliebt in die eigene Form und den Status des „Meditierenden".
 
 Der Sturm: Das sind nicht nur weiße Flocken, sondern unsere Gedanken: oft grell, neonfarben und süchtig machend. Wir wirbeln sie ständig auf, weil wir die Agitation gewohnt sind.
 
@@ -1287,18 +1311,19 @@ function drawMenu() {
     ctx.fillRect(sx, sy, 1.5, 1.5);
   }
 
-  menuButtons = { timer: [], breathing: [], timerToggle: null, shake: [], meditation: [], start: null, faceSwap: [], faceSave: null };
+  menuButtons = { timer: [], breathing: [], timerToggle: null, customTime: null, shake: [], meditation: [], start: null, faceSwap: [], faceSave: null };
 
-  // Vertikales Layout berechnen
+  // Vertikales Layout berechnen — dynamisch an Fensterhöhe angepasst
+  const vScale = isMobilePortrait ? 1.0 : Math.max(0.7, Math.min(1.4, H / 800));
   const titleSize = unit * 0.12;
   const subtitleSize = unit * (isMobilePortrait ? 0.02 : 0.028) * uiScale;
   const rowFont = unit * 0.02 * uiScale;
   const btnH = unit * 0.04 * uiScale;
   const btnGap = unit * 0.012 * uiScale;
-  const sectionGap = unit * 0.025 * (isMobilePortrait ? 1.0 : 0.7);
+  const sectionGap = unit * 0.025 * (isMobilePortrait ? 1.0 : 0.7) * vScale;
 
   const safeTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
-  let curY = Math.max(H * (isMobilePortrait ? 0.07 : 0.1), safeTop + unit * (isMobilePortrait ? 0.03 : 0.03));
+  let curY = Math.max(H * (isMobilePortrait ? 0.07 : 0.1 * vScale), safeTop + unit * (isMobilePortrait ? 0.03 : 0.03));
 
   // Native Scrolling: Gesamten Menü-Inhalt um scrollY nach oben verschieben
   const scrollY = window.scrollY || 0;
@@ -1356,20 +1381,10 @@ function drawMenu() {
   }
   if (easterEggFlash > 0) easterEggFlash = Math.max(0, easterEggFlash - 0.015);
 
-  // --- Credits (Dachzeile über dem Titel) ---
-  if (!easterEggVoice) {
-    ctx.fillStyle = isMobilePortrait ? 'rgba(240, 236, 230, 0.7)' : 'rgba(240, 236, 230, 0.45)';
-    ctx.font = `${subtitleSize * 0.7}px "Courier New", monospace`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText('jochenhornung.de', cx, curY);
-    const linkW = ctx.measureText('jochenhornung.de').width;
-    const linkH = subtitleSize;
-    menuButtons.link = { x: cx - linkW / 2, y: curY, w: linkW, h: linkH };
-    curY += subtitleSize * 1.2;
-  }
 
-  // --- Titel: M-SPHERE mit ZPMA-Glow ---
+
+  // --- Titel: M-SPHÄRE (DE) / M-SPHERE (EN) mit ZPMA-Glow ---
+  const titleText = lang === 'de' ? 'M-SPHÄRE' : 'M-SPHERE';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   ctx.font = `900 ${titleSize}px -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif`;
@@ -1379,29 +1394,29 @@ function drawMenu() {
   ctx.shadowColor = 'rgba(42, 191, 191, 0.7)';
   ctx.shadowBlur = 80;
   ctx.fillStyle = 'rgba(42, 191, 191, 0.35)';
-  ctx.fillText('M-SPHERE', cx, curY);
+  ctx.fillText(titleText, cx, curY);
 
   // Glow Layer 2: mittlerer Teal-Schein
   ctx.shadowColor = 'rgba(42, 191, 191, 1.0)';
   ctx.shadowBlur = 35;
   ctx.fillStyle = 'rgba(42, 191, 191, 0.5)';
-  ctx.fillText('M-SPHERE', cx, curY);
+  ctx.fillText(titleText, cx, curY);
 
   // Layer 3: Haupttext mit kleinem Drop-Shadow
   ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 2;
   ctx.fillStyle = '#f0ece6';
-  ctx.fillText('M-SPHERE', cx, curY);
+  ctx.fillText(titleText, cx, curY);
   ctx.shadowOffsetY = 0;
   ctx.shadowBlur = 0;
   ctx.letterSpacing = '0px';
-  const titleMetrics = ctx.measureText('M-SPHERE');
+  const titleMetrics = ctx.measureText(titleText);
   const titleW = titleMetrics.width;
   const actualTitleH = titleMetrics.actualBoundingBoxDescent || titleSize;
   // Titel-Hit-Area für Easter Egg (Triple-Tap / Long-Press)
   menuButtons.title = { x: cx - titleW / 2, y: curY, w: titleW, h: actualTitleH };
-  curY += actualTitleH + (isMobilePortrait ? unit * 0.015 : unit * 0.015);
+  curY += actualTitleH + unit * 0.015 * vScale;
 
   // Untertitel
   ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.55)';
@@ -1412,7 +1427,7 @@ function drawMenu() {
   ctx.fillText(t('subtitle'), cx, curY);
   ctx.letterSpacing = '0px';
   ctx.shadowBlur = 0;
-  curY += subtitleSize * 2;
+  curY += subtitleSize * (isMobilePortrait ? 2 : 2 + vScale * 1.5);
 
   // Language Toggle wird außerhalb des Scroll-Bereichs gezeichnet (siehe unten)
 
@@ -1549,15 +1564,23 @@ function drawMenu() {
     return { btns, bottomY: curRowY - btnGap * (collapseKey ? 1.5 : 1) };
   }
 
-  // --- MEDITATIONSZEIT + TIMER ANZEIGEN (eine Zeile) ---
-  const timeLabels = DURATION_OPTIONS.map(d => d.label + ' min');
-  timeLabels.push(timerVisible ? t('timerAn') : t('timerAus'));
+  // --- MEDITATIONSZEIT (⏱ | 10/20/30 | +) ---
+  const VISIBLE_DURATIONS = [2, 3, 4]; // Indices in DURATION_OPTIONS (10, 20, 30 min)
+  const isCustomTime = selectedDurationIdx >= 0 && !VISIBLE_DURATIONS.includes(selectedDurationIdx);
+  const customLabel = isCustomTime ? Math.round(meditationDuration / 60) + ' min' : '+';
+  const timeLabels = [timerVisible ? t('timerAn') : t('timerAus')];
+  timeLabels.push(...VISIBLE_DURATIONS.map(i => DURATION_OPTIONS[i].label + ' min'));
+  timeLabels.push(customLabel);
+  // Selected-Index: Timer-Toggle ist 0, Presets sind 1-3, Custom ist 4
+  const visTimeSel = isCustomTime ? VISIBLE_DURATIONS.length + 1 : (VISIBLE_DURATIONS.indexOf(selectedDurationIdx) >= 0 ? VISIBLE_DURATIONS.indexOf(selectedDurationIdx) + 1 : -1);
   const timeLabelColor = selectedDurationIdx < 0 ? '#f4a842' : null;
-  const timeRow = drawSettingsRow(t('meditationszeit'), timeLabels, selectedDurationIdx, curY, timeLabelColor);
-  // Letzter Button ist Timer-Toggle (separater Hit-Bereich)
-  const timerToggleBtn = timeRow.btns.pop();
+  const timeRow = drawSettingsRow(t('meditationszeit'), timeLabels, visTimeSel, curY, timeLabelColor);
+  // Erster Button = Timer-Toggle, letzer = Custom, Rest = Presets
+  const timerToggleBtn = timeRow.btns.shift();
+  const customTimeBtn = timeRow.btns.pop();
+  timeRow.btns.forEach((btn, i) => { btn.idx = VISIBLE_DURATIONS[i]; });
   menuButtons.timer = timeRow.btns;
-  // Timer-Toggle-Button nachfärben (eigener Selected-State)
+  // Timer-Toggle nachfärben
   const ttb = timerToggleBtn;
   ctx.beginPath();
   ctx.roundRect(ttb.x, ttb.y, ttb.w, ttb.h, ttb.h * 0.25);
@@ -1572,6 +1595,21 @@ function drawMenu() {
   ctx.textBaseline = 'middle';
   ctx.fillText(timerVisible ? t('timerAn') : t('timerAus'), ttb.x + ttb.w / 2, ttb.y + ttb.h / 2);
   menuButtons.timerToggle = { x: ttb.x, y: ttb.y, w: ttb.w, h: ttb.h };
+  // Custom-Button nachfärben
+  const ctb = customTimeBtn;
+  ctx.beginPath();
+  ctx.roundRect(ctb.x, ctb.y, ctb.w, ctb.h, ctb.h * 0.25);
+  ctx.fillStyle = isCustomTime ? btnSelFill : btnUnselFill;
+  ctx.fill();
+  ctx.strokeStyle = isCustomTime ? btnSelStroke : btnUnselStroke;
+  ctx.lineWidth = isCustomTime ? (isMobilePortrait ? 2 : 1.5) : (isMobilePortrait ? 1.5 : 1);
+  ctx.stroke();
+  ctx.fillStyle = isCustomTime ? '#2abfbf' : btnTextDim;
+  ctx.font = `${rowFont * 0.85}px "Courier New", monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(customLabel, ctb.x + ctb.w / 2, ctb.y + ctb.h / 2);
+  menuButtons.customTime = { x: ctb.x, y: ctb.y, w: ctb.w, h: ctb.h };
   curY = timeRow.bottomY + sectionGap;
 
   // --- ATMEN ---
@@ -1615,8 +1653,10 @@ function drawMenu() {
   }
 
   // --- DEIN GESICHT ---
+  const faceHasSwap = faceSwapStatus === 'done' && faceSwapImg;
+  const faceLabel = faceHasSwap && !menuExpanded.face ? t('deinGesicht') + ' ✓' : t('deinGesicht');
   const faceMobileLabels = [t('aus'), t('mediathek'), t('kamera'), t('laden')];
-  const faceRow = drawSettingsRow(t('deinGesicht'), faceMobileLabels, faceModeIdx, curY, null, 'face');
+  const faceRow = drawSettingsRow(faceLabel, faceMobileLabels, faceModeIdx, curY, faceHasSwap && !menuExpanded.face ? '#2abfbf' : null, 'face');
   menuButtons.faceSwap = faceRow.btns;
   curY = faceRow.bottomY;
 
@@ -1666,7 +1706,7 @@ function drawMenu() {
     const waber = Math.sin(Date.now() * 0.001) * 0.3 + 0.7;
     ctx.shadowColor = `rgba(244, 168, 66, ${waber * 0.4})`;
     ctx.shadowBlur = 15;
-    ctx.fillStyle = `rgba(244, 168, 66, ${waber})`;
+    ctx.fillStyle = `rgba(255, 140, 155, ${waber})`;
   }
   const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   const startLabel = canStart
@@ -1756,6 +1796,19 @@ function drawMenu() {
     ctx.lineJoin = 'miter';
   }
 
+  // --- Credits (fixiert am unteren Bildrand) ---
+  {
+    const credFont = subtitleSize * 0.65;
+    const credY = H - (isMobilePortrait ? 18 : 14);
+    ctx.font = `${credFont}px "Courier New", monospace`;
+    ctx.fillStyle = isMobilePortrait ? 'rgba(240, 236, 230, 0.5)' : 'rgba(240, 236, 230, 0.3)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('jochenhornung.de', cx, credY);
+    const linkW = ctx.measureText('jochenhornung.de').width;
+    menuButtons.link = { x: cx - linkW / 2, y: credY - credFont, w: linkW, h: credFont * 1.5 };
+  }
+
   ctx.textAlign = 'start';
   ctx.textBaseline = 'alphabetic';
 
@@ -1803,13 +1856,9 @@ function drawMenu() {
 
     const sLabel = t('speichern');
     const sW = ctx.measureText(sLabel).width + oFont * 2;
-    const wLabel = t('weiter');
-    const wW = ctx.measureText(wLabel).width + oFont * 2;
-    const totalW = sW + gap + wW;
-    const startX = oCx - totalW / 2;
+    const sX = oCx - sW / 2;
 
-    // Speichern
-    const sX = startX;
+    // Speichern (einziger Button — User muss Bild speichern)
     ctx.beginPath();
     ctx.roundRect(sX, ovBtnY, sW, ovBH, ovBH * 0.2);
     ctx.fillStyle = btnSelFill;
@@ -1820,19 +1869,7 @@ function drawMenu() {
     ctx.fillStyle = '#2abfbf';
     ctx.fillText(sLabel, sX + sW / 2, ovBtnY + ovBH / 2);
     menuButtons.faceSave = { x: sX, y: ovBtnY, w: sW, h: ovBH };
-
-    // Weiter
-    const wX = startX + sW + gap;
-    ctx.beginPath();
-    ctx.roundRect(wX, ovBtnY, wW, ovBH, ovBH * 0.2);
-    ctx.fillStyle = btnUnselFill;
-    ctx.fill();
-    ctx.strokeStyle = btnUnselStroke;
-    ctx.lineWidth = isMobilePortrait ? 1.5 : 1;
-    ctx.stroke();
-    ctx.fillStyle = btnTextDim;
-    ctx.fillText(wLabel, wX + wW / 2, ovBtnY + ovBH / 2);
-    menuButtons.faceDismiss = { x: wX, y: ovBtnY, w: wW, h: ovBH };
+    menuButtons.faceDismiss = null;
   } else {
     menuButtons.faceSave = null;
     menuButtons.faceDismiss = null;
@@ -1943,21 +1980,22 @@ function drawLegalOverlay() {
   burgerMenuItems = [];
 
   // ← Zurück-Button oben links
-  const backBtnSize = closeBtnSize;
+  const backFontSize = fontSize * 0.85;
+  const backBtnH = backFontSize * 2;
   const backX = padding;
   const backY = topPad;
-  ctx.font = `${backBtnSize * 0.6}px "Courier New", monospace`;
+  ctx.font = `${backFontSize}px "Courier New", monospace`;
   const backLabel = t('zurueck');
   const backTextW = ctx.measureText(backLabel).width;
-  legalBackBtn = { x: backX, y: backY, w: backTextW + backBtnSize * 0.3, h: backBtnSize };
+  legalBackBtn = { x: backX, y: backY, w: backTextW + backFontSize * 0.3, h: backBtnH };
 
   ctx.fillStyle = 'rgba(42, 191, 191, 0.8)';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.fillText(backLabel, backX, backY + backBtnSize / 2);
+  ctx.fillText(backLabel, backX, backY + backBtnH / 2);
 
   // Inhaltsbereich (geclippt)
-  const contentTop = topPad + closeBtnSize + fontSize * 0.5;
+  const contentTop = topPad + backBtnH + fontSize * 3;
   const contentHeight = H - contentTop - topPad;
 
   ctx.save();
@@ -2086,14 +2124,10 @@ function handleMenuClick(x, y) {
     if (sv && x >= sv.x && x <= sv.x + sv.w && y >= sv.y && y <= sv.y + sv.h) {
       saveFaceSwapImage();
       faceSwapShowSave = false;
+      menuExpanded.face = false; // Menü zuklappen nach Speichern
       return true;
     }
-    const dm = menuButtons.faceDismiss;
-    if (dm && x >= dm.x && x <= dm.x + dm.w && y >= dm.y && y <= dm.y + dm.h) {
-      faceSwapShowSave = false;
-      return true;
-    }
-    return true; // Klicks außerhalb ignorieren (Overlay bleibt)
+    return true; // Klicks außerhalb ignorieren (Overlay bleibt, User muss speichern)
   }
 
   // ☰ Burger-Icon (Screen-Space, VOR Scroll-Offset-Berechnung)
@@ -2257,10 +2291,16 @@ function handleMenuClick(x, y) {
     }
   }
   // Timer-Toggle
-  const t = menuButtons.timerToggle;
-  if (t && x >= t.x && x <= t.x + t.w && sy >= t.y && sy <= t.y + t.h) {
+  const tt = menuButtons.timerToggle;
+  if (tt && x >= tt.x && x <= tt.x + tt.w && sy >= tt.y && sy <= tt.y + tt.h) {
     timerVisible = !timerVisible;
     localStorage.setItem('msphere_timer', timerVisible);
+    return true;
+  }
+  // Custom-Time-Button
+  const ct = menuButtons.customTime;
+  if (ct && x >= ct.x && x <= ct.x + ct.w && sy >= ct.y && sy <= ct.y + ct.h) {
+    showCustomTimeInput();
     return true;
   }
   // Start-Button
@@ -2314,6 +2354,7 @@ let backBtnArea = null;
 
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    if (document.getElementById('customTimeOverlay').style.display !== 'none') { hideCustomTimeOverlay(); return; }
     if (document.getElementById('cameraOverlay').style.display !== 'none') { hideCameraOverlay(); faceModeIdx = 0; return; }
     if (legalOverlay) { legalOverlay = null; legalScrollY = 0; return; }
     if (state !== 'idle') returnToMenu();
@@ -3594,6 +3635,8 @@ function showPayPalOverlay() {
             // Overlay schließen OHNE voidPayment (Zahlung ist gültig!)
             document.getElementById('paypalOverlay').style.display = 'none';
             pendingSelfie = null;
+            // Menü aufklappen damit User den Fortschritt sieht
+            menuExpanded.face = true;
             if (selfie) {
               executeFaceSwap(selfie, 'paid', authData.token);
             }
@@ -3745,6 +3788,31 @@ function saveFaceSwapImage() {
   a.download = 'msphere-monk-' + Date.now() + '.png';
   a.click();
 }
+
+// Custom-Time-Overlay Funktionen
+function showCustomTimeInput() {
+  const overlay = document.getElementById('customTimeOverlay');
+  const input = document.getElementById('customTimeInput');
+  input.value = selectedDurationIdx >= 0 ? Math.round(meditationDuration / 60) : 8;
+  overlay.style.display = 'flex';
+  setTimeout(() => input.select(), 100);
+}
+function hideCustomTimeOverlay() {
+  document.getElementById('customTimeOverlay').style.display = 'none';
+}
+document.getElementById('customTimeOk').addEventListener('click', () => {
+  const mins = parseInt(document.getElementById('customTimeInput').value);
+  if (mins >= 1 && mins <= 180) {
+    meditationDuration = mins * 60;
+    selectedDurationIdx = 99; // Custom-Marker (nicht in DURATION_OPTIONS)
+    hideCustomTimeOverlay();
+  }
+});
+document.getElementById('customTimeCancel').addEventListener('click', hideCustomTimeOverlay);
+document.getElementById('customTimeInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('customTimeOk').click();
+  if (e.key === 'Escape') hideCustomTimeOverlay();
+});
 
 // Camera-Overlay Funktionen
 function showCameraOverlay() {
