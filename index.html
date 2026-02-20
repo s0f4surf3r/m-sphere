@@ -3043,7 +3043,7 @@ canvas.addEventListener('click', (e) => {
     const _hitC = (b) => b && cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h;
     if (_hitC(menuButtons.lotus)) {
       distractionModeIdx = distractionModeIdx === 1 ? 0 : 1;
-      localStorage.setItem('msphere_distraction', distractionModeIdx);
+      try { localStorage.setItem('msphere_distraction', distractionModeIdx); } catch(e) {}
       toastMsg = distractionModeIdx === 1
         ? (lang === 'de' ? 'Ablenkungen aktiviert — widerstehe den Versuchungen!'
                          : 'Distractions enabled — resist the temptations!')
@@ -3114,7 +3114,7 @@ canvas.addEventListener('touchend', (e) => {
     if (_hitS(_lotus)) {
       try { ensureSound(); } catch(err) {}
       distractionModeIdx = distractionModeIdx === 1 ? 0 : 1;
-      localStorage.setItem('msphere_distraction', distractionModeIdx);
+      try { localStorage.setItem('msphere_distraction', distractionModeIdx); } catch(e) {}
       toastMsg = distractionModeIdx === 1
         ? (lang === 'de' ? 'Ablenkungen aktiviert — widerstehe den Versuchungen!'
                          : 'Distractions enabled — resist the temptations!')
