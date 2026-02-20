@@ -2091,12 +2091,12 @@ function drawMenu() {
     ctx.textAlign = 'start';
   }
 
-  // Auf Mobile: Start-Text zentriert zwischen letztem Menüpunkt und Footer-Icons
+  // Auf Mobile: Start-Text im oberen Drittel zwischen letztem Menüpunkt und Footer
   if (isMobilePortrait) {
-    const footerY = H - unit * 0.08; // ungefähre Footer-Icon-Position
+    const footerY = H - unit * 0.12; // Footer-Icons + Credits-Bereich
     const availableSpace = footerY - curY;
-    const startBlockH = rowFont * 1.3 + rowFont * 1.3 * 0.6 * 2; // approx startH
-    curY += Math.max(sectionGap * 2, (availableSpace - startBlockH) / 2);
+    const startBlockH = rowFont * 1.3 + rowFont * 1.3 * 0.6 * 2;
+    curY += Math.max(sectionGap * 2, (availableSpace - startBlockH) * 0.35);
   } else {
     curY += sectionGap * 2;
   }
