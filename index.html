@@ -24,7 +24,7 @@
 html { --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom); --sal: env(safe-area-inset-left); }
 body {
   margin: 0;
-  background: #0a0a0f;
+  background: #000;
   overflow: hidden;
 }
 canvas {
@@ -35,6 +35,20 @@ canvas {
 }
 input[type=number]::-webkit-outer-spin-button,
 input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+#landscapeBlock {
+  display: none;
+  position: fixed; inset: 0; z-index: 99999;
+  background: #000;
+  align-items: center; justify-content: center; flex-direction: column;
+  font-family: -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif;
+  color: rgba(42, 191, 191, 0.8);
+  text-align: center; padding: 2rem;
+}
+#landscapeBlock span { font-size: 3rem; margin-bottom: 1rem; }
+#landscapeBlock p { font-size: 1rem; opacity: 0.7; }
+@media (max-width: 900px) and (orientation: landscape) {
+  #landscapeBlock { display: flex !important; }
+}
 </style>
 <script type="importmap">
 {
@@ -46,6 +60,7 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 </script>
 </head>
 <body>
+<div id="landscapeBlock"><span>↻</span><p>Bitte drehe dein Gerät ins Hochformat</p></div>
 <canvas id="c" style="-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none;-webkit-user-drag:none"></canvas>
 <div id="menuSpacer" style="width:1px;height:0;pointer-events:none"></div>
 <input type="file" id="faceInput" accept="image/*" capture="user" style="display:none">
@@ -102,6 +117,9 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
+
+// Portrait-Lock (wo unterstützt)
+try { screen.orientation.lock('portrait').catch(() => {}); } catch(e) {}
 
 // --- Footer-Icons ---
 const appIcon = new Image();
@@ -337,10 +355,25 @@ const DURATION_OPTIONS = [
   { label: '1', seconds: 60 },
   { label: '5', seconds: 300 },
   { label: '10', seconds: 600 },
+  { label: '15', seconds: 900 },
   { label: '20', seconds: 1200 },
-  { label: '30', seconds: 1800 }
+  { label: '25', seconds: 1500 },
+  { label: '30', seconds: 1800 },
+  { label: '45', seconds: 2700 },
+  { label: '60', seconds: 3600 }
 ];
-let selectedDurationIdx = -1; // nichts vorausgewählt
+let selectedDurationIdx = 4; // Voreinstellung: 20 min
+
+// Dreh-Rad (Mobile Time Picker)
+const DIAL_DURATIONS = [1, 2, 3, 4, 5, 6, 7, 8]; // Indizes in DURATION_OPTIONS (5,10,15,20,25,30,45,60)
+let dialPos = 3;       // aktuelle Position (Float, Index in DIAL_DURATIONS) — 20 min default
+let dialVel = 0;       // Geschwindigkeit (für Momentum)
+let dialTouchActive = false;
+let dialTouchStartX = 0;
+let dialTouchLastX = 0;
+let dialTouchStartTime = 0;
+let dialHitArea = null; // {x, y, w, h} für Touch-Detection
+
 // Atem-Modi: 0=Aus, 1=Kohärent (5.5s/5.5s), 2=Beruhigend (4s/6s)
 const BREATHING_MODES = ['Aus', 'Kohärent', 'Beruhigend 4:6', '4-7-8', 'Box 4-4-4-4'];
 const BREATHING_TIMING = [
@@ -375,7 +408,7 @@ function calcBreathWave(bt, elapsedSec) {
 }
 
 let timerVisible = localStorage.getItem('msphere_timer') === 'true';
-let meditationDuration = 60;
+let meditationDuration = 1200; // 20 min default
 let meditationTimeLeft = 0;
 let meditationStartTime = 0;
 
@@ -765,10 +798,21 @@ function addShakeDist(dist) {
 let hoverLink = false;
 let hoverSection = null; // welcher Sektions-Header wird gehovert
 let hoverLotus = false;
+let hoverGk = false;
 let lotusHintOpen = false; // Mobile: Fragezeichen-Hint offen
 let hoverMouseX = 0, hoverMouseY = 0; // aktuelle Mausposition für Hover-Checks
 function onMouseMove(e) {
   const [mx, my] = canvasCoords(e.clientX, e.clientY);
+  // Dreh-Rad: Mouse-Drag
+  if (dialTouchActive) {
+    const dx = mx - dialTouchLastX;
+    const itemSpacing = (cW < 600 && cH > cW) ? cW * 0.18 : Math.min(450, cW * 0.4) * 0.16;
+    dialPos -= dx / itemSpacing;
+    dialPos = Math.max(-0.4, Math.min(DIAL_DURATIONS.length - 0.6, dialPos));
+    dialVel = -dx / itemSpacing;
+    dialTouchLastX = mx;
+    return;
+  }
   if (!mouseDown) {
     lastMouseX = mx;
     lastMouseY = my;
@@ -807,7 +851,14 @@ function onMouseMove(e) {
       if (!overTimeBtn && ct && mx >= ct.x && mx <= ct.x + ct.w && sy >= ct.y && sy <= ct.y + ct.h) overTimeBtn = true;
       const gkBtn = menuButtons.gkLink;
       const overGk = gkBtn && mx >= gkBtn.x && mx <= gkBtn.x + gkBtn.w && my >= gkBtn.y && my <= gkBtn.y + gkBtn.h;
-      canvas.style.cursor = (overLink || hoverSection || overStart || overLotus || overTimeBtn || overGk) ? 'pointer' : 'default';
+      hoverGk = !!overGk;
+      // Dreh-Rad Hover
+      let overDial = false;
+      if (dialHitArea) {
+        const d = dialHitArea;
+        overDial = mx >= d.x && mx <= d.x + d.w && sy >= d.y && sy <= d.y + d.h;
+      }
+      canvas.style.cursor = overDial ? 'grab' : (overLink || hoverSection || overStart || overLotus || overTimeBtn || overGk) ? 'pointer' : 'default';
     }
     return;
   }
@@ -821,14 +872,56 @@ function onMouseMove(e) {
 
 canvas.addEventListener('mousedown', (e) => {
   e.preventDefault(); // Safari: verhindert Text-Selection/Drag
-  // Im idle-State: Maus-Schütteln blockiert — erst Timer wählen
+  const [mx, my] = canvasCoords(e.clientX, e.clientY);
+  // Dreh-Rad: Mouse-Drag starten (idle-State)
+  if (state === 'idle' && dialHitArea) {
+    const sy = my + (window.scrollY || 0);
+    const d = dialHitArea;
+    if (mx >= d.x && mx <= d.x + d.w && sy >= d.y && sy <= d.y + d.h) {
+      dialTouchActive = true;
+      dialTouchStartX = mx;
+      dialTouchLastX = mx;
+      dialTouchStartTime = Date.now();
+      dialVel = 0;
+      return;
+    }
+  }
+  // Im idle-State: Maus-Schütteln blockiert
   if (state === 'idle') return;
   mouseDown = true;
-  const [mx, my] = canvasCoords(e.clientX, e.clientY);
   lastMouseX = mx;
   lastMouseY = my;
 });
-window.addEventListener('mouseup', () => { mouseDown = false; });
+window.addEventListener('mouseup', (e) => {
+  mouseDown = false;
+  // Dreh-Rad: Mouse-Drag beenden → Snap
+  if (dialTouchActive) {
+    dialTouchActive = false;
+    const snapDial = () => {
+      if (dialTouchActive) return;
+      dialPos += dialVel;
+      dialVel *= 0.88;
+      dialPos = Math.max(-0.3, Math.min(DIAL_DURATIONS.length - 0.7, dialPos));
+      const nearest = Math.round(dialPos);
+      const snapForce = (nearest - dialPos) * 0.15;
+      dialPos += snapForce;
+      dialVel += snapForce * 0.5;
+      if (Math.abs(dialVel) > 0.005 || Math.abs(dialPos - nearest) > 0.01) {
+        requestAnimationFrame(snapDial);
+      } else {
+        dialPos = nearest;
+        dialVel = 0;
+      }
+      const snapped = Math.max(0, Math.min(DIAL_DURATIONS.length - 1, Math.round(dialPos)));
+      const durIdx = DIAL_DURATIONS[snapped];
+      if (durIdx !== undefined && durIdx < DURATION_OPTIONS.length) {
+        selectedDurationIdx = durIdx;
+        meditationDuration = DURATION_OPTIONS[durIdx].seconds;
+      }
+    };
+    requestAnimationFrame(snapDial);
+  }
+});
 canvas.addEventListener('dragstart', (e) => e.preventDefault());
 canvas.addEventListener('selectstart', (e) => e.preventDefault());
 
@@ -847,6 +940,17 @@ function onTouchMove(e) {
   if (state === 'idle') {
     const t = e.touches[0];
     const [tx, ty] = canvasCoords(t.clientX, t.clientY);
+    // Dreh-Rad: Touch-Move
+    if (dialTouchActive) {
+      const dx = tx - dialTouchLastX;
+      const itemSpacing = cW * 0.18; // px pro Item
+      dialPos -= dx / itemSpacing;
+      dialPos = Math.max(-0.4, Math.min(DIAL_DURATIONS.length - 0.6, dialPos));
+      dialVel = -dx / itemSpacing;
+      dialTouchLastX = tx;
+      e.preventDefault();
+      return;
+    }
     // Horizontales Karussell-Scrolling
     if (menuScrollActive) {
       const area = menuScrollRowAreas[menuScrollActive];
@@ -906,6 +1010,21 @@ function onTouchStart(e) {
     menuTouchDist = 0;
     titleTouchStartX = tx;
     titleTouchStartY = ty;
+    // Dreh-Rad: Touch-Start prüfen
+    const isMob = cW < 600 && cH > cW;
+    if (isMob && dialHitArea) {
+      const sy = ty + (window.scrollY || 0);
+      const d = dialHitArea;
+      if (tx >= d.x && tx <= d.x + d.w && sy >= d.y && sy <= d.y + d.h) {
+        dialTouchActive = true;
+        dialTouchStartX = tx;
+        dialTouchLastX = tx;
+        dialTouchStartTime = Date.now();
+        dialVel = 0;
+        e.preventDefault();
+        return;
+      }
+    }
     // Horizontales Karussell: Prüfen ob Touch in einer scrollbaren Row liegt
     menuScrollActive = null;
     menuScrollVelocity = 0;
@@ -1996,11 +2115,12 @@ function drawMenu() {
   const donBtnFill = isMobilePortrait ? 'rgba(232, 106, 122, 0.3)' : 'rgba(232, 106, 122, 0.12)';
   const donBtnStroke = isMobilePortrait ? 'rgba(232, 106, 122, 1.0)' : 'rgba(232, 106, 122, 0.5)';
 
-  // Dunkler Overlay-Hintergrund
+  // Dunkler Overlay-Hintergrund — gesamten scrollbaren Bereich abdecken
   ctx.fillStyle = menuBg;
-  ctx.fillRect(0, 0, W, H);
+  const scrollY0 = window.scrollY || 0;
+  ctx.fillRect(0, 0, W, H + scrollY0);
 
-  // Subtile Sterne im Hintergrund
+  // Subtile Sterne im Hintergrund (fixiert am Viewport)
   const starSeed = 42;
   for (let i = 0; i < 40; i++) {
     const sx = ((starSeed * (i + 1) * 7.3) % W);
@@ -2008,7 +2128,7 @@ function drawMenu() {
     const pulse = Math.sin(Date.now() * 0.001 + i) * 0.3 + 0.7;
     const starAlpha = isMobilePortrait ? 0.2 : 0.1;
     ctx.fillStyle = `rgba(200, 220, 255, ${starAlpha * pulse})`;
-    ctx.fillRect(sx, sy, 1.5, 1.5);
+    ctx.fillRect(sx + 0, sy + scrollY0, 1.5, 1.5);
   }
 
   const _prevLotus = menuButtons.lotus; // Hit-Area beibehalten falls Rendering fehlschlägt
@@ -2023,10 +2143,10 @@ function drawMenu() {
   const rowFont = unit * 0.02 * uiScale;
   const btnH = unit * 0.04 * uiScale;
   const btnGap = unit * 0.012 * uiScale;
-  const sectionGap = unit * 0.025 * (isMobilePortrait ? 1.0 : 0.7) * vScale;
+  const sectionGap = unit * 0.025 * (isMobilePortrait ? 0.4 : 0.7) * vScale;
 
   const safeTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
-  let curY = Math.max(H * (isMobilePortrait ? 0.1 : 0.1 * vScale), safeTop + unit * (isMobilePortrait ? 0.05 : 0.03));
+  let curY = Math.max(H * (isMobilePortrait ? 0.06 : 0.1 * vScale), safeTop + unit * (isMobilePortrait ? 0.03 : 0.03));
 
   // Native Scrolling: Gesamten Menü-Inhalt um scrollY nach oben verschieben
   const scrollY = window.scrollY || 0;
@@ -2126,18 +2246,27 @@ function drawMenu() {
     ctx.textBaseline = 'top';
   }
 
-  curY += actualTitleH + unit * 0.015 * vScale;
+  curY += actualTitleH + unit * (isMobilePortrait ? 0.005 : 0.015) * vScale;
 
-  // Untertitel
+  // Untertitel — auf Mobile gleich breit wie Titel
   ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.55)';
-  ctx.font = `400 ${subtitleSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+  let stSize = subtitleSize;
+  const stSpacing = isMobilePortrait ? '3px' : '8px';
+  if (isMobilePortrait) {
+    // Subtitle-Größe so skalieren, dass Breite ≈ titleW
+    ctx.font = `400 ${stSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+    ctx.letterSpacing = stSpacing;
+    const measuredW = ctx.measureText(t('subtitle')).width;
+    if (measuredW > 0) stSize = stSize * (titleW / measuredW);
+  }
+  ctx.font = `400 ${stSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
   ctx.shadowColor = 'rgba(42, 191, 191, 0.4)';
   ctx.shadowBlur = 12;
-  ctx.letterSpacing = isMobilePortrait ? '3px' : '8px';
+  ctx.letterSpacing = stSpacing;
   ctx.fillText(t('subtitle'), cx, curY);
   ctx.letterSpacing = '0px';
   ctx.shadowBlur = 0;
-  curY += subtitleSize * (isMobilePortrait ? 2.5 : 2 + vScale * 1.5);
+  curY += stSize * (isMobilePortrait ? 2.2 : 2 + vScale * 1.5);
 
   // Language Toggle wird außerhalb des Scroll-Bereichs gezeichnet (siehe unten)
 
@@ -2371,143 +2500,107 @@ function drawMenu() {
     return { btns, bottomY: curRowY - btnGap * 0.5 };
   }
 
-  // --- MEDITATIONSZEIT (Gold-Buttons) ---
+  // --- MEDITATIONSZEIT ---
   {
-    const VISIBLE_DURATIONS = [2, 3, 4]; // 10, 20, 30 min
-    const isCustomTime = selectedDurationIdx >= 0 && !VISIBLE_DURATIONS.includes(selectedDurationIdx);
-    const timeItems = [
-      { label: timerVisible ? t('timerAn') : t('timerAus'), type: 'timer' },
-      ...VISIBLE_DURATIONS.map(i => ({ label: DURATION_OPTIONS[i].label, type: 'preset', idx: i })),
-      { label: isCustomTime ? '' + Math.round(meditationDuration / 60) : '+', type: 'custom' }
-    ];
-
-    // Label
-    const labelFont = rowFont;
-    const timeLabelColor = selectedDurationIdx < 0 ? '#f4a842' : null;
-    ctx.font = `${labelFont}px "Courier New", monospace`;
-    ctx.fillStyle = timeLabelColor || (isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.95)');
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText(t('meditationszeit'), cx, curY);
-    curY += labelFont * 1.8;
-
-    // Buttons in einer Reihe, zentriert
-    const n = timeItems.length;
-    const tBtnH = btnH;
-    const tBtnW = btnH * 1.6;
-    const tGap = btnGap;
-    const totalW = n * tBtnW + (n - 1) * tGap;
-    let rx = cx - totalW / 2;
-
     menuButtons.timer = [];
     menuButtons.timerToggle = null;
     menuButtons.customTime = null;
 
-    for (let i = 0; i < n; i++) {
-      const item = timeItems[i];
-      let sel = false;
-      if (item.type === 'preset') sel = selectedDurationIdx === item.idx;
-      if (item.type === 'custom') sel = isCustomTime;
-      if (item.type === 'timer') sel = timerVisible;
+    // Label
+    const labelFont = isMobilePortrait ? rowFont : rowFont * 2;
+    ctx.font = isMobilePortrait
+      ? `${labelFont}px "Courier New", monospace`
+      : `700 ${labelFont}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+    ctx.fillStyle = 'rgba(255, 215, 0, 0.85)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(t('meditationszeit'), cx, curY);
+    curY += labelFont * (isMobilePortrait ? 1.2 : 1.5);
 
-      const isTimer = item.type === 'timer';
+    // ====== Dreh-Rad (Mobile + Desktop) ======
+    const dialH = isMobilePortrait ? btnH * 2.2 : btnH * 1.8;
+    const dialW = isMobilePortrait ? W * 0.85 : Math.min(450, W * 0.4);
+    const dialX = (W - dialW) / 2;
+    const dialCx = cx;
+    const dialCy = curY + dialH / 2;
+    const itemSpacing = isMobilePortrait ? W * 0.18 : dialW * 0.16;
 
-      // Hover-Check (Mausposition vs. Button-Rect, mit Scroll-Offset)
-      const scrollY = window.scrollY || 0;
-      const hsy = hoverMouseY + scrollY;
-      const isHover = !isMobilePortrait && hoverMouseX >= rx && hoverMouseX <= rx + tBtnW && hsy >= curY && hsy <= curY + tBtnH;
+    // Hit-Area für Touch/Mouse-Detection
+    dialHitArea = { x: dialX, y: curY, w: dialW, h: dialH };
 
-      // Richtig goldene Buttons
-      if (sel) {
-        ctx.shadowColor = 'rgba(255, 215, 0, 0.6)';
-        ctx.shadowBlur = 20;
-      } else if (isHover) {
-        ctx.shadowColor = 'rgba(255, 215, 0, 0.5)';
-        ctx.shadowBlur = 15;
-      }
-
-      ctx.beginPath();
-      const cr = tBtnH * 0.25;
-      ctx.roundRect(rx, curY, tBtnW, tBtnH, cr);
-
-      if (sel) {
-        // Selektiert: sattes Gold mit Gradient
-        const grd = ctx.createLinearGradient(rx, curY, rx, curY + tBtnH);
-        grd.addColorStop(0, 'rgba(255, 225, 80, 0.45)');
-        grd.addColorStop(0.5, 'rgba(255, 200, 40, 0.35)');
-        grd.addColorStop(1, 'rgba(200, 155, 20, 0.4)');
-        ctx.fillStyle = grd;
-        ctx.fill();
-        ctx.strokeStyle = '#ffd700';
-        ctx.lineWidth = 2;
-      } else {
-        // Unselektiert (+ Hover-Aufhellung)
-        const grd = ctx.createLinearGradient(rx, curY, rx, curY + tBtnH);
-        if (isHover) {
-          grd.addColorStop(0, 'rgba(220, 190, 60, 0.3)');
-          grd.addColorStop(1, 'rgba(160, 130, 40, 0.25)');
-        } else {
-          grd.addColorStop(0, 'rgba(180, 150, 50, 0.2)');
-          grd.addColorStop(1, 'rgba(120, 95, 25, 0.15)');
-        }
-        ctx.fillStyle = grd;
-        ctx.fill();
-        ctx.strokeStyle = isHover ? 'rgba(255, 215, 0, 0.7)' : 'rgba(220, 185, 60, 0.5)';
-        ctx.lineWidth = isHover ? 1.5 : 1;
-      }
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-
-      // Text / Icon
-      if (isTimer) {
-        // Canvas-gezeichnetes Stoppuhr-Icon (überall identisch)
-        const icx = rx + tBtnW / 2;
-        const icy = curY + tBtnH / 2;
-        const ir = tBtnH * 0.2;
-        const iconCol = sel ? 'rgba(255, 229, 102, 0.9)' : 'rgba(240, 215, 140, 0.7)';
-        ctx.strokeStyle = iconCol;
-        ctx.lineWidth = 1.2;
-        // Kreis (Ziffernblatt)
-        ctx.beginPath();
-        ctx.arc(icx, icy + ir * 0.1, ir, 0, Math.PI * 2);
-        ctx.stroke();
-        // Zeiger
-        ctx.beginPath();
-        ctx.moveTo(icx, icy + ir * 0.1);
-        ctx.lineTo(icx + ir * 0.5, icy - ir * 0.3);
-        ctx.stroke();
-        // Knopf oben
-        ctx.beginPath();
-        ctx.moveTo(icx - ir * 0.2, icy - ir * 0.9);
-        ctx.lineTo(icx + ir * 0.2, icy - ir * 0.9);
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        // Stiel
-        ctx.beginPath();
-        ctx.moveTo(icx, icy - ir * 0.9);
-        ctx.lineTo(icx, icy - ir);
-        ctx.lineWidth = 1.2;
-        ctx.stroke();
-      } else {
-        const isPlus = item.label === '+';
-        const fontSize = isPlus ? rowFont * 1.4 : (sel ? rowFont * 1.05 : rowFont * 0.9);
-        ctx.font = `${sel ? '700' : (isPlus ? '300' : '400')} ${fontSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
-        ctx.fillStyle = sel ? '#ffe566' : 'rgba(240, 215, 140, 0.8)';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(item.label, rx + tBtnW / 2, curY + tBtnH / 2);
-      }
-
-      // Hit-Area
-      const hitBox = { x: rx, y: curY, w: tBtnW, h: tBtnH };
-      if (item.type === 'preset') { hitBox.idx = item.idx; menuButtons.timer.push(hitBox); }
-      else if (item.type === 'timer') menuButtons.timerToggle = hitBox;
-      else if (item.type === 'custom') menuButtons.customTime = hitBox;
-
-      rx += tBtnW + tGap;
+    // Sync dialPos mit selectedDurationIdx (falls von außen gesetzt)
+    if (!dialTouchActive && dialVel === 0 && selectedDurationIdx >= 0) {
+      const dialIdx = DIAL_DURATIONS.indexOf(selectedDurationIdx);
+      if (dialIdx >= 0 && Math.abs(dialPos - dialIdx) > 0.5) dialPos = dialIdx;
     }
 
-    curY += tBtnH + sectionGap * (isMobilePortrait ? 2.5 : 2);
+    // Hintergrund-Spur
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(dialX, curY, dialW, dialH, dialH * 0.35);
+    ctx.fillStyle = 'rgba(26, 58, 92, 0.25)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(220, 185, 60, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Clip auf Dial-Bereich
+    ctx.beginPath();
+    ctx.roundRect(dialX, curY, dialW, dialH, dialH * 0.35);
+    ctx.clip();
+
+    // Items zeichnen
+    const numFont = dialH * 0.4;
+    const minFont = dialH * 0.18;
+    ctx.textBaseline = 'middle';
+
+    for (let i = 0; i < DIAL_DURATIONS.length; i++) {
+      const offset = i - dialPos;
+      const px = dialCx + offset * itemSpacing;
+
+      if (px < dialX - itemSpacing || px > dialX + dialW + itemSpacing) continue;
+
+      const dist = Math.abs(offset);
+      const isSel = dist < 0.5;
+      const fade = Math.max(0, 1 - dist * 0.35);
+      const scale = 1 - dist * 0.15;
+
+      const durIdx = DIAL_DURATIONS[i];
+      const label = DURATION_OPTIONS[durIdx].label;
+
+      ctx.textAlign = 'center';
+      const fSize = numFont * scale;
+      ctx.font = `${isSel ? '700' : '400'} ${fSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+
+      if (isSel) {
+        ctx.shadowColor = 'rgba(255, 215, 0, 0.6)';
+        ctx.shadowBlur = 15;
+        ctx.fillStyle = `rgba(255, 225, 80, ${0.95 * fade})`;
+      } else {
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = `rgba(240, 215, 140, ${0.6 * fade})`;
+      }
+      ctx.fillText(label, px, dialCy - minFont * 0.3);
+      ctx.shadowBlur = 0;
+
+      ctx.font = `400 ${minFont * scale}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+      ctx.fillStyle = `rgba(240, 215, 140, ${0.4 * fade})`;
+      ctx.fillText('min', px, dialCy + numFont * 0.4);
+    }
+
+    ctx.restore();
+
+    // Mittel-Markierung (Dreieck oben)
+    ctx.beginPath();
+    const triSize = dialH * 0.1;
+    ctx.moveTo(dialCx - triSize, curY - 1);
+    ctx.lineTo(dialCx + triSize, curY - 1);
+    ctx.lineTo(dialCx, curY + triSize * 0.8);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255, 215, 0, 0.7)';
+    ctx.fill();
+
+    curY += dialH + sectionGap;
   }
 
   // --- ATMEN ---
@@ -2548,8 +2641,13 @@ function drawMenu() {
   // --- DEIN GESICHT ---
   const faceHasSwap = faceSwapStatus === 'done' && faceSwapImg;
   const faceLabel = faceHasSwap && !menuExpanded.face ? t('deinGesicht') + ' ✓' : t('deinGesicht');
-  const faceMobileLabels = [t('aus'), t('mediathek'), t('kamera'), t('laden')];
-  const faceRow = drawSettingsRow(faceLabel, faceMobileLabels, faceModeIdx, curY, faceHasSwap && !menuExpanded.face ? '#2abfbf' : null, 'face');
+  const faceMobileLabels = isMobilePortrait
+    ? [t('aus'), t('laden')]
+    : [t('aus'), t('mediathek'), t('kamera'), t('laden')];
+  const faceMobileIdx = isMobilePortrait
+    ? (faceModeIdx === 3 ? 1 : faceModeIdx === 0 ? 0 : 0)
+    : faceModeIdx;
+  const faceRow = drawSettingsRow(faceLabel, faceMobileLabels, faceMobileIdx, curY, faceHasSwap && !menuExpanded.face ? '#2abfbf' : null, 'face');
   menuButtons.faceSwap = faceRow.btns;
   curY = faceRow.bottomY;
 
@@ -2586,7 +2684,7 @@ function drawMenu() {
     const footerY = H - unit * 0.12; // Footer-Icons + Credits-Bereich
     const availableSpace = footerY - curY;
     const startBlockH = rowFont * 1.3 + rowFont * 1.3 * 0.6 * 2;
-    curY += Math.max(sectionGap * 2, (availableSpace - startBlockH) * 0.35);
+    curY += sectionGap;
   } else {
     curY += sectionGap * 2;
   }
@@ -2596,9 +2694,7 @@ function drawMenu() {
   const startFont = rowFont * 1.3;
   ctx.font = `700 ${startFont}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
   const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  const startLabel = canStart
-    ? (isTouchDevice ? t('tapStart') : t('clickStart'))
-    : t('chooseDuration');
+  const startLabel = isTouchDevice ? t('tapStart') : t('clickStart');
   const startTextW = ctx.measureText(startLabel).width;
   const startPadX = startFont * 1.5;
   const startPadY = startFont * 0.6;
@@ -2702,6 +2798,34 @@ function drawMenu() {
     ctx.fillText(langLabels[li], lx + langBtnW / 2, langY + langH / 2);
     menuButtons.langToggle.push({ x: lx, y: langY, w: langBtnW, h: langH, lang: li === 0 ? 'de' : 'en' });
   }
+
+  // --- Stoppuhr-Icon oben Mitte (Timer-Toggle) ---
+  {
+    const twSize = burgerSize * 0.7;
+    const twX = cx;
+    const twY = burgerY + burgerSize / 2;
+    const twR = twSize * 0.35;
+    const twCol = timerVisible ? 'rgba(255, 215, 0, 0.9)' : 'rgba(240, 236, 230, 0.25)';
+    if (timerVisible) {
+      ctx.shadowColor = 'rgba(255, 215, 0, 0.5)';
+      ctx.shadowBlur = 10;
+    }
+    ctx.strokeStyle = twCol;
+    ctx.lineWidth = isMobilePortrait ? 2 : 1.5;
+    // Kreis
+    ctx.beginPath(); ctx.arc(twX, twY + twR * 0.1, twR, 0, Math.PI * 2); ctx.stroke();
+    // Zeiger
+    ctx.beginPath(); ctx.moveTo(twX, twY + twR * 0.1); ctx.lineTo(twX + twR * 0.55, twY - twR * 0.3); ctx.stroke();
+    // Knopf oben
+    ctx.beginPath(); ctx.moveTo(twX - twR * 0.25, twY - twR * 0.95); ctx.lineTo(twX + twR * 0.25, twY - twR * 0.95);
+    ctx.lineWidth = isMobilePortrait ? 2.5 : 2; ctx.stroke();
+    // Stiel
+    ctx.beginPath(); ctx.moveTo(twX, twY - twR * 0.95); ctx.lineTo(twX, twY - twR * 1.1);
+    ctx.lineWidth = isMobilePortrait ? 2 : 1.5; ctx.stroke();
+    ctx.shadowBlur = 0;
+    const twHitSize = burgerSize;
+    menuButtons.timerToggle = { x: twX - twHitSize / 2, y: twY - twHitSize / 2, w: twHitSize, h: twHitSize };
+  }
   ctx.textAlign = 'start';
   ctx.textBaseline = 'alphabetic';
 
@@ -2727,7 +2851,9 @@ function drawMenu() {
   // --- Credits + Footer-Icons (fixiert am unteren Bildrand) ---
   {
     const credFont = subtitleSize * 0.65;
-    const credY = H - (isMobilePortrait ? 18 : 14);
+    const iconSize = burgerSize;
+    const iconY = H - (isMobilePortrait ? 18 : 14) - iconSize;
+    const credY = iconY + iconSize / 2; // vertikal zentriert mit Icons
     ctx.font = `${credFont}px "Courier New", monospace`;
     const credBase = isMobilePortrait ? 0.5 : 0.3;
     if (hoverLink) {
@@ -2738,24 +2864,31 @@ function drawMenu() {
       ctx.fillStyle = `rgba(240, 236, 230, ${credBase})`;
     }
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
+    ctx.textBaseline = 'middle';
     ctx.fillText('jochenhornung.de', cx, credY);
     ctx.shadowBlur = 0;
     const linkW = ctx.measureText('jochenhornung.de').width;
-    menuButtons.link = { x: cx - linkW / 2, y: credY - credFont, w: linkW, h: credFont * 1.5 };
+    menuButtons.link = { x: cx - linkW / 2, y: credY - credFont / 2, w: linkW, h: credFont * 1.5 };
 
     // Footer-Icons: Favicon links, Lotusblüte rechts (bündig mit Titel)
-    const iconSize = burgerSize;
-    const iconY = credY - iconSize;
     const iconAlpha = isMobilePortrait ? 0.5 : 0.35;
     const iconLeftX = isMobilePortrait ? 20 : titleLeftX;
     const iconRightX = isMobilePortrait ? W - 20 - iconSize : titleRightX - iconSize;
 
     // Links: Gefühlskompass Check-in Button (Link)
     if (gkIconReady) {
-      ctx.globalAlpha = iconAlpha;
-      ctx.drawImage(gkIcon, iconLeftX, iconY, iconSize, iconSize);
+      const gkScale = hoverGk ? 1.25 : 1;
+      const gkS = iconSize * gkScale;
+      const gkX = iconLeftX + (iconSize - gkS) / 2;
+      const gkY = iconY + (iconSize - gkS) / 2;
+      if (hoverGk) {
+        ctx.shadowColor = 'rgba(42, 191, 191, 0.7)';
+        ctx.shadowBlur = 18;
+      }
+      ctx.globalAlpha = hoverGk ? 0.9 : iconAlpha;
+      ctx.drawImage(gkIcon, gkX, gkY, gkS, gkS);
       ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
     }
     menuButtons.gkLink = { x: iconLeftX, y: iconY, w: iconSize, h: iconSize };
 
@@ -3541,7 +3674,9 @@ function handleMenuClick(x, y) {
   for (const btn of menuButtons.faceSwap || []) {
     if (hitBtn(btn)) {
       const prevMode = faceModeIdx;
-      faceModeIdx = btn.idx;
+      const isMob = cW < 600 && cH > cW;
+      // Mobile: nur Aus(0) und Laden(1→3), Desktop: alle 4
+      faceModeIdx = (isMob && btn.idx === 1) ? 3 : btn.idx;
       if (faceModeIdx === 0) {
         // Aus → Reset
         faceSwapImg = null;
@@ -3745,6 +3880,38 @@ canvas.addEventListener('touchend', (e) => {
     }
   }
   if (state === 'idle' && e.changedTouches.length > 0) {
+    // Dreh-Rad: Touch-End → Snap mit Momentum
+    if (dialTouchActive) {
+      dialTouchActive = false;
+      // Momentum-Snap-Animation
+      const snapDial = () => {
+        if (dialTouchActive) return;
+        dialPos += dialVel;
+        dialVel *= 0.88; // Deceleration
+        // Bounds
+        dialPos = Math.max(-0.3, Math.min(DIAL_DURATIONS.length - 0.7, dialPos));
+        // Snap-Kraft zum nächsten Rastpunkt
+        const nearest = Math.round(dialPos);
+        const snapForce = (nearest - dialPos) * 0.15;
+        dialPos += snapForce;
+        dialVel += snapForce * 0.5;
+        if (Math.abs(dialVel) > 0.005 || Math.abs(dialPos - nearest) > 0.01) {
+          requestAnimationFrame(snapDial);
+        } else {
+          dialPos = nearest;
+          dialVel = 0;
+        }
+        // Selektion aktualisieren
+        const snapped = Math.max(0, Math.min(DIAL_DURATIONS.length - 1, Math.round(dialPos)));
+        const durIdx = DIAL_DURATIONS[snapped];
+        if (durIdx !== undefined && durIdx < DURATION_OPTIONS.length) {
+          selectedDurationIdx = durIdx;
+          meditationDuration = DURATION_OPTIONS[durIdx].seconds;
+        }
+      };
+      requestAnimationFrame(snapDial);
+      return;
+    }
     // Horizontales Karussell: Momentum starten und Swipe-Tap unterscheiden
     if (menuScrollActive) {
       const key = menuScrollActive;
