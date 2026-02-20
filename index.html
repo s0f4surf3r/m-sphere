@@ -126,7 +126,6 @@ const TR = {
     meditationsSound: 'MEDITATIONS-SOUND',
     gedankenmodus: 'GEDANKENMODUS',
     gedankenfluss: 'GEDANKENFLUSS',
-    ablenkungen: 'ABLENKUNGEN',
     deinGesicht: 'DEIN GESICHT',
     timerAn: '⏱ An',
     timerAus: '⏱',
@@ -162,8 +161,6 @@ const TR = {
     abbrechen: 'Abbrechen',
     speichern: '💾 Speichern',
     weiter: 'Weiter',
-    ablenkAus: 'Ablenkungsmenü ausblenden',
-    ablenkEin: 'Ablenkungsmenü einblenden',
     ueberMSphere: 'Die Geschichte dahinter',
     literatur: 'Literaturempfehlungen',
     impressum: 'Impressum',
@@ -200,7 +197,6 @@ const TR = {
     meditationsSound: 'MEDITATION SOUND',
     gedankenmodus: 'THOUGHT MODE',
     gedankenfluss: 'THOUGHT FLOW',
-    ablenkungen: 'DISTRACTIONS',
     deinGesicht: 'YOUR FACE',
     timerAn: '⏱ On',
     timerAus: '⏱',
@@ -236,8 +232,6 @@ const TR = {
     abbrechen: 'Cancel',
     speichern: '💾 Save',
     weiter: 'Continue',
-    ablenkAus: 'Hide distraction menu',
-    ablenkEin: 'Show distraction menu',
     ueberMSphere: 'The Story Behind',
     literatur: 'Book Recommendations',
     impressum: 'Legal Notice',
@@ -406,7 +400,7 @@ if (flowLevelIdx > 3) flowLevelIdx = 3; // Migration: 4x/5x → 3x
 const shrinkModeIdx = 1;
 
 // Ablenkungen: 0=Aus, 1=Ein
-const DISTRACTION_MODES = ['Aus', 'Ein'];
+
 let distractionModeIdx = parseInt(localStorage.getItem('msphere_distraction')) || 0;
 // Toast-Notification
 let toastMsg = '';
@@ -447,7 +441,7 @@ let menuContentHeight = 0; // Gesamte Menü-Inhaltshöhe für native Scrolling
 // --- Legal Overlay (Impressum/Datenschutz/About/Menu) ---
 let legalOverlay = null; // 'menu' | 'about' | 'impressum' | 'datenschutz' | null
 // Ausklappbare Menü-Sektionen (true = offen)
-const menuExpanded = { breathing: false, meditation: false, thoughtMode: false, flowLevel: false, distraction: false, face: false };
+const menuExpanded = { breathing: false, meditation: false, thoughtMode: false, flowLevel: false, face: false };
 let menuToggleAreas = {}; // Hit-Areas für Sektions-Header
 let legalScrollY = 0;
 let legalCloseBtn = null;
@@ -2061,9 +2055,6 @@ function drawMenu() {
   menuButtons.flowLevel = flowRow.btns;
   curY = flowRow.bottomY + sectionGap;
 
-  // Ablenkungen werden jetzt über Lotus-Icon unten rechts gesteuert
-  menuButtons.distractionMode = [];
-
   // --- DEIN GESICHT ---
   const faceHasSwap = faceSwapStatus === 'done' && faceSwapImg;
   const faceLabel = faceHasSwap && !menuExpanded.face ? t('deinGesicht') + ' ✓' : t('deinGesicht');
@@ -2910,14 +2901,6 @@ function handleMenuClick(x, y) {
     if (hitBtn(btn)) {
       flowLevelIdx = btn.idx;
       localStorage.setItem('msphere_flow', flowLevelIdx);
-      return true;
-    }
-  }
-  // Ablenkungen
-  for (const btn of menuButtons.distractionMode || []) {
-    if (hitBtn(btn)) {
-      distractionModeIdx = btn.idx;
-      localStorage.setItem('msphere_distraction', distractionModeIdx);
       return true;
     }
   }
@@ -4888,21 +4871,35 @@ function frame() {
     drawMenu();
     drawLegalOverlay();
     // Toast-Notification
-    if (toastMsg && Date.now() - toastStart < 4000) {
+    if (toastMsg && Date.now() - toastStart < 5000) {
       const toastElapsed = Date.now() - toastStart;
       let toastAlpha = 1;
       if (toastElapsed < 300) toastAlpha = toastElapsed / 300;
-      else if (toastElapsed > 3200) toastAlpha = 1 - (toastElapsed - 3200) / 800;
-      const toastFont = Math.max(13, Math.min(cW, cH) * 0.022);
+      else if (toastElapsed > 4000) toastAlpha = 1 - (toastElapsed - 4000) / 1000;
+      const toastFont = Math.max(15, Math.min(cW, cH) * (isMobilePortrait ? 0.035 : 0.022));
       ctx.font = `400 ${toastFont}px "Courier New", monospace`;
-      const tw = ctx.measureText(toastMsg).width + toastFont * 2;
-      const th = toastFont * 2.5;
+      // Word-wrap für lange Texte auf Mobile
+      const maxTW = cW * 0.85;
+      const toastLines = [];
+      const words = toastMsg.split(' ');
+      let curLine = '';
+      for (const w of words) {
+        const testLine = curLine ? curLine + ' ' + w : w;
+        if (ctx.measureText(testLine).width > maxTW - toastFont * 2) {
+          if (curLine) toastLines.push(curLine);
+          curLine = w;
+        } else curLine = testLine;
+      }
+      if (curLine) toastLines.push(curLine);
+      const lineH = toastFont * 1.4;
+      const tw = Math.min(maxTW, Math.max(...toastLines.map(l => ctx.measureText(l).width)) + toastFont * 2);
+      const th = lineH * toastLines.length + toastFont * 1.2;
       const tx = (cW - tw) / 2;
-      const ty = cH * 0.85;
-      ctx.globalAlpha = toastAlpha * 0.9;
-      ctx.fillStyle = 'rgba(10, 22, 40, 0.85)';
+      const ty = cH * 0.5 - th / 2;
+      ctx.globalAlpha = toastAlpha * 0.95;
+      ctx.fillStyle = 'rgba(10, 22, 40, 0.9)';
       ctx.beginPath();
-      ctx.roundRect(tx, ty, tw, th, th / 2);
+      ctx.roundRect(tx, ty, tw, th, th * 0.15);
       ctx.fill();
       ctx.strokeStyle = distractionModeIdx === 1 ? 'rgba(232, 106, 122, 0.5)' : 'rgba(42, 191, 191, 0.5)';
       ctx.lineWidth = 1;
@@ -4910,7 +4907,10 @@ function frame() {
       ctx.fillStyle = distractionModeIdx === 1 ? 'rgba(232, 106, 122, 0.9)' : 'rgba(42, 191, 191, 0.9)';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(toastMsg, cW / 2, ty + th / 2);
+      const textStartY = ty + th / 2 - (toastLines.length - 1) * lineH / 2;
+      for (let i = 0; i < toastLines.length; i++) {
+        ctx.fillText(toastLines[i], cW / 2, textStartY + i * lineH);
+      }
       ctx.globalAlpha = 1;
     }
   }
