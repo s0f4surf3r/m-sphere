@@ -3096,10 +3096,36 @@ canvas.addEventListener('touchend', (e) => {
         return;
       }
     }
+    // Screen-Space-Buttons (Footer) IMMER prüfen, auch bei Mikro-Scroll
+    const ft = e.changedTouches[0];
+    const [ftx, fty] = canvasCoords(ft.clientX, ft.clientY);
+    const _lotus = menuButtons.lotus;
+    const _gk = menuButtons.gkLink;
+    const _lnk = menuButtons.link;
+    const _hitS = (b) => b && ftx >= b.x && ftx <= b.x + b.w && fty >= b.y && fty <= b.y + b.h;
+    if (_hitS(_lotus)) {
+      ensureSound();
+      distractionModeIdx = distractionModeIdx === 1 ? 0 : 1;
+      localStorage.setItem('msphere_distraction', distractionModeIdx);
+      toastMsg = distractionModeIdx === 1
+        ? (lang === 'de' ? 'Ablenkungen aktiviert — widerstehe den Versuchungen!'
+                         : 'Distractions enabled — resist the temptations!')
+        : (lang === 'de' ? 'Ablenkungen deaktiviert' : 'Distractions disabled');
+      toastStart = Date.now();
+      playTingsha();
+      return;
+    }
+    if (_hitS(_gk)) {
+      window.open('https://gefuehlskompass.vercel.app/de', '_blank');
+      return;
+    }
+    if (_hitS(_lnk)) {
+      window.open('https://jochenhornung.de', '_blank');
+      return;
+    }
+    // Reguläre Menü-Buttons: nur bei echtem Tap (kein Scroll)
     if (menuTouchDist < 10) {
-      const t = e.changedTouches[0];
-      const [tx, ty] = canvasCoords(t.clientX, t.clientY);
-      handleMenuClick(tx, ty);
+      handleMenuClick(ftx, fty);
     }
   } else if (state === 'done') {
     if (donateHitArea && e.changedTouches.length > 0) {
