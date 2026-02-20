@@ -2823,31 +2823,9 @@ function handleMenuClick(x, y) {
       return true;
     }
   }
-  // Gefühlskompass-Link (unten links, Screen-Space)
-  const gk = menuButtons.gkLink;
-  if (gk && hitScreenBtn(gk)) {
-    window.open('https://gefuehlskompass.vercel.app/de', '_blank');
-    return true;
-  }
-  // Link (Screen-Space)
-  const lnk = menuButtons.link;
-  if (lnk && hitScreenBtn(lnk)) {
-    window.open('https://jochenhornung.de', '_blank');
-    return true;
-  }
-  // Lotus-Toggle (Ablenkungen, Screen-Space)
-  const lotus = menuButtons.lotus;
-  if (lotus && hitScreenBtn(lotus)) {
-    distractionModeIdx = distractionModeIdx === 1 ? 0 : 1;
-    localStorage.setItem('msphere_distraction', distractionModeIdx);
-    toastMsg = distractionModeIdx === 1
-      ? (lang === 'de' ? 'Ablenkungen aktiviert — widerstehe den Versuchungen!'
-                       : 'Distractions enabled — resist the temptations!')
-      : (lang === 'de' ? 'Ablenkungen deaktiviert' : 'Distractions disabled');
-    toastStart = Date.now();
-    playTingsha();
-    return true;
-  }
+  // Footer-Buttons (Lotus, GK, Link) werden direkt in touchend/click behandelt,
+  // nicht hier — verhindert Double-Firing-Probleme auf Touch-Geräten.
+
   // Language Toggle (Screen-Space)
   for (const btn of menuButtons.langToggle || []) {
     if (hitScreenBtn(btn)) {
@@ -3041,7 +3019,10 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
+let lastTouchEndTime = 0; // Verhindert Click nach Touch (Double-Firing)
 canvas.addEventListener('click', (e) => {
+  // Touch-Geräte: Click ignorieren wenn kurz nach touchend (Double-Fire-Schutz)
+  if (Date.now() - lastTouchEndTime < 500) return;
   ensureSound();
   const [cx, cy] = canvasCoords(e.clientX, e.clientY);
   // Zurück-Button (ready/shaking/meditating)
@@ -3053,6 +3034,27 @@ canvas.addEventListener('click', (e) => {
     }
   }
   if (state === 'idle') {
+    // Footer-Buttons direkt prüfen (Screen-Space)
+    const _hitC = (b) => b && cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h;
+    if (_hitC(menuButtons.lotus)) {
+      distractionModeIdx = distractionModeIdx === 1 ? 0 : 1;
+      localStorage.setItem('msphere_distraction', distractionModeIdx);
+      toastMsg = distractionModeIdx === 1
+        ? (lang === 'de' ? 'Ablenkungen aktiviert — widerstehe den Versuchungen!'
+                         : 'Distractions enabled — resist the temptations!')
+        : (lang === 'de' ? 'Ablenkungen deaktiviert' : 'Distractions disabled');
+      toastStart = Date.now();
+      playTingsha();
+      return;
+    }
+    if (_hitC(menuButtons.gkLink)) {
+      window.open('https://gefuehlskompass.vercel.app/de', '_blank');
+      return;
+    }
+    if (_hitC(menuButtons.link)) {
+      window.open('https://jochenhornung.de', '_blank');
+      return;
+    }
     handleMenuClick(cx, cy);
   } else if (state === 'done') {
     if (donateHitArea) {
@@ -3068,6 +3070,7 @@ canvas.addEventListener('click', (e) => {
 
 canvas.addEventListener('touchend', (e) => {
   e.preventDefault(); // verhindert synthetischen Click (Double-Firing)
+  lastTouchEndTime = Date.now();
   ensureSound();
   // Zurück-Button (ready/shaking/meditating)
   if (backBtnArea && state !== 'idle' && state !== 'done' && e.changedTouches.length > 0) {
