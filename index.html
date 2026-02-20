@@ -443,6 +443,16 @@ let menuButtons = {};
 let menuTouchDist = 0;
 let menuContentHeight = 0; // Gesamte Menü-Inhaltshöhe für native Scrolling
 
+// Horizontales Scroll-Karussell für Mobile Menü-Buttons
+const menuScrollOffsets = {}; // Key = collapseKey, Value = px-Offset
+let menuScrollActive = null;  // Welche Row wird gerade geswipet
+let menuScrollStartX = 0;     // Touch-Start X (clientX)
+let menuScrollStartOff = 0;   // Offset bei Touch-Start
+let menuScrollVelocity = 0;   // Für Momentum-Scrolling
+let menuScrollLastX = 0;      // Letzter Touch-X für Velocity
+let menuScrollLastTime = 0;   // Letzter Touch-Zeitpunkt
+let menuScrollRowAreas = {};  // Key = collapseKey, Value = {x, y, w, h, maxOffset}
+
 // --- Legal Overlay (Impressum/Datenschutz/About/Menu) ---
 let legalOverlay = null; // 'menu' | 'about' | 'impressum' | 'datenschutz' | null
 // Ausklappbare Menü-Sektionen (true = offen)
@@ -579,6 +589,8 @@ jochenhornung.de`;
 
 const BOOK_RECOMMENDATIONS = [
   { author: 'Thomas Metzinger', title: 'Der Ego-Tunnel', titleEN: 'The Ego Tunnel', asin: '3827006309' },
+  { author: 'Thomas Metzinger', title: 'Being No One', titleEN: 'Being No One', asin: '0262633086' },
+  { author: 'Thomas Metzinger', title: 'Der Elefant und die Blinden', titleEN: 'The Elephant and the Blind', asin: '3827014875' },
   { author: 'Eckhart Tolle', title: 'Jetzt! Die Kraft der Gegenwart', titleEN: 'The Power of Now', asin: '3899013018' },
   { author: 'Sam Harris', title: 'Waking Up', titleEN: 'Waking Up', asin: '1451636024' },
   { author: 'Jon Kabat-Zinn', title: 'Gesund durch Meditation', titleEN: 'Full Catastrophe Living', asin: '3426878372' },
@@ -596,11 +608,11 @@ BOOK_RECOMMENDATIONS.forEach(b => {
   b.coverImg.onload = () => { b.coverLoaded = true; };
 });
 
-const LITERATUR_TEXT_DE = `Literaturempfehlungen
+const LITERATUR_TEXT_DE = `1. Literaturempfehlungen
 
 Die folgenden Bücher haben die Philosophie hinter der M-Sphäre inspiriert — von Bewusstseinsforschung über Meditation bis hin zur Frage, was Realität eigentlich ist.`;
 
-const LITERATUR_TEXT_EN = `Book Recommendations
+const LITERATUR_TEXT_EN = `1. Book Recommendations
 
 The following books inspired the philosophy behind M-Sphere — from consciousness research to meditation to the question of what reality actually is.`;
 
@@ -833,9 +845,39 @@ function onTouchMove(e) {
     return;
   }
   if (state === 'idle') {
-    // Native Scrolling übernimmt. Nur Touch-Distanz für Tap-Erkennung tracken.
     const t = e.touches[0];
     const [tx, ty] = canvasCoords(t.clientX, t.clientY);
+    // Horizontales Karussell-Scrolling
+    if (menuScrollActive) {
+      const area = menuScrollRowAreas[menuScrollActive];
+      if (area) {
+        // clientX-basiertes Delta (nicht canvasCoords, da clientX stabiler für Pixel-Scrolling)
+        const deltaClientX = t.clientX - menuScrollStartX;
+        // Canvas-Skalierung: clientX zu Canvas-Pixel umrechnen
+        const rect = canvas.getBoundingClientRect();
+        const scale = cW / rect.width;
+        const deltaX = deltaClientX * scale;
+        let newOff = menuScrollStartOff - deltaX;
+        // Bounce-Back: Überdehnung mit Dämpfung
+        if (newOff < 0) newOff *= 0.3;
+        else if (newOff > area.maxOffset) newOff = area.maxOffset + (newOff - area.maxOffset) * 0.3;
+        menuScrollOffsets[menuScrollActive] = newOff;
+        // Velocity tracken
+        const now = Date.now();
+        const dt = now - menuScrollLastTime;
+        if (dt > 0) {
+          menuScrollVelocity = (t.clientX - menuScrollLastX) * scale / dt * 16; // px/frame
+        }
+        menuScrollLastX = t.clientX;
+        menuScrollLastTime = now;
+        // Inkrementelle Distanz für Tap-Erkennung (vom letzten Touch, nicht vom Start)
+        menuTouchDist += Math.abs(tx - lastTouchX) + Math.abs(ty - lastTouchY);
+        lastTouchX = tx; lastTouchY = ty;
+        e.preventDefault(); // Vertikales Scrollen blocken bei horizontalem Swipe
+        return;
+      }
+    }
+    // Native Scrolling übernimmt. Nur Touch-Distanz für Tap-Erkennung tracken.
     menuTouchDist += Math.abs(ty - lastTouchY);
     lastTouchX = tx; lastTouchY = ty;
     return; // Kein preventDefault → natives Scrolling läuft weiter
@@ -864,6 +906,20 @@ function onTouchStart(e) {
     menuTouchDist = 0;
     titleTouchStartX = tx;
     titleTouchStartY = ty;
+    // Horizontales Karussell: Prüfen ob Touch in einer scrollbaren Row liegt
+    menuScrollActive = null;
+    menuScrollVelocity = 0;
+    const sy = ty + (window.scrollY || 0);
+    for (const [key, area] of Object.entries(menuScrollRowAreas)) {
+      if (area && tx >= area.x && tx <= area.x + area.w && sy >= area.y && sy <= area.y + area.h && area.maxOffset > 0) {
+        menuScrollActive = key;
+        menuScrollStartX = t.clientX;
+        menuScrollStartOff = menuScrollOffsets[key] || 0;
+        menuScrollLastX = t.clientX;
+        menuScrollLastTime = Date.now();
+        break;
+      }
+    }
   }
 }
 
@@ -2198,6 +2254,79 @@ function drawMenu() {
 
     const btns = [];
     const maxRowW = W * 0.92;
+
+    // Mobile Karussell: Horizontal scrollbar wenn Buttons breiter als Viewport
+    const useCarousel = isMobilePortrait && collapseKey && !isCollapsed && totalW > maxRowW;
+
+    if (useCarousel) {
+      // Initialisiere Scroll-Offset falls noch nicht vorhanden
+      if (menuScrollOffsets[collapseKey] === undefined) menuScrollOffsets[collapseKey] = 0;
+      const scrollOff = menuScrollOffsets[collapseKey];
+      const clipX = cx - maxRowW / 2;
+      const clipW = maxRowW;
+      const maxOffset = Math.max(0, totalW - clipW);
+      const fadeW = 20;
+
+      // Speichere Row-Area für Touch-Detection
+      menuScrollRowAreas[collapseKey] = { x: clipX, y: rowY, w: clipW, h: rBtnH + btnGap, maxOffset };
+
+      // Clipping für horizontales Scrolling
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(clipX, rowY - 2, clipW, rBtnH + 4);
+      ctx.clip();
+
+      // Alle Buttons in EINE Zeile, versetzt um scrollOff
+      let rx = clipX - scrollOff;
+      for (let i = 0; i < options.length; i++) {
+        const sel = i === selectedIdx;
+        const w = widths[i];
+        // Hit-Area speichern (mit tatsächlicher Screen-Position)
+        btns.push({ x: rx, y: rowY, w, h: rBtnH, idx: i });
+        ctx.beginPath();
+        ctx.roundRect(rx, rowY, w, rBtnH, rBtnH * 0.25);
+        if (sel) {
+          ctx.fillStyle = btnSelFill;
+          ctx.fill();
+          ctx.strokeStyle = btnSelStroke;
+          ctx.lineWidth = 2;
+        } else {
+          ctx.fillStyle = btnUnselFill;
+          ctx.fill();
+          ctx.strokeStyle = btnUnselStroke;
+          ctx.lineWidth = 1.5;
+        }
+        ctx.stroke();
+        ctx.fillStyle = sel ? '#2abfbf' : btnTextDim;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(options[i], rx + w / 2, rowY + rBtnH / 2);
+        rx += w + btnGap;
+      }
+      ctx.restore();
+
+      // Fade-Indikatoren an den Rändern
+      if (scrollOff > 1) {
+        // Linker Fade
+        const grdL = ctx.createLinearGradient(clipX, 0, clipX + fadeW, 0);
+        grdL.addColorStop(0, 'rgba(10, 22, 40, 0.85)');
+        grdL.addColorStop(1, 'rgba(10, 22, 40, 0)');
+        ctx.fillStyle = grdL;
+        ctx.fillRect(clipX, rowY - 2, fadeW, rBtnH + 4);
+      }
+      if (scrollOff < maxOffset - 1) {
+        // Rechter Fade
+        const grdR = ctx.createLinearGradient(clipX + clipW - fadeW, 0, clipX + clipW, 0);
+        grdR.addColorStop(0, 'rgba(10, 22, 40, 0)');
+        grdR.addColorStop(1, 'rgba(10, 22, 40, 0.85)');
+        ctx.fillStyle = grdR;
+        ctx.fillRect(clipX + clipW - fadeW, rowY - 2, fadeW, rBtnH + 4);
+      }
+
+      return { btns, bottomY: rowY + rBtnH + btnGap * 0.5 };
+    }
+
+    // Desktop / Nicht-scrollbar: normales Wrapping
     const lines = [[]];
     let lineW = 0;
     for (let i = 0; i < options.length; i++) {
@@ -2383,6 +2512,7 @@ function drawMenu() {
 
   // --- ATMEN ---
   menuToggleAreas = {};
+  menuScrollRowAreas = {};
   const breathLabels = lang === 'de' ? BREATHING_MODES : [t('aus'), 'Coherent', 'Calming 4:6', '4-7-8', 'Box 4-4-4-4'];
   const breathRow = drawSettingsRow(t('atemrhythmus'), breathLabels, breathingMode, curY, null, 'breathing');
   menuButtons.breathing = breathRow.btns;
@@ -2976,7 +3106,8 @@ function drawLegalOverlay() {
   if (legalOverlay === 'menu') {
     burgerMenuItems = [];
     legalBackBtn = null;
-    const itemFont = Math.max(16, Math.min(W, H) * (isMob ? 0.045 : 0.028));
+    const itemFont = Math.max(14, Math.min(W, H) * (isMob ? 0.045 : 0.018));
+    const sansFont = '-apple-system, "SF Pro Display", "Helvetica Neue", sans-serif';
     const items = [
       { label: t('ueberMSphere'), target: 'about' },
       { label: t('literatur'), target: 'literatur' },
@@ -2984,41 +3115,82 @@ function drawLegalOverlay() {
       { label: t('impressum'), target: 'impressum' },
       { label: t('datenschutz'), target: 'datenschutz' }
     ];
-    const itemH = itemFont * 3;
-    const totalH = items.length * itemH;
+    const itemH = itemFont * 2.4;
+    const gap = itemFont * 0.6;
+    const cardW = isMob ? W * 0.75 : Math.min(380, W * 0.4);
+    const cardX = (W - cardW) / 2;
+    const padX = itemFont * 0.8;
+    const titleFontSize = itemFont * 1.1;
+    const titleH = titleFontSize * 2.2;
+    const totalH = titleH + items.length * itemH + (items.length - 1) * gap;
     const startY = (H - totalH) / 2;
 
-    ctx.font = `${itemFont}px "Courier New", monospace`;
+    // M-SPHERE Titel oben im Menü
+    ctx.save();
+    ctx.font = `600 ${titleFontSize}px ${sansFont}`;
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(42, 191, 191, 0.4)';
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = 'rgba(42, 191, 191, 0.7)';
+    ctx.fillText('M-SPHERE', W / 2, startY + titleFontSize * 0.9);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    ctx.font = `500 ${itemFont}px ${sansFont}`;
     ctx.textBaseline = 'middle';
 
     for (let i = 0; i < items.length; i++) {
-      const iy = startY + i * itemH;
-      const itemArea = { x: W * 0.1, y: iy, w: W * 0.8, h: itemH, target: items[i].target };
+      const iy = startY + titleH + i * (itemH + gap);
+      const itemArea = { x: cardX, y: iy, w: cardW, h: itemH, target: items[i].target };
       burgerMenuItems.push(itemArea);
 
-      // Hover-Highlight-Linie (subtil)
-      ctx.strokeStyle = 'rgba(42, 191, 191, 0.15)';
-      ctx.lineWidth = 1;
+      // Hover-Detection (nur Desktop)
+      const isHover = !isMob &&
+        hoverMouseX >= cardX && hoverMouseX <= cardX + cardW &&
+        hoverMouseY >= iy && hoverMouseY <= iy + itemH;
+
+      // Karten-Hintergrund
+      const cornerR = itemH * 0.25;
       ctx.beginPath();
-      ctx.moveTo(W * 0.2, iy + itemH - 1);
-      ctx.lineTo(W * 0.8, iy + itemH - 1);
-      ctx.stroke();
+      ctx.roundRect(cardX, iy, cardW, itemH, cornerR);
+      if (isHover) {
+        ctx.fillStyle = 'rgba(42, 191, 191, 0.12)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(42, 191, 191, 0.5)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        // Subtiler Glow
+        ctx.save();
+        ctx.shadowColor = 'rgba(42, 191, 191, 0.25)';
+        ctx.shadowBlur = 8;
+        ctx.strokeStyle = 'rgba(42, 191, 191, 0.3)';
+        ctx.stroke();
+        ctx.restore();
+      } else {
+        ctx.fillStyle = 'rgba(26, 58, 92, 0.3)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(42, 191, 191, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
 
-      // Label
-      ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
-      ctx.fillText(items[i].label, W / 2 - itemFont * 0.5, iy + itemH / 2);
+      // Label linksbündig
+      ctx.textAlign = 'left';
+      ctx.fillStyle = isHover ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.9)';
+      ctx.fillText(items[i].label, cardX + padX, iy + itemH / 2);
 
-      // Arrow →
-      ctx.fillStyle = 'rgba(42, 191, 191, 0.4)';
-      const arrowX = W / 2 + ctx.measureText(items[i].label).width / 2 + itemFont * 0.6;
-      ctx.fillText('→', arrowX, iy + itemH / 2);
+      // Chevron › rechtsbündig
+      ctx.textAlign = 'right';
+      ctx.fillStyle = isHover ? 'rgba(42, 191, 191, 0.7)' : 'rgba(42, 191, 191, 0.35)';
+      ctx.fillText('›', cardX + cardW - padX, iy + itemH / 2);
     }
 
     // Versionsnummer unten
-    ctx.fillStyle = 'rgba(240, 236, 230, 0.2)';
-    ctx.font = `${itemFont * 0.6}px "Courier New", monospace`;
-    ctx.fillText('v1.5', W / 2, startY + totalH + itemFont * 1.5);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(240, 236, 230, 0.15)';
+    ctx.font = `400 ${itemFont * 0.65}px ${sansFont}`;
+    ctx.fillText('v1.5', W / 2, startY + totalH + itemFont * 1.8);
 
     ctx.textAlign = 'start';
     ctx.textBaseline = 'alphabetic';
@@ -3091,7 +3263,7 @@ function drawLegalOverlay() {
   const cardTextW = maxTextWidth - coverW - fontSize * 0.8;
   const bookCardH = isLiteratur ? coverH + cardGap : 0;
   const introTextH = wrappedLines.length * lineHeight + fontSize;
-  const totalTextHeight = introTextH + (isLiteratur ? BOOK_RECOMMENDATIONS.length * bookCardH + fontSize : 0);
+  const totalTextHeight = introTextH + (isLiteratur ? BOOK_RECOMMENDATIONS.length * bookCardH + fontSize * 2.5 : 0);
   const maxScroll = Math.max(0, totalTextHeight - contentHeight);
   legalScrollY = Math.max(0, Math.min(legalScrollY, maxScroll));
 
@@ -3117,7 +3289,7 @@ function drawLegalOverlay() {
 
   // Literatur: Buchkarten mit Cover-Bildern
   if (isLiteratur) {
-    y += fontSize * 0.5;
+    y += fontSize * 2.0;
     for (const book of BOOK_RECOMMENDATIONS) {
       const cardTop = y;
       if (cardTop + bookCardH > contentTop && cardTop < contentTop + contentHeight) {
@@ -3573,6 +3745,39 @@ canvas.addEventListener('touchend', (e) => {
     }
   }
   if (state === 'idle' && e.changedTouches.length > 0) {
+    // Horizontales Karussell: Momentum starten und Swipe-Tap unterscheiden
+    if (menuScrollActive) {
+      const key = menuScrollActive;
+      const area = menuScrollRowAreas[key];
+      menuScrollActive = null;
+      if (area) {
+        // Momentum-Animation starten
+        const vel = menuScrollVelocity;
+        if (Math.abs(vel) > 0.5) {
+          let momentum = vel;
+          const animateMomentum = () => {
+            if (menuScrollActive) return; // Neuer Touch unterbrochen
+            const off = menuScrollOffsets[key] || 0;
+            let newOff = off - momentum;
+            momentum *= 0.92; // Deceleration
+            // Bounds clamping
+            if (newOff < 0) { newOff = 0; momentum = 0; }
+            else if (newOff > area.maxOffset) { newOff = area.maxOffset; momentum = 0; }
+            menuScrollOffsets[key] = newOff;
+            if (Math.abs(momentum) > 0.3) requestAnimationFrame(animateMomentum);
+          };
+          requestAnimationFrame(animateMomentum);
+        } else {
+          // Snap to bounds (Bounce-Back)
+          let off = menuScrollOffsets[key] || 0;
+          if (off < 0) menuScrollOffsets[key] = 0;
+          else if (off > area.maxOffset) menuScrollOffsets[key] = area.maxOffset;
+        }
+      }
+      menuScrollVelocity = 0;
+      // Bei zu viel Scroll-Bewegung: kein Button-Tap
+      if (menuTouchDist > 10) return;
+    }
     // Swipe-left über Titel → Levi Easter Egg
     const ttl = menuButtons.title;
     if (ttl && titleTouchStartX > 0) {
