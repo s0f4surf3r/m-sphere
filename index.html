@@ -110,25 +110,6 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
       font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">Abbrechen</button>
   </div>
 </div>
-<div id="customFlowOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,22,40,0.92);
-  align-items:center;justify-content:center;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">
-  <div style="background:#1a2a3c;border-radius:16px;padding:32px 28px;max-width:300px;width:85%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
-    <div style="color:rgba(240,236,230,0.7);font-size:14px;margin-bottom:20px;font-family:'Courier New',monospace">GEDANKENFLUSS</div>
-    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:24px">
-      <input id="customFlowInput" type="number" min="0.1" max="10" value="1" step="0.1"
-        style="width:80px;padding:10px;font-size:28px;font-weight:300;text-align:center;background:rgba(42,191,191,0.08);
-        border:1px solid rgba(42,191,191,0.4);border-radius:10px;color:#f0ece6;outline:none;
-        font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif;-moz-appearance:textfield">
-      <span style="color:rgba(240,236,230,0.5);font-size:16px;font-family:'Courier New',monospace">x</span>
-    </div>
-    <button id="customFlowOk" style="display:block;width:100%;padding:10px 0;margin-bottom:10px;background:rgba(42,191,191,0.15);
-      border:1px solid rgba(42,191,191,0.5);color:rgba(42,191,191,0.95);border-radius:8px;font-size:15px;cursor:pointer;
-      font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">OK</button>
-    <button id="customFlowCancel" style="display:block;width:100%;padding:8px 0;background:none;
-      border:1px solid rgba(240,236,230,0.2);color:rgba(240,236,230,0.6);border-radius:8px;font-size:14px;cursor:pointer;
-      font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">Abbrechen</button>
-  </div>
-</div>
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -452,12 +433,7 @@ const FLOW_VALUES = [0.5, 1, 2, 3, 4, 5];
 const FLOW_VISIBLE = [0, 1, 2, 3]; // Indices: 0.5x, 1x, 2x, 3x
 const _flowStored = localStorage.getItem('msphere_flow');
 let flowLevelIdx = _flowStored !== null ? parseInt(_flowStored) : 1;
-if (flowLevelIdx > 3 && flowLevelIdx !== 99) flowLevelIdx = 3; // Migration: 4x/5x → 3x (99=custom bleibt)
-let customFlowValue = parseFloat(localStorage.getItem('msphere_flow_custom')) || 0;
-function getFlowValue() {
-  if (flowLevelIdx === 99 && customFlowValue > 0) return customFlowValue;
-  return FLOW_VALUES[flowLevelIdx] || 1;
-}
+if (flowLevelIdx > 3) flowLevelIdx = 3; // Migration: 4x/5x → 3x
 
 // Mönch-Schrumpfen: immer aktiv
 const shrinkModeIdx = 1;
@@ -510,68 +486,6 @@ let menuScrollVelocity = 0;   // Für Momentum-Scrolling
 let menuScrollLastX = 0;      // Letzter Touch-X für Velocity
 let menuScrollLastTime = 0;   // Letzter Touch-Zeitpunkt
 let menuScrollRowAreas = {};  // Key = collapseKey, Value = {x, y, w, h, maxOffset}
-
-// --- Settings-Dials State ---
-const settingsDials = {};  // key → { pos, vel, active, startX, lastX, startTime, hitArea, numItems }
-let activeSettingsDial = null;
-
-function ensureSettingsDial(key, numItems, currentVisibleIdx) {
-  if (!settingsDials[key] || settingsDials[key].numItems !== numItems) {
-    settingsDials[key] = {
-      pos: Math.max(0, Math.min(numItems - 1, currentVisibleIdx >= 0 ? currentVisibleIdx : 0)),
-      vel: 0, active: false, startX: 0, startY: 0, lastX: 0, startTime: 0, hitArea: null, numItems: numItems
-    };
-  } else {
-    const dial = settingsDials[key];
-    if (!dial.active && dial.vel === 0 && currentVisibleIdx >= 0) {
-      if (Math.abs(dial.pos - currentVisibleIdx) > 0.5) {
-        dial.pos = currentVisibleIdx;
-      }
-    }
-  }
-}
-
-function applyDialSelection(key, visibleIdx, isFinal) {
-  if (key === 'flowLevel') {
-    if (visibleIdx >= FLOW_VISIBLE.length) {
-      flowLevelIdx = 99;
-      localStorage.setItem('msphere_flow', 99);
-    } else {
-      flowLevelIdx = FLOW_VISIBLE[visibleIdx];
-      localStorage.setItem('msphere_flow', flowLevelIdx);
-    }
-  }
-}
-
-function snapSettingsDial(key) {
-  const dial = settingsDials[key];
-  if (!dial) return;
-  const numItems = dial.numItems;
-  const snap = () => {
-    if (dial.active) return;
-    dial.pos += dial.vel;
-    dial.vel *= 0.88;
-    dial.pos = Math.max(-0.3, Math.min(numItems - 0.7, dial.pos));
-    const nearest = Math.round(dial.pos);
-    const snapForce = (nearest - dial.pos) * 0.15;
-    dial.pos += snapForce;
-    dial.vel += snapForce * 0.5;
-    const settled = !(Math.abs(dial.vel) > 0.005 || Math.abs(dial.pos - nearest) > 0.01);
-    if (!settled) {
-      requestAnimationFrame(snap);
-    } else {
-      dial.pos = nearest;
-      dial.vel = 0;
-      // Flow custom: Overlay öffnen wenn auf ✎-Position gelangt
-      if (key === 'flowLevel' && nearest >= FLOW_VISIBLE.length) {
-        setTimeout(() => showCustomFlowInput(), 120);
-      }
-    }
-    const snapped = Math.max(0, Math.min(numItems - 1, Math.round(dial.pos)));
-    applyDialSelection(key, snapped, settled);
-  };
-  requestAnimationFrame(snap);
-}
 
 // --- Legal Overlay (Impressum/Datenschutz/About/Menu) ---
 let legalOverlay = null; // 'menu' | 'about' | 'impressum' | 'datenschutz' | null
@@ -900,17 +814,6 @@ function onMouseMove(e) {
     dialTouchLastX = mx;
     return;
   }
-  // Settings-Dials: Mouse-Drag
-  if (activeSettingsDial) {
-    const dial = settingsDials[activeSettingsDial];
-    const dx = mx - dial.lastX;
-    const itemSpacing = dial.spacing || ((cW < 600 && cH > cW) ? cW * 0.22 : Math.min(450, cW * 0.4) * 0.2);
-    dial.pos -= dx / itemSpacing;
-    dial.pos = Math.max(-0.4, Math.min(dial.numItems - 0.6, dial.pos));
-    dial.vel = -dx / itemSpacing;
-    dial.lastX = mx;
-    return;
-  }
   if (!mouseDown) {
     lastMouseX = mx;
     lastMouseY = my;
@@ -956,17 +859,6 @@ function onMouseMove(e) {
         const d = dialHitArea;
         overDial = mx >= d.x && mx <= d.x + d.w && sy >= d.y && sy <= d.y + d.h;
       }
-      // Settings-Dials Hover
-      if (!overDial) {
-        for (const [key, dial] of Object.entries(settingsDials)) {
-          if (dial.hitArea && menuExpanded[key]) {
-            const d = dial.hitArea;
-            if (mx >= d.x && mx <= d.x + d.w && sy >= d.y && sy <= d.y + d.h) {
-              overDial = true; break;
-            }
-          }
-        }
-      }
       canvas.style.cursor = overDial ? 'grab' : (overLink || hoverSection || overStart || overLotus || overTimeBtn || overGk) ? 'pointer' : 'default';
     }
     return;
@@ -993,22 +885,6 @@ canvas.addEventListener('mousedown', (e) => {
       dialTouchStartTime = Date.now();
       dialVel = 0;
       return;
-    }
-  }
-  // Settings-Dials: Mouse-Drag starten
-  if (state === 'idle') {
-    const sy = my + (window.scrollY || 0);
-    for (const [key, dial] of Object.entries(settingsDials)) {
-      if (dial.hitArea && menuExpanded[key]) {
-        const d = dial.hitArea;
-        if (mx >= d.x && mx <= d.x + d.w && sy >= d.y && sy <= d.y + d.h) {
-          activeSettingsDial = key;
-          dial.active = true;
-          dial.startX = mx; dial.lastX = mx;
-          dial.startTime = Date.now(); dial.vel = 0;
-          return;
-        }
-      }
     }
   }
   // Im idle-State: Maus-Schütteln blockiert
@@ -1046,13 +922,6 @@ window.addEventListener('mouseup', (e) => {
     };
     requestAnimationFrame(snapDial);
   }
-  // Settings-Dials: Mouse-Drag beenden → Snap
-  if (activeSettingsDial) {
-    const key = activeSettingsDial;
-    settingsDials[key].active = false;
-    activeSettingsDial = null;
-    snapSettingsDial(key);
-  }
 });
 canvas.addEventListener('dragstart', (e) => e.preventDefault());
 canvas.addEventListener('selectstart', (e) => e.preventDefault());
@@ -1082,41 +951,6 @@ function onTouchMove(e) {
       dialTouchLastX = tx;
       e.preventDefault();
       return;
-    }
-    // Settings-Dials: Touch-Move (mit Gesture-Discriminator)
-    if (activeSettingsDial) {
-      const dial = settingsDials[activeSettingsDial];
-      if (!dial.active) {
-        // Pending: Richtung bestimmen (horizontal = Dial, vertikal = Scroll)
-        const hDist = Math.abs(tx - dial.startX);
-        const vDist = Math.abs(ty - (dial.startY || dial.startX));
-        if (hDist > 8 && hDist > vDist) {
-          // Horizontal dominant → Dial-Drag aktivieren
-          dial.active = true;
-          dial.lastX = tx;
-          e.preventDefault();
-          return;
-        } else if (vDist > 5) {
-          // Vertikal dominant → Scrolling erlauben, Dial abbrechen
-          activeSettingsDial = null;
-          // Fall through to native scrolling
-        } else {
-          // Noch zu wenig Bewegung — weiter warten
-          menuTouchDist += Math.abs(ty - lastTouchY);
-          lastTouchX = tx; lastTouchY = ty;
-          return;
-        }
-      } else {
-        // Aktiver Drag
-        const dx = tx - dial.lastX;
-        const itemSpacing = dial.spacing || cW * 0.22;
-        dial.pos -= dx / itemSpacing;
-        dial.pos = Math.max(-0.4, Math.min(dial.numItems - 0.6, dial.pos));
-        dial.vel = -dx / itemSpacing;
-        dial.lastX = tx;
-        e.preventDefault();
-        return;
-      }
     }
     // Horizontales Karussell-Scrolling
     if (menuScrollActive) {
@@ -1185,24 +1019,6 @@ function onTouchStart(e) {
         dialVel = 0;
         e.preventDefault();
         return;
-      }
-    }
-    // Settings-Dials: Touch-Start prüfen (pending — wartet auf Richtungserkennung)
-    {
-      const sy = ty + (window.scrollY || 0);
-      for (const [key, dial] of Object.entries(settingsDials)) {
-        if (dial.hitArea && menuExpanded[key]) {
-          const d = dial.hitArea;
-          if (tx >= d.x && tx <= d.x + d.w && sy >= d.y && sy <= d.y + d.h) {
-            activeSettingsDial = key;
-            dial.active = false; // Pending — noch kein Drag, wartet auf Richtung
-            dial.startX = tx; dial.lastX = tx;
-            dial.startY = ty;
-            dial.startTime = Date.now(); dial.vel = 0;
-            // KEIN e.preventDefault() — natives Scrolling noch erlaubt
-            return;
-          }
-        }
       }
     }
     // Horizontales Karussell: Prüfen ob Touch in einer scrollbaren Row liegt
@@ -2042,7 +1858,7 @@ function spawnParticle(cx, cy, r) {
   const headY = cy - r * 0.28; // Oberkopf / Scheitel des Mönchs
   const bodyY = cy + r * 0.05; // Körpermitte
   const angle = Math.random() * Math.PI * 2;
-  const flow = getFlowValue();
+  const flow = FLOW_VALUES[flowLevelIdx];
   const speed = (1.5 + Math.random() * 3 * shakeIntensity) * (1 + (flow - 1) * 0.15);
 
   let spawnX, spawnY;
@@ -2083,7 +1899,7 @@ function updateParticles(cx, cy, r) {
       p.vx *= Math.pow(frict, lowFpsDt);
       p.vy *= Math.pow(frict, lowFpsDt);
       // Brownsche Bewegung wird mit der Zeit ruhiger
-      const brownStr = 0.15 * calm * (1 + (getFlowValue() - 1) * 0.25);
+      const brownStr = 0.15 * calm * (1 + (FLOW_VALUES[flowLevelIdx] - 1) * 0.25);
       p.vx += (Math.random() - 0.5) * brownStr * lowFpsDt;
       p.vy += (Math.random() - 0.5) * brownStr * lowFpsDt;
       // Schweben mit Sog: Sanfter Sog zum Mönch-Zentrum — Partikel rücken nach wenn er schrumpft (NICHT für idx=6)
@@ -2695,168 +2511,6 @@ function drawMenu() {
     return { btns, bottomY: curRowY - btnGap * 0.5 };
   }
 
-  // --- Settings-Dial Funktion (ersetzt drawSettingsRow) ---
-  function drawSettingsDial(label, options, key, y, labelColor, currentIdx) {
-    const labelFont = rowFont;
-    const lineH = labelFont * 2;
-
-    ensureSettingsDial(key, options.length, currentIdx);
-    const dial = settingsDials[key];
-
-    ctx.font = `${labelFont}px "Courier New", monospace`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-
-    if (!menuExpanded[key]) {
-      // --- COLLAPSED: Label + ▶ ---
-      const arrowSize = labelFont * 1.2;
-      const isHovered = hoverSection === key;
-      ctx.fillStyle = labelColor || (isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.95)');
-      ctx.textBaseline = 'middle';
-      const labelW = ctx.measureText(label).width;
-      const gap = labelFont * 0.6;
-      const totalW = labelW + gap + arrowSize;
-      const startX = cx - totalW / 2;
-      ctx.textAlign = 'left';
-      ctx.fillText(label, startX, y + lineH / 2);
-      if (isHovered) {
-        const underY = y + lineH / 2 + labelFont * 0.7;
-        ctx.beginPath();
-        ctx.moveTo(startX, underY);
-        ctx.lineTo(startX + labelW, underY);
-        ctx.strokeStyle = 'rgba(42, 191, 191, 0.6)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
-      ctx.fillStyle = isHovered ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.7)';
-      const ax = startX + labelW + gap;
-      const ay = y + lineH / 2;
-      ctx.beginPath();
-      ctx.moveTo(ax, ay - arrowSize * 0.4);
-      ctx.lineTo(ax + arrowSize * 0.6, ay);
-      ctx.lineTo(ax, ay + arrowSize * 0.4);
-      ctx.closePath();
-      ctx.fill();
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      const hitPad = labelFont * 1.5;
-      menuToggleAreas[key] = { x: startX - hitPad, y: y, w: totalW + hitPad * 2, h: lineH };
-      dial.hitArea = null; // Kein Dial sichtbar wenn collapsed
-      return { bottomY: y + lineH };
-    }
-
-    // --- EXPANDED: Label + ▼ + Dial ---
-    const arrowSize = labelFont * 1.2;
-    const isHovered = hoverSection === key;
-    ctx.fillStyle = labelColor || (isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.95)');
-    ctx.textBaseline = 'middle';
-    const labelW = ctx.measureText(label).width;
-    const gapH = labelFont * 0.6;
-    const totalW = labelW + gapH + arrowSize;
-    const startX = cx - totalW / 2;
-    ctx.textAlign = 'left';
-    ctx.fillText(label, startX, y + lineH / 2);
-    if (isHovered) {
-      const underY = y + lineH / 2 + labelFont * 0.7;
-      ctx.beginPath();
-      ctx.moveTo(startX, underY);
-      ctx.lineTo(startX + labelW, underY);
-      ctx.strokeStyle = 'rgba(42, 191, 191, 0.6)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
-    ctx.fillStyle = isHovered ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.9)';
-    const ax = startX + labelW + gapH + arrowSize * 0.3;
-    const ay = y + lineH / 2;
-    ctx.beginPath();
-    ctx.moveTo(ax - arrowSize * 0.4, ay - arrowSize * 0.25);
-    ctx.lineTo(ax + arrowSize * 0.4, ay - arrowSize * 0.25);
-    ctx.lineTo(ax, ay + arrowSize * 0.35);
-    ctx.closePath();
-    ctx.fill();
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    const hitPad = labelFont * 1.5;
-    menuToggleAreas[key] = { x: startX - hitPad, y: y, w: totalW + hitPad * 2, h: lineH };
-
-    // --- Dial (schlank wie Buttons) ---
-    const sdH = btnH * 0.9;
-    const sdW = isMobilePortrait ? W * 0.85 : Math.min(450, W * 0.4);
-    const sdX = (W - sdW) / 2;
-    const sdCx = cx;
-    const sdY = y + lineH + btnGap * 0.5;
-    const sdCy = sdY + sdH / 2;
-    // Spacing basierend auf breitestem Label (dynamisch)
-    const sdTextFont = sdH * 0.5;
-    ctx.font = `700 ${sdTextFont}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
-    let maxLabelW = 0;
-    for (let i = 0; i < options.length; i++) {
-      maxLabelW = Math.max(maxLabelW, ctx.measureText(options[i]).width);
-    }
-    const sdSpacing = Math.max(isMobilePortrait ? W * 0.18 : sdW * 0.16, maxLabelW + sdTextFont * 0.6);
-
-    dial.hitArea = { x: sdX, y: sdY, w: sdW, h: sdH };
-    dial.spacing = sdSpacing; // Für Touch/Mouse-Move
-
-    // Background track
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(sdX, sdY, sdW, sdH, sdH * 0.35);
-    ctx.fillStyle = 'rgba(26, 58, 92, 0.25)';
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(42, 191, 191, 0.3)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Clip
-    ctx.beginPath();
-    ctx.roundRect(sdX, sdY, sdW, sdH, sdH * 0.35);
-    ctx.clip();
-
-    // Draw items
-    const textFont = sdH * 0.5;
-    ctx.textBaseline = 'middle';
-
-    for (let i = 0; i < options.length; i++) {
-      const offset = i - dial.pos;
-      const px = sdCx + offset * sdSpacing;
-      if (px < sdX - sdSpacing * 1.5 || px > sdX + sdW + sdSpacing * 1.5) continue;
-
-      const dist = Math.abs(offset);
-      const isSel = dist < 0.5;
-      const fade = Math.max(0, 1 - dist * 0.35);
-      const scale = 1 - dist * 0.15;
-
-      ctx.textAlign = 'center';
-      const fSize = textFont * scale;
-      ctx.font = `${isSel ? '700' : '400'} ${fSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
-
-      if (isSel) {
-        ctx.shadowColor = 'rgba(42, 191, 191, 0.6)';
-        ctx.shadowBlur = 12;
-        ctx.fillStyle = `rgba(42, 191, 191, ${0.95 * fade})`;
-      } else {
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = `rgba(200, 220, 240, ${0.6 * fade})`;
-      }
-      ctx.fillText(options[i], px, sdCy);
-      ctx.shadowBlur = 0;
-    }
-
-    ctx.restore();
-
-    // Triangle marker (Teal)
-    ctx.beginPath();
-    const triSize = sdH * 0.15;
-    ctx.moveTo(sdCx - triSize, sdY - 2);
-    ctx.lineTo(sdCx + triSize, sdY - 2);
-    ctx.lineTo(sdCx, sdY + triSize * 0.7);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(42, 191, 191, 0.7)';
-    ctx.fill();
-
-    return { bottomY: sdY + sdH + btnGap };
-  }
 
   // --- MEDITATIONSZEIT ---
   {
@@ -2977,12 +2631,11 @@ function drawMenu() {
   menuButtons.thoughtMode = thoughtRow.btns;
   curY = thoughtRow.bottomY + sectionGap;
 
-  // --- GEDANKENFLUSS (4x/5x ausgeblendet) — Dreh-Rad ---
+  // --- GEDANKENFLUSS (4x/5x ausgeblendet) — Buttons ---
   const visFlowLabels = FLOW_VISIBLE.map(i => FLOW_LEVELS[i]);
-  // Custom-Eintrag: zeigt Wert oder ✎
-  visFlowLabels.push(customFlowValue > 0 ? customFlowValue + 'x' : '✎');
-  const visFlowSelectedIdx = flowLevelIdx === 99 ? FLOW_VISIBLE.length : FLOW_VISIBLE.indexOf(flowLevelIdx);
-  const flowRow = drawSettingsDial(t('gedankenfluss'), visFlowLabels, 'flowLevel', curY, null, visFlowSelectedIdx);
+  const visFlowSelectedIdx = FLOW_VISIBLE.indexOf(flowLevelIdx);
+  const flowRow = drawSettingsRow(t('gedankenfluss'), visFlowLabels, visFlowSelectedIdx, curY, null, 'flowLevel');
+  menuButtons.flowLevel = flowRow.btns;
   curY = flowRow.bottomY + sectionGap;
 
   // --- DEIN GESICHT ---
@@ -4008,7 +3661,14 @@ function handleMenuClick(x, y) {
       return true;
     }
   }
-  // (Gedankenfluss — via Settings-Dial)
+  // Gedankenfluss
+  for (const btn of menuButtons.flowLevel || []) {
+    if (hitBtn(btn)) {
+      flowLevelIdx = FLOW_VISIBLE[btn.idx];
+      localStorage.setItem('msphere_flow', flowLevelIdx);
+      return true;
+    }
+  }
   // Face Swap
   for (const btn of menuButtons.faceSwap || []) {
     if (hitBtn(btn)) {
@@ -4118,7 +3778,6 @@ let backBtnArea = null;
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (document.getElementById('customTimeOverlay').style.display !== 'none') { hideCustomTimeOverlay(); return; }
-    if (document.getElementById('customFlowOverlay').style.display !== 'none') { hideCustomFlowOverlay(); return; }
     if (document.getElementById('cameraOverlay').style.display !== 'none') { hideCameraOverlay(); faceModeIdx = 0; return; }
     if (legalOverlay) { legalOverlay = null; legalScrollY = 0; return; }
     if (state !== 'idle') returnToMenu();
@@ -4244,18 +3903,6 @@ canvas.addEventListener('touchend', (e) => {
       };
       requestAnimationFrame(snapDial);
       return;
-    }
-    // Settings-Dials: Touch-End → Snap (nur wenn aktiv gedraggt wurde)
-    if (activeSettingsDial) {
-      const key = activeSettingsDial;
-      const wasActive = settingsDials[key].active;
-      settingsDials[key].active = false;
-      activeSettingsDial = null;
-      if (wasActive) {
-        snapSettingsDial(key);
-        return;
-      }
-      // War nur pending (kein Drag) → als Tap weiterleiten (fall through)
     }
     // Horizontales Karussell: Momentum starten und Swipe-Tap unterscheiden
     if (menuScrollActive) {
@@ -5731,40 +5378,6 @@ document.getElementById('customTimeInput').addEventListener('keydown', e => {
   if (e.key === 'Escape') hideCustomTimeOverlay();
 });
 
-// Custom-Flow-Overlay Funktionen
-function showCustomFlowInput() {
-  const overlay = document.getElementById('customFlowOverlay');
-  const input = document.getElementById('customFlowInput');
-  input.value = customFlowValue > 0 ? customFlowValue : 1;
-  overlay.style.display = 'flex';
-  setTimeout(() => input.select(), 100);
-}
-function hideCustomFlowOverlay() {
-  document.getElementById('customFlowOverlay').style.display = 'none';
-}
-document.getElementById('customFlowOk').addEventListener('click', () => {
-  const val = parseFloat(document.getElementById('customFlowInput').value);
-  if (val >= 0.1 && val <= 10) {
-    customFlowValue = Math.round(val * 10) / 10; // 1 Nachkommastelle
-    localStorage.setItem('msphere_flow_custom', customFlowValue);
-    flowLevelIdx = 99;
-    localStorage.setItem('msphere_flow', 99);
-    hideCustomFlowOverlay();
-  }
-});
-document.getElementById('customFlowCancel').addEventListener('click', () => {
-  hideCustomFlowOverlay();
-  // Wenn kein Custom-Wert existiert, zurück zum ersten Preset
-  if (customFlowValue <= 0 && flowLevelIdx === 99) {
-    flowLevelIdx = 1; // 1x
-    localStorage.setItem('msphere_flow', 1);
-    if (settingsDials.flowLevel) settingsDials.flowLevel.pos = 1;
-  }
-});
-document.getElementById('customFlowInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('customFlowOk').click();
-  if (e.key === 'Escape') hideCustomFlowOverlay();
-});
 
 // Camera-Overlay Funktionen
 function showCameraOverlay() {
@@ -5996,7 +5609,7 @@ function frame() {
 
   if (shakeIntensity > 0.05) {
     const isMobShake = cW < 600 && cH > cW;
-    const flowShake = 1 + (getFlowValue() - 1) * 0.12;
+    const flowShake = 1 + (FLOW_VALUES[flowLevelIdx] - 1) * 0.12;
     offsetX += (Math.random() - 0.5) * shakeIntensity * (isMobShake ? 20 : 45) * flowShake;
     offsetY += (Math.random() - 0.5) * shakeIntensity * (isMobShake ? 12 : 30) * flowShake;
   }
@@ -6059,7 +5672,7 @@ function frame() {
   }
 
   // Partikel spawnen beim Schütteln — Gedankenfluss-Multiplikator
-  const flow = getFlowValue(); // 0.5–5
+  const flow = FLOW_VALUES[flowLevelIdx]; // 0.5–5
   const isMobParticle = cW < 600 && cH > cW;
   const maxParticles = isMobParticle ? 800 * flow : 3500 * flow;
   if (shakeIntensity > 0.05 && particles.length < maxParticles) {
