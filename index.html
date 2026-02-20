@@ -151,8 +151,8 @@ const TR = {
     abbrechen: 'Abbrechen',
     speichern: '💾 Speichern',
     weiter: 'Weiter',
-    ablenkAus: 'Ablenkungen ausblenden',
-    ablenkEin: 'Ablenkungen einblenden',
+    ablenkAus: 'Ablenkungsmenü ausblenden',
+    ablenkEin: 'Ablenkungsmenü einblenden',
     ueberMSphere: 'Die Geschichte dahinter',
     impressum: 'Impressum',
     datenschutz: 'Datenschutz',
@@ -224,8 +224,8 @@ const TR = {
     abbrechen: 'Cancel',
     speichern: '💾 Save',
     weiter: 'Continue',
-    ablenkAus: 'Hide distractions',
-    ablenkEin: 'Show distractions',
+    ablenkAus: 'Hide distraction menu',
+    ablenkEin: 'Show distraction menu',
     ueberMSphere: 'The Story Behind',
     impressum: 'Legal Notice',
     datenschutz: 'Privacy Policy',
@@ -1410,9 +1410,12 @@ function drawMenu() {
   ctx.fillText(titleText, cx, curY);
   ctx.shadowOffsetY = 0;
   ctx.shadowBlur = 0;
-  ctx.letterSpacing = '0px';
+  // Messen VOR letterSpacing-Reset (damit Breite zum gerenderten Titel passt)
   const titleMetrics = ctx.measureText(titleText);
   const titleW = titleMetrics.width;
+  const titleLeftX = cx - titleW / 2;
+  const titleRightX = cx + titleW / 2;
+  ctx.letterSpacing = '0px';
   const actualTitleH = titleMetrics.actualBoundingBoxDescent || titleSize;
   // Titel-Hit-Area für Easter Egg (Triple-Tap / Long-Press)
   menuButtons.title = { x: cx - titleW / 2, y: curY, w: titleW, h: actualTitleH };
@@ -1564,53 +1567,104 @@ function drawMenu() {
     return { btns, bottomY: curRowY - btnGap * (collapseKey ? 1.5 : 1) };
   }
 
-  // --- MEDITATIONSZEIT (⏱ | 10/20/30 | +) ---
-  const VISIBLE_DURATIONS = [2, 3, 4]; // Indices in DURATION_OPTIONS (10, 20, 30 min)
-  const isCustomTime = selectedDurationIdx >= 0 && !VISIBLE_DURATIONS.includes(selectedDurationIdx);
-  const customLabel = isCustomTime ? Math.round(meditationDuration / 60) + ' min' : '+';
-  const timeLabels = [timerVisible ? t('timerAn') : t('timerAus')];
-  timeLabels.push(...VISIBLE_DURATIONS.map(i => DURATION_OPTIONS[i].label + ' min'));
-  timeLabels.push(customLabel);
-  // Selected-Index: Timer-Toggle ist 0, Presets sind 1-3, Custom ist 4
-  const visTimeSel = isCustomTime ? VISIBLE_DURATIONS.length + 1 : (VISIBLE_DURATIONS.indexOf(selectedDurationIdx) >= 0 ? VISIBLE_DURATIONS.indexOf(selectedDurationIdx) + 1 : -1);
-  const timeLabelColor = selectedDurationIdx < 0 ? '#f4a842' : null;
-  const timeRow = drawSettingsRow(t('meditationszeit'), timeLabels, visTimeSel, curY, timeLabelColor);
-  // Erster Button = Timer-Toggle, letzer = Custom, Rest = Presets
-  const timerToggleBtn = timeRow.btns.shift();
-  const customTimeBtn = timeRow.btns.pop();
-  timeRow.btns.forEach((btn, i) => { btn.idx = VISIBLE_DURATIONS[i]; });
-  menuButtons.timer = timeRow.btns;
-  // Timer-Toggle nachfärben
-  const ttb = timerToggleBtn;
-  ctx.beginPath();
-  ctx.roundRect(ttb.x, ttb.y, ttb.w, ttb.h, ttb.h * 0.25);
-  ctx.fillStyle = timerVisible ? btnSelFill : btnUnselFill;
-  ctx.fill();
-  ctx.strokeStyle = timerVisible ? btnSelStroke : btnUnselStroke;
-  ctx.lineWidth = timerVisible ? (isMobilePortrait ? 2 : 1.5) : (isMobilePortrait ? 1.5 : 1);
-  ctx.stroke();
-  ctx.fillStyle = timerVisible ? '#2abfbf' : btnTextDim;
-  ctx.font = `${rowFont * 0.85}px "Courier New", monospace`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(timerVisible ? t('timerAn') : t('timerAus'), ttb.x + ttb.w / 2, ttb.y + ttb.h / 2);
-  menuButtons.timerToggle = { x: ttb.x, y: ttb.y, w: ttb.w, h: ttb.h };
-  // Custom-Button nachfärben
-  const ctb = customTimeBtn;
-  ctx.beginPath();
-  ctx.roundRect(ctb.x, ctb.y, ctb.w, ctb.h, ctb.h * 0.25);
-  ctx.fillStyle = isCustomTime ? btnSelFill : btnUnselFill;
-  ctx.fill();
-  ctx.strokeStyle = isCustomTime ? btnSelStroke : btnUnselStroke;
-  ctx.lineWidth = isCustomTime ? (isMobilePortrait ? 2 : 1.5) : (isMobilePortrait ? 1.5 : 1);
-  ctx.stroke();
-  ctx.fillStyle = isCustomTime ? '#2abfbf' : btnTextDim;
-  ctx.font = `${rowFont * 0.85}px "Courier New", monospace`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(customLabel, ctb.x + ctb.w / 2, ctb.y + ctb.h / 2);
-  menuButtons.customTime = { x: ctb.x, y: ctb.y, w: ctb.w, h: ctb.h };
-  curY = timeRow.bottomY + sectionGap;
+  // --- MEDITATIONSZEIT (Gold-Buttons) ---
+  {
+    const VISIBLE_DURATIONS = [2, 3, 4]; // 10, 20, 30 min
+    const isCustomTime = selectedDurationIdx >= 0 && !VISIBLE_DURATIONS.includes(selectedDurationIdx);
+    const timeItems = [
+      { label: timerVisible ? t('timerAn') : t('timerAus'), type: 'timer' },
+      ...VISIBLE_DURATIONS.map(i => ({ label: DURATION_OPTIONS[i].label, type: 'preset', idx: i })),
+      { label: isCustomTime ? '' + Math.round(meditationDuration / 60) : '+', type: 'custom' }
+    ];
+
+    // Label
+    const labelFont = rowFont;
+    const timeLabelColor = selectedDurationIdx < 0 ? '#f4a842' : null;
+    ctx.font = `${labelFont}px "Courier New", monospace`;
+    ctx.fillStyle = timeLabelColor || (isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.95)');
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(t('meditationszeit'), cx, curY);
+    curY += labelFont * 1.8;
+
+    // Buttons in einer Reihe, zentriert
+    const n = timeItems.length;
+    const tBtnH = btnH;
+    const tBtnW = btnH * 1.6;
+    const tGap = btnGap;
+    const totalW = n * tBtnW + (n - 1) * tGap;
+    let rx = cx - totalW / 2;
+
+    menuButtons.timer = [];
+    menuButtons.timerToggle = null;
+    menuButtons.customTime = null;
+
+    for (let i = 0; i < n; i++) {
+      const item = timeItems[i];
+      let sel = false;
+      if (item.type === 'preset') sel = selectedDurationIdx === item.idx;
+      if (item.type === 'custom') sel = isCustomTime;
+      if (item.type === 'timer') sel = timerVisible;
+
+      const isTimer = item.type === 'timer';
+
+      // Richtig goldene Buttons
+      if (sel && !isTimer) {
+        ctx.shadowColor = 'rgba(255, 215, 0, 0.6)';
+        ctx.shadowBlur = 20;
+      }
+
+      ctx.beginPath();
+      const cr = tBtnH * 0.25;
+      ctx.roundRect(rx, curY, tBtnW, tBtnH, cr);
+
+      if (isTimer) {
+        ctx.fillStyle = sel ? 'rgba(80, 65, 20, 0.5)' : 'rgba(40, 35, 15, 0.3)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(180, 150, 60, 0.3)';
+        ctx.lineWidth = 0.5;
+      } else if (sel) {
+        // Selektiert: sattes Gold mit Gradient
+        const grd = ctx.createLinearGradient(rx, curY, rx, curY + tBtnH);
+        grd.addColorStop(0, 'rgba(255, 225, 80, 0.45)');
+        grd.addColorStop(0.5, 'rgba(255, 200, 40, 0.35)');
+        grd.addColorStop(1, 'rgba(200, 155, 20, 0.4)');
+        ctx.fillStyle = grd;
+        ctx.fill();
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 2;
+      } else {
+        // Unselektiert: dunkles Gold
+        const grd = ctx.createLinearGradient(rx, curY, rx, curY + tBtnH);
+        grd.addColorStop(0, 'rgba(180, 150, 50, 0.2)');
+        grd.addColorStop(1, 'rgba(120, 95, 25, 0.15)');
+        ctx.fillStyle = grd;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(220, 185, 60, 0.5)';
+        ctx.lineWidth = 1;
+      }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Text
+      const fontSize = isTimer ? rowFont * 0.7 : (sel ? rowFont * 1.05 : rowFont * 0.9);
+      ctx.font = `${sel ? '700' : '400'} ${fontSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+      ctx.fillStyle = sel ? '#ffe566' : (isTimer ? 'rgba(200, 175, 100, 0.5)' : 'rgba(240, 215, 140, 0.8)');
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(item.label, rx + tBtnW / 2, curY + tBtnH / 2);
+
+      // Hit-Area
+      const hitBox = { x: rx, y: curY, w: tBtnW, h: tBtnH };
+      if (item.type === 'preset') { hitBox.idx = item.idx; menuButtons.timer.push(hitBox); }
+      else if (item.type === 'timer') menuButtons.timerToggle = hitBox;
+      else if (item.type === 'custom') menuButtons.customTime = hitBox;
+
+      rx += tBtnW + tGap;
+    }
+
+    curY += tBtnH + sectionGap;
+  }
 
   // --- ATMEN ---
   menuToggleAreas = {};
@@ -1729,7 +1783,8 @@ function drawMenu() {
   // ☰ Burger-Icon oben rechts (Screen-Space, scrollt nicht mit)
   const burgerSize = unit * (isMobilePortrait ? 0.08 : 0.04);
   const burgerPad = unit * (isMobilePortrait ? 0.04 : 0.03);
-  const burgerX = W - burgerPad - burgerSize;
+  // Desktop: Burger/Lang bündig mit Titelkanten
+  const burgerX = isMobilePortrait ? W - burgerPad - burgerSize : titleRightX - burgerSize;
   const burgerY = Math.max(burgerPad, safeTop + burgerPad * 0.5);
   burgerBtnArea = { x: burgerX, y: burgerY, w: burgerSize, h: burgerSize };
 
@@ -1753,7 +1808,7 @@ function drawMenu() {
   const langH = burgerSize * (isMobilePortrait ? 0.55 : 0.5);
   const langBtnW = langFont * 2.2;
   const langGap = langFont * 0.3;
-  const langPad = burgerPad;
+  const langPad = isMobilePortrait ? burgerPad : titleLeftX;
   const langY = burgerY + (burgerSize - langH) / 2;
   const langLabels = ['DE', 'EN'];
   const langSel = lang === 'de' ? 0 : 1;
