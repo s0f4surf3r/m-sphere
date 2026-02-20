@@ -4931,7 +4931,7 @@ function frame() {
       const tw = Math.min(maxTW, Math.max(...toastLines.map(l => ctx.measureText(l).width)) + toastFont * 2);
       const th = lineH * toastLines.length + toastFont * 1.2;
       const tx = (cW - tw) / 2;
-      const ty = cH * 0.5 - th / 2;
+      const ty = toastMobile ? cH * 0.72 - th / 2 : cH * 0.5 - th / 2;
       ctx.globalAlpha = toastAlpha * 0.95;
       ctx.fillStyle = 'rgba(10, 22, 40, 0.9)';
       ctx.beginPath();
