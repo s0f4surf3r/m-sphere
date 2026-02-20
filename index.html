@@ -103,6 +103,12 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 
+// --- App-Icon für Footer ---
+const appIcon = new Image();
+appIcon.src = 'apple-touch-icon.png';
+let appIconReady = false;
+appIcon.onload = () => { appIconReady = true; };
+
 // --- Sprache (EN/DE) ---
 let lang = localStorage.getItem('msphere_lang') || ((navigator.language || '').startsWith('de') ? 'de' : 'en');
 const TR = {
@@ -1846,7 +1852,7 @@ function drawMenu() {
     ctx.lineJoin = 'miter';
   }
 
-  // --- Credits (fixiert am unteren Bildrand) ---
+  // --- Credits + Footer-Icons (fixiert am unteren Bildrand) ---
   {
     const credFont = subtitleSize * 0.65;
     const credY = H - (isMobilePortrait ? 18 : 14);
@@ -1857,6 +1863,42 @@ function drawMenu() {
     ctx.fillText('jochenhornung.de', cx, credY);
     const linkW = ctx.measureText('jochenhornung.de').width;
     menuButtons.link = { x: cx - linkW / 2, y: credY - credFont, w: linkW, h: credFont * 1.5 };
+
+    // Footer-Icons: Favicon links, Lotusblüte rechts (bündig mit Titel)
+    const iconSize = burgerSize;
+    const iconY = credY - iconSize;
+    const iconAlpha = isMobilePortrait ? 0.5 : 0.35;
+    const iconLeftX = isMobilePortrait ? 20 : titleLeftX;
+    const iconRightX = isMobilePortrait ? W - 20 - iconSize : titleRightX - iconSize;
+
+    // Links: App-Favicon
+    if (appIconReady) {
+      ctx.globalAlpha = iconAlpha;
+      ctx.drawImage(appIcon, iconLeftX, iconY, iconSize, iconSize);
+      ctx.globalAlpha = 1;
+    }
+
+    // Rechts: Kleine Lotusblüte (Canvas-Pfad)
+    const lx = iconRightX + iconSize / 2;
+    const ly = iconY + iconSize / 2;
+    const lr = iconSize * 0.45;
+    ctx.globalAlpha = iconAlpha;
+    const petals = 6;
+    for (let p = 0; p < petals; p++) {
+      const a = (p / petals) * Math.PI * 2 - Math.PI / 2;
+      const px = lx + Math.cos(a) * lr * 0.4;
+      const py = ly + Math.sin(a) * lr * 0.4;
+      ctx.beginPath();
+      ctx.ellipse(px, py, lr * 0.35, lr * 0.7, a + Math.PI / 2, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(42, 191, 191, 0.6)';
+      ctx.fill();
+    }
+    // Mitte
+    ctx.beginPath();
+    ctx.arc(lx, ly, lr * 0.25, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(42, 191, 191, 0.8)';
+    ctx.fill();
+    ctx.globalAlpha = 1;
   }
 
   ctx.textAlign = 'start';
