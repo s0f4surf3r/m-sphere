@@ -1296,10 +1296,16 @@ function onDeviceMotion(e) {
 canvas.addEventListener('mousemove', onMouseMove);
 canvas.addEventListener('touchstart', onTouchStart, { passive: false });
 canvas.addEventListener('touchmove', onTouchMove, { passive: false });
-// Motion-Permission Retry: beim ersten Touch in ready/shaking nochmal anfordern
+// Motion-Permission Retry: bei jedem Touch in ready/shaking Listener sicherstellen
 canvas.addEventListener('touchstart', () => {
-  if ((state === 'ready' || state === 'shaking') && !deviceMotionGranted) {
-    requestMotionPermission();
+  if (state === 'ready' || state === 'shaking') {
+    if (!deviceMotionGranted) {
+      requestMotionPermission();
+    } else {
+      // Listener neu registrieren (iOS verliert Events manchmal still)
+      window.removeEventListener('devicemotion', onDeviceMotion);
+      window.addEventListener('devicemotion', onDeviceMotion);
+    }
   }
 }, { passive: true });
 canvas.addEventListener('wheel', (e) => {
@@ -1312,12 +1318,19 @@ canvas.addEventListener('wheel', (e) => {
 let deviceMotionGranted = false;
 let deviceMotionDenied = false;
 function requestMotionPermission() {
-  if (deviceMotionGranted) return; // Bereits erlaubt — nicht nochmal fragen
-  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+  if (typeof DeviceMotionEvent === 'undefined') return;
+  if (deviceMotionGranted) {
+    // Bereits erlaubt — Listener trotzdem frisch registrieren (iOS verliert Events manchmal)
+    window.removeEventListener('devicemotion', onDeviceMotion);
+    window.addEventListener('devicemotion', onDeviceMotion);
+    return;
+  }
+  if (typeof DeviceMotionEvent.requestPermission === 'function') {
     // iOS 13+ — Permission beim Start anfordern (muss im User-Gesture-Handler sein)
     DeviceMotionEvent.requestPermission().then(permState => {
       if (permState === 'granted') {
         deviceMotionGranted = true;
+        window.removeEventListener('devicemotion', onDeviceMotion);
         window.addEventListener('devicemotion', onDeviceMotion);
       } else {
         // Nicht merken — bei nächster User-Geste erneut versuchen
@@ -1325,7 +1338,7 @@ function requestMotionPermission() {
     }).catch(err => {
       console.warn('DeviceMotion permission error:', err);
     });
-  } else if (typeof DeviceMotionEvent !== 'undefined') {
+  } else {
     deviceMotionGranted = true;
     window.addEventListener('devicemotion', onDeviceMotion);
   }
@@ -4153,7 +4166,7 @@ function returnToMenu() {
     });
   }
   mouseDown = false;
-  selectedDurationIdx = -1;
+  // selectedDurationIdx bleibt erhalten → Start-Button sofort wieder verfügbar
   if (faceSwapPollTimer) { clearInterval(faceSwapPollTimer); faceSwapPollTimer = null; }
   stopWebcam();
   releaseWakeLock();
