@@ -125,8 +125,8 @@ const TR = {
     deinGesicht: 'DEIN GESICHT',
     timerAn: '⏱ An',
     timerAus: '⏱',
-    clickStart: 'Klicke hier um zu starten',
-    tapStart: 'Tippe hier um zu starten',
+    clickStart: 'Meditation starten',
+    tapStart: 'Meditation starten',
     chooseDuration: 'Wähle deine Meditationszeit',
     hintMobile1: 'Wische schnell über die Kugel',
     hintMobile2: 'oder schüttle dein Handy.',
@@ -198,8 +198,8 @@ const TR = {
     deinGesicht: 'YOUR FACE',
     timerAn: '⏱ On',
     timerAus: '⏱',
-    clickStart: 'Click here to start',
-    tapStart: 'Tap here to start',
+    clickStart: 'Start meditation',
+    tapStart: 'Start meditation',
     chooseDuration: 'Choose your meditation time',
     hintMobile1: 'Swipe quickly over the sphere',
     hintMobile2: 'or shake your phone.',
@@ -715,11 +715,36 @@ function addShakeDist(dist) {
   shakeAccum += dist;
 }
 
+let hoverLink = false;
+let hoverSection = null; // welcher Sektions-Header wird gehovert
+let hoverMouseX = 0, hoverMouseY = 0; // aktuelle Mausposition für Hover-Checks
 function onMouseMove(e) {
   const [mx, my] = canvasCoords(e.clientX, e.clientY);
   if (!mouseDown) {
     lastMouseX = mx;
     lastMouseY = my;
+    // Cursor + Hover für klickbare Elemente im idle-State
+    hoverMouseX = mx;
+    hoverMouseY = my;
+    if (state === 'idle') {
+      const scrollY = window.scrollY || 0;
+      const sy = my + scrollY;
+      const lnk = menuButtons.link;
+      const overLink = lnk && mx >= lnk.x && mx <= lnk.x + lnk.w && my >= lnk.y && my <= lnk.y + lnk.h;
+      hoverLink = !!overLink;
+      // Sektions-Header Hover
+      hoverSection = null;
+      for (const [key, area] of Object.entries(menuToggleAreas)) {
+        if (area && mx >= area.x && mx <= area.x + area.w && sy >= area.y && sy <= area.y + area.h) {
+          hoverSection = key;
+          break;
+        }
+      }
+      // Start-Button Hover
+      const startBtn = menuButtons.start;
+      const overStart = startBtn && mx >= startBtn.x && mx <= startBtn.x + startBtn.w && sy >= startBtn.y && sy <= startBtn.y + startBtn.h;
+      canvas.style.cursor = (overLink || hoverSection || overStart) ? 'pointer' : 'default';
+    }
     return;
   }
   const dx = mx - lastMouseX;
@@ -1454,6 +1479,7 @@ function drawMenu() {
       // Eingeklappt: Label + großer Dreieckspfeil ▶
       const lineH = labelFont * 2;
       const arrowSize = labelFont * 1.2;
+      const isHovered = hoverSection === collapseKey;
       ctx.fillStyle = labelColor || (isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.95)');
       ctx.textBaseline = 'middle';
       // Label + Pfeil nebeneinander, zentriert
@@ -1463,8 +1489,18 @@ function drawMenu() {
       const startX = cx - totalW / 2;
       ctx.textAlign = 'left';
       ctx.fillText(label, startX, y + lineH / 2);
+      // Hover: dezente Unterstreichung
+      if (isHovered) {
+        const underY = y + lineH / 2 + labelFont * 0.7;
+        ctx.beginPath();
+        ctx.moveTo(startX, underY);
+        ctx.lineTo(startX + labelW, underY);
+        ctx.strokeStyle = 'rgba(42, 191, 191, 0.6)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
       // Dreieck ▶ (rechtszeigend)
-      ctx.fillStyle = 'rgba(42, 191, 191, 0.7)';
+      ctx.fillStyle = isHovered ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.7)';
       const ax = startX + labelW + gap;
       const ay = y + lineH / 2;
       ctx.beginPath();
@@ -1475,8 +1511,9 @@ function drawMenu() {
       ctx.fill();
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      // Hit-Area: volle Breite
-      menuToggleAreas[collapseKey] = { x: cx - W * 0.45, y: y, w: W * 0.9, h: lineH };
+      // Hit-Area: nur Label + Pfeil Breite (+ etwas Padding)
+      const hitPad = labelFont * 1.5;
+      menuToggleAreas[collapseKey] = { x: startX - hitPad, y: y, w: totalW + hitPad * 2, h: lineH };
       return { btns: [], bottomY: y + lineH };
     }
 
@@ -1485,6 +1522,7 @@ function drawMenu() {
     const lineH = labelFont * 2;
     if (collapseKey) {
       const arrowSize = labelFont * 1.2;
+      const isHovered = hoverSection === collapseKey;
       ctx.fillStyle = labelColor || (isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.95)');
       ctx.textBaseline = 'middle';
       // Label + Dreieck nebeneinander, zentriert
@@ -1494,8 +1532,18 @@ function drawMenu() {
       const startX = cx - totalW / 2;
       ctx.textAlign = 'left';
       ctx.fillText(label, startX, y + lineH / 2);
+      // Hover: dezente Unterstreichung
+      if (isHovered) {
+        const underY = y + lineH / 2 + labelFont * 0.7;
+        ctx.beginPath();
+        ctx.moveTo(startX, underY);
+        ctx.lineTo(startX + labelW, underY);
+        ctx.strokeStyle = 'rgba(42, 191, 191, 0.6)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
       // Dreieck ▼ (runterzeigend)
-      ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
+      ctx.fillStyle = isHovered ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.9)';
       const ax = startX + labelW + gap + arrowSize * 0.3;
       const ay = y + lineH / 2;
       ctx.beginPath();
@@ -1506,8 +1554,9 @@ function drawMenu() {
       ctx.fill();
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      // Hit-Area zum Zuklappen (gleiche Zeile)
-      menuToggleAreas[collapseKey] = { x: cx - W * 0.45, y: y, w: W * 0.9, h: lineH };
+      // Hit-Area zum Zuklappen (nur Label + Pfeil Breite)
+      const hitPad = labelFont * 1.5;
+      menuToggleAreas[collapseKey] = { x: startX - hitPad, y: y, w: totalW + hitPad * 2, h: lineH };
     } else {
       // Nicht-klappbar (z.B. MEDITATIONSZEIT): nur Label
       ctx.fillStyle = labelColor || (isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.95)');
@@ -1614,10 +1663,18 @@ function drawMenu() {
 
       const isTimer = item.type === 'timer';
 
+      // Hover-Check (Mausposition vs. Button-Rect, mit Scroll-Offset)
+      const scrollY = window.scrollY || 0;
+      const hsy = hoverMouseY + scrollY;
+      const isHover = !isMobilePortrait && hoverMouseX >= rx && hoverMouseX <= rx + tBtnW && hsy >= curY && hsy <= curY + tBtnH;
+
       // Richtig goldene Buttons
       if (sel) {
         ctx.shadowColor = 'rgba(255, 215, 0, 0.6)';
         ctx.shadowBlur = 20;
+      } else if (isHover) {
+        ctx.shadowColor = 'rgba(255, 215, 0, 0.5)';
+        ctx.shadowBlur = 15;
       }
 
       ctx.beginPath();
@@ -1635,14 +1692,19 @@ function drawMenu() {
         ctx.strokeStyle = '#ffd700';
         ctx.lineWidth = 2;
       } else {
-        // Unselektiert: dunkles Gold
+        // Unselektiert (+ Hover-Aufhellung)
         const grd = ctx.createLinearGradient(rx, curY, rx, curY + tBtnH);
-        grd.addColorStop(0, 'rgba(180, 150, 50, 0.2)');
-        grd.addColorStop(1, 'rgba(120, 95, 25, 0.15)');
+        if (isHover) {
+          grd.addColorStop(0, 'rgba(220, 190, 60, 0.3)');
+          grd.addColorStop(1, 'rgba(160, 130, 40, 0.25)');
+        } else {
+          grd.addColorStop(0, 'rgba(180, 150, 50, 0.2)');
+          grd.addColorStop(1, 'rgba(120, 95, 25, 0.15)');
+        }
         ctx.fillStyle = grd;
         ctx.fill();
-        ctx.strokeStyle = 'rgba(220, 185, 60, 0.5)';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = isHover ? 'rgba(255, 215, 0, 0.7)' : 'rgba(220, 185, 60, 0.5)';
+        ctx.lineWidth = isHover ? 1.5 : 1;
       }
       ctx.stroke();
       ctx.shadowBlur = 0;
@@ -1745,29 +1807,55 @@ function drawMenu() {
 
   curY += sectionGap * 2;
 
-  // --- START Button ---
+  // --- START Button (Pill-Shape) ---
   const canStart = selectedDurationIdx >= 0;
-  const startW = unit * 0.25 * uiScale;
-  const startH = btnH * 1.3;
+  const startFont = rowFont * 1.3;
+  ctx.font = `700 ${startFont}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const startLabel = canStart
+    ? (isTouchDevice ? t('tapStart') : t('clickStart'))
+    : t('chooseDuration');
+  const startTextW = ctx.measureText(startLabel).width;
+  const startPadX = startFont * 1.5;
+  const startPadY = startFont * 0.6;
+  const startW = startTextW + startPadX * 2;
+  const startH = startFont + startPadY * 2;
   const startX = cx - startW / 2;
   const pulse = Math.sin(Date.now() * 0.003) * 0.15 + 0.85;
 
-  // START als Text (ZPMA-Stil: "Click to Play" in accent)
+  const scrollY_ = window.scrollY || 0;
+  const hoverStart = canStart && !isMobilePortrait &&
+    hoverMouseX >= startX && hoverMouseX <= startX + startW &&
+    (hoverMouseY + scrollY_) >= curY && (hoverMouseY + scrollY_) <= curY + startH;
+
   if (canStart) {
-    ctx.shadowColor = 'rgba(232, 106, 122, 0.5)';
-    ctx.shadowBlur = 10;
-    ctx.fillStyle = `rgba(232, 106, 122, ${pulse})`;
+    // Pill-Hintergrund
+    if (hoverStart) {
+      ctx.shadowColor = 'rgba(232, 106, 122, 0.7)';
+      ctx.shadowBlur = 25;
+    } else {
+      ctx.shadowColor = 'rgba(232, 106, 122, 0.4)';
+      ctx.shadowBlur = 12;
+    }
+    ctx.beginPath();
+    ctx.roundRect(startX, curY, startW, startH, startH / 2);
+    ctx.fillStyle = hoverStart ? 'rgba(232, 106, 122, 0.2)' : 'rgba(232, 106, 122, 0.08)';
+    ctx.fill();
+    ctx.strokeStyle = `rgba(232, 106, 122, ${hoverStart ? 0.9 : pulse * 0.6})`;
+    ctx.lineWidth = hoverStart ? 2 : 1.5;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Text
+    ctx.fillStyle = `rgba(232, 106, 122, ${hoverStart ? 1.0 : pulse})`;
   } else {
+    // Kein Button, nur wabernder Text
     const waber = Math.sin(Date.now() * 0.001) * 0.3 + 0.7;
     ctx.shadowColor = `rgba(244, 168, 66, ${waber * 0.4})`;
     ctx.shadowBlur = 15;
     ctx.fillStyle = `rgba(255, 140, 155, ${waber})`;
   }
-  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-  const startLabel = canStart
-    ? (isTouchDevice ? t('tapStart') : t('clickStart'))
-    : t('chooseDuration');
-  ctx.font = `${canStart ? '700' : '400'} ${rowFont * 1.4}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+  ctx.font = `${canStart ? '700' : '400'} ${startFont}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(startLabel, cx, curY + startH / 2);
@@ -1857,10 +1945,18 @@ function drawMenu() {
     const credFont = subtitleSize * 0.65;
     const credY = H - (isMobilePortrait ? 18 : 14);
     ctx.font = `${credFont}px "Courier New", monospace`;
-    ctx.fillStyle = isMobilePortrait ? 'rgba(240, 236, 230, 0.5)' : 'rgba(240, 236, 230, 0.3)';
+    const credBase = isMobilePortrait ? 0.5 : 0.3;
+    if (hoverLink) {
+      ctx.shadowColor = 'rgba(42, 191, 191, 0.6)';
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
+    } else {
+      ctx.fillStyle = `rgba(240, 236, 230, ${credBase})`;
+    }
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     ctx.fillText('jochenhornung.de', cx, credY);
+    ctx.shadowBlur = 0;
     const linkW = ctx.measureText('jochenhornung.de').width;
     menuButtons.link = { x: cx - linkW / 2, y: credY - credFont, w: linkW, h: credFont * 1.5 };
 
@@ -4230,10 +4326,10 @@ function frame() {
     // Meditation: Mönch ist da, glitcht zunehmend, löst sich bis zum Ende auf
     const progress = 1 - meditationTimeLeft / meditationDuration; // 0→1
     const glitchAmount = distractionModeIdx === 1
-      ? Math.max(0, progress - 0.3) * 1.2   // Ablenkungen ein: ab 30%, stark
-      : Math.max(0, progress - 0.5) * 0.6;  // Ablenkungen aus: ab 50%, subtil
+      ? Math.max(0, progress - 0.15) * 2.0   // Ablenkungen ein: ab 15%, sehr stark
+      : Math.max(0, progress - 0.5) * 0.6;   // Ablenkungen aus: ab 50%, subtil
     const alpha = Math.pow(1 - progress, 0.5); // Wurzelkurve: länger sichtbar, erst spät weg
-    const glitchOffset = glitchAmount > 0 ? (Math.random() - 0.5) * glitchAmount * 3 : 0;
+    const glitchOffset = glitchAmount > 0 ? (Math.random() - 0.5) * glitchAmount * 6 : 0;
 
     if (alpha > 0.01) {
       const shrinkScale = shrinkModeIdx === 1 ? (1 - progress) : 1;
@@ -4267,7 +4363,7 @@ function frame() {
       const alpha = Math.pow(1 - progress, 0.5);
       if (alpha > 0.01) {
         const glitchAmount = distractionModeIdx === 1
-          ? Math.max(0, progress - 0.3) * 1.2
+          ? Math.max(0, progress - 0.15) * 2.0
           : Math.max(0, progress - 0.5) * 0.6;
         const shrinkScale = shrinkModeIdx === 1 ? (1 - progress) : 1;
         drawModel3D(cx, cy, r, alpha, 0, Math.min(1, glitchAmount), shrinkScale);
