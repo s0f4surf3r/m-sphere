@@ -88,7 +88,7 @@ const TR = {
   de: {
     subtitle: 'INTERAKTIVE MEDITATION',
     moreTools: 'Mehr Werkzeuge',
-    donate: '♡ Unterstützen ♡',
+    donate: '♡ Wertschätzen ♡',
     meditationszeit: 'MEDITATIONSZEIT',
     atemrhythmus: 'ATEMRHYTHMUS',
     meditationsSound: 'MEDITATIONS-SOUND',
@@ -161,7 +161,7 @@ const TR = {
   en: {
     subtitle: 'INTERACTIVE MEDITATION',
     moreTools: 'More Tools',
-    donate: '♡ Support ♡',
+    donate: '♡ Appreciate ♡',
     meditationszeit: 'MEDITATION TIME',
     atemrhythmus: 'BREATHING',
     meditationsSound: 'MEDITATION SOUND',
@@ -1413,29 +1413,6 @@ function drawMenu() {
   ctx.letterSpacing = '0px';
   ctx.shadowBlur = 0;
   curY += subtitleSize * 2;
-
-  // Spenden-Button
-  const donLabel = t('donate');
-  const donFont = subtitleSize * 0.85;
-  ctx.font = `${donFont}px "Courier New", monospace`;
-  const donTxtW = ctx.measureText(donLabel).width;
-  const donW = donTxtW + donFont * 2;
-  const donH = donFont * 2.2;
-  const donX = cx - donW / 2;
-  const donY = curY;
-  ctx.beginPath();
-  ctx.roundRect(donX, donY, donW, donH, donH * 0.25);
-  ctx.fillStyle = donBtnFill;
-  ctx.fill();
-  ctx.strokeStyle = donBtnStroke;
-  ctx.lineWidth = isMobilePortrait ? 2 : 1.5;
-  ctx.stroke();
-  ctx.fillStyle = isMobilePortrait ? 'rgba(255, 130, 145, 1.0)' : 'rgba(232, 106, 122, 0.85)';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(donLabel, cx, donY + donH / 2);
-  menuButtons.donate = { x: donX, y: donY, w: donW, h: donH };
-  curY += donH + sectionGap * (isMobilePortrait ? 2.5 : 1.8);
 
   // Language Toggle wird außerhalb des Scroll-Bereichs gezeichnet (siehe unten)
 
