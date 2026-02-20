@@ -114,6 +114,11 @@ gkIcon.src = 'gefuehlskompass-icon.png';
 let gkIconReady = false;
 gkIcon.onload = () => { gkIconReady = true; };
 
+const bgLogo = new Image();
+bgLogo.src = 'Gemini_Generated_Image_jyo6hqjyo6hqjyo6.jpeg';
+let bgLogoReady = false;
+bgLogo.onload = () => { bgLogoReady = true; };
+
 // --- Sprache (EN/DE) ---
 let lang = localStorage.getItem('msphere_lang') || ((navigator.language || '').startsWith('de') ? 'de' : 'en');
 const TR = {
@@ -748,6 +753,7 @@ function addShakeDist(dist) {
 let hoverLink = false;
 let hoverSection = null; // welcher Sektions-Header wird gehovert
 let hoverLotus = false;
+let lotusHintOpen = false; // Mobile: Fragezeichen-Hint offen
 let hoverMouseX = 0, hoverMouseY = 0; // aktuelle Mausposition für Hover-Checks
 function onMouseMove(e) {
   const [mx, my] = canvasCoords(e.clientX, e.clientY);
@@ -773,7 +779,7 @@ function onMouseMove(e) {
       }
       // Start-Button Hover
       const startBtn = menuButtons.start;
-      const overStart = startBtn && mx >= startBtn.x && mx <= startBtn.x + startBtn.w && sy >= startBtn.y && sy <= startBtn.y + startBtn.h;
+      const overStart = startBtn && !startBtn.disabled && mx >= startBtn.x && mx <= startBtn.x + startBtn.w && sy >= startBtn.y && sy <= startBtn.y + startBtn.h;
       // Lotus-Icon Hover
       const lotusBtn = menuButtons.lotus;
       const overLotus = lotusBtn && mx >= lotusBtn.x && mx <= lotusBtn.x + lotusBtn.w && my >= lotusBtn.y && my <= lotusBtn.y + lotusBtn.h;
@@ -1003,6 +1009,11 @@ const DISTRACTION_MSGS = {
       ['📰 EILMELDUNG', 'Wichtige Entwicklung — jetzt lesen'],
       ['🛒 Amazon', 'Deine Bestellung wurde versandt!'],
       ['📅 Kalender', 'Termin in 15 Minuten'],
+      ['📅 Kalender', 'Zahnarzt morgen um 9:00'],
+      ['📅 Kalender', 'Geburtstag von Lisa — heute!'],
+      ['☑️ Erinnerungen', 'Einkaufen nicht vergessen'],
+      ['☑️ Erinnerungen', 'Rechnung bezahlen — überfällig'],
+      ['☑️ Erinnerungen', 'Paket abholen bei der Post'],
       ['🔋 Batterie niedrig', 'Noch 12 % — jetzt laden'],
       ['⚡ Update verfügbar', 'Jetzt installieren?'],
       ['🎵 Spotify', 'Dein Jahresrückblick ist da!'],
@@ -1018,6 +1029,32 @@ const DISTRACTION_MSGS = {
       ['⚠️ Verbindung instabil', 'Erneut verbinden'],
       ['🔄 Neue Version verfügbar', 'Jetzt aktualisieren'],
     ],
+    chat: [
+      ['Mama', 'Kannst du kurz anrufen? 💕'],
+      ['Tom', 'Ey hast du das gesehen?? 😂'],
+      ['Lisa', 'Bist du noch wach?'],
+      ['Papa', 'Ruf mich bitte zurück'],
+      ['Anna', 'Wo bist du gerade?'],
+      ['Max', 'Guck mal Instagram Story 🔥'],
+      ['Sarah', 'Hab dir was geschickt!!'],
+      ['Jan', 'Kommst du heute Abend?'],
+    ],
+    fomo: [
+      ['🔥 Nur noch 3 Plätze frei!', 'Jetzt sichern'],
+      ['⚡ Flash Sale endet bald', 'Zum Angebot'],
+      ['🎟️ Tickets fast ausverkauft', 'Letzte Chance'],
+      ['💎 -70% nur heute', 'Nicht verpassen'],
+    ],
+    feed: [
+      'Das MUSST du gesehen haben 🤯',
+      'Ich kann nicht aufhören zu lachen 😂',
+      'Wartet bis zum Ende... 🙈',
+      'POV: Montagmorgen',
+      'Das erklärt ALLES 💡',
+      'Warum redet niemand darüber?!',
+      'Teil 3 — es wird wild 🔥',
+      'Stitch mit @viral_page',
+    ],
     accept: 'Akzeptieren',
     dismiss: 'Später',
     swipe: '← wischen zum schließen',
@@ -1032,6 +1069,11 @@ const DISTRACTION_MSGS = {
       ['📰 BREAKING', 'Important development — read now'],
       ['🛒 Amazon', 'Your order has shipped!'],
       ['📅 Calendar', 'Meeting in 15 minutes'],
+      ['📅 Calendar', 'Dentist tomorrow at 9:00 AM'],
+      ['📅 Calendar', "Lisa's birthday — today!"],
+      ['☑️ Reminders', "Don't forget groceries"],
+      ['☑️ Reminders', 'Pay bill — overdue'],
+      ['☑️ Reminders', 'Pick up package at post office'],
       ['🔋 Battery low', '12% remaining — charge now'],
       ['⚡ Update available', 'Install now?'],
       ['🎵 Spotify', 'Your year in review is here!'],
@@ -1046,6 +1088,32 @@ const DISTRACTION_MSGS = {
       ['🎉 You won!', 'Claim here'],
       ['⚠️ Connection unstable', 'Reconnect'],
       ['🔄 New version available', 'Update now'],
+    ],
+    chat: [
+      ['Mom', 'Can you call me real quick? 💕'],
+      ['Tom', 'Dude you HAVE to see this 😂'],
+      ['Lisa', 'Are you still up?'],
+      ['Dad', 'Please call me back'],
+      ['Anna', 'Where are you rn?'],
+      ['Max', 'Check my Instagram Story 🔥'],
+      ['Sarah', 'Just sent you something!!'],
+      ['Jan', 'Are you coming tonight?'],
+    ],
+    fomo: [
+      ['🔥 Only 3 spots left!', 'Secure now'],
+      ['⚡ Flash Sale ending soon', 'View deal'],
+      ['🎟️ Tickets almost sold out', 'Last chance'],
+      ['💎 -70% today only', "Don't miss out"],
+    ],
+    feed: [
+      'You NEED to see this 🤯',
+      "I can't stop laughing 😂",
+      'Wait for it... 🙈',
+      'POV: Monday morning',
+      'This explains EVERYTHING 💡',
+      'Why is nobody talking about this?!',
+      'Part 3 — it gets wild 🔥',
+      'Stitch with @viral_page',
     ],
     accept: 'Accept',
     dismiss: 'Later',
@@ -1074,7 +1142,7 @@ function updateDistractions() {
   if (distractions.length < maxActive && (now - lastDistractionSpawn > interval || burstChance)) {
     lastDistractionSpawn = now + (burstChance ? -interval * 0.7 : 0); // Burst: nächste kommt schneller
 
-    const types = ['notif', 'notif', 'notif', 'cookie', 'popup', 'notif'];
+    const types = ['notif', 'notif', 'chat', 'chat', 'cookie', 'popup', 'likes', 'fomo', 'feed'];
     const type = types[Math.floor(Math.random() * types.length)];
     const msgs = DISTRACTION_MSGS[lang] || DISTRACTION_MSGS.en;
 
@@ -1087,36 +1155,118 @@ function updateDistractions() {
     } else if (type === 'popup') {
       const msg = msgs.popup[Math.floor(Math.random() * msgs.popup.length)];
       data = { title: msg[0], button: msg[1] };
+    } else if (type === 'chat') {
+      const msg = msgs.chat[Math.floor(Math.random() * msgs.chat.length)];
+      data = { sender: msg[0], text: msg[1], fromRight: Math.random() > 0.5, typing: true };
+    } else if (type === 'likes') {
+      const emojis = ['❤️', '🧡', '💜', '💗', '🔥', '😍', '💕', '✨'];
+      const count = 5 + Math.floor(Math.random() * 4);
+      const hearts = [];
+      for (let i = 0; i < count; i++) {
+        hearts.push({
+          x: 0.1 + Math.random() * 0.8,
+          size: 14 + Math.random() * 18,
+          emoji: emojis[Math.floor(Math.random() * emojis.length)],
+          speed: 0.6 + Math.random() * 0.6,
+          wobble: Math.random() * Math.PI * 2,
+          delay: Math.random() * 0.3,
+        });
+      }
+      data = { hearts };
+    } else if (type === 'fomo') {
+      const msg = msgs.fomo[Math.floor(Math.random() * msgs.fomo.length)];
+      data = { text: msg[0], cta: msg[1], startSec: 47 + Math.floor(Math.random() * 134) };
+    } else if (type === 'feed') {
+      const shuffled = [...msgs.feed].sort(() => Math.random() - 0.5);
+      const titles = shuffled.slice(0, 3 + Math.floor(Math.random() * 2));
+      const feedColors = ['#ff006e', '#00bbf9', '#9b5de5', '#ff5400', '#00f5d4', '#ffbe0b'];
+      const colors = titles.map(() => feedColors[Math.floor(Math.random() * feedColors.length)]);
+      data = { titles, colors, scrollOffset: 0 };
     }
 
     // Dauer stark variierend: 3-12 Sekunden, kein Muster
-    const dur = 3000 + Math.random() * 5000 + Math.random() * Math.random() * 4000;
+    let dur = 3000 + Math.random() * 5000 + Math.random() * Math.random() * 4000;
+    if (type === 'likes') dur = Math.min(dur, 5000); // Likes kürzer
+    if (type === 'fomo') dur = Math.max(dur, 6000); // FOMO länger
     distractions.push({ type, startTime: now, duration: dur, data });
 
-    // Notification-Sound: kurzer Ping
+    // Sounds je Typ
     if (soundInitialized) {
-      const ping = audioCtx.createOscillator();
-      const pingGain = audioCtx.createGain();
-      ping.type = type === 'popup' ? 'triangle' : 'sine';
-      ping.frequency.value = type === 'notif' ? 880 : (type === 'cookie' ? 440 : 660);
-      pingGain.gain.value = 0.05;
-      ping.connect(pingGain);
-      pingGain.connect(audioCtx.destination);
-      ping.start();
-      pingGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
-      ping.stop(audioCtx.currentTime + 0.2);
-      // Zweiter Ton bei Notifications (typisches Ding-Dong)
-      if (type === 'notif') {
-        const ping2 = audioCtx.createOscillator();
-        const pg2 = audioCtx.createGain();
-        ping2.type = 'sine';
-        ping2.frequency.value = 1100;
-        pg2.gain.value = 0.03;
-        ping2.connect(pg2);
-        pg2.connect(audioCtx.destination);
-        ping2.start(audioCtx.currentTime + 0.12);
-        pg2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
-        ping2.stop(audioCtx.currentTime + 0.35);
+      if (type === 'chat') {
+        // WhatsApp-Doppel-Ping: 660→880Hz
+        const p1 = audioCtx.createOscillator();
+        const g1 = audioCtx.createGain();
+        p1.type = 'sine'; p1.frequency.value = 660;
+        g1.gain.value = 0.05;
+        p1.connect(g1); g1.connect(audioCtx.destination);
+        p1.start(); g1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+        p1.stop(audioCtx.currentTime + 0.15);
+        const p2 = audioCtx.createOscillator();
+        const g2 = audioCtx.createGain();
+        p2.type = 'sine'; p2.frequency.value = 880;
+        g2.gain.value = 0.04;
+        p2.connect(g2); g2.connect(audioCtx.destination);
+        p2.start(audioCtx.currentTime + 0.12);
+        g2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+        p2.stop(audioCtx.currentTime + 0.3);
+      } else if (type === 'likes') {
+        // Leises Plop
+        const p = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        p.type = 'sine'; p.frequency.value = 220;
+        g.gain.value = 0.03;
+        p.connect(g); g.connect(audioCtx.destination);
+        p.start(); p.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.1);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+        p.stop(audioCtx.currentTime + 0.12);
+      } else if (type === 'fomo') {
+        // Kurzes Tick
+        const p = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        p.type = 'square'; p.frequency.value = 1200;
+        g.gain.value = 0.03;
+        p.connect(g); g.connect(audioCtx.destination);
+        p.start(); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.06);
+        p.stop(audioCtx.currentTime + 0.06);
+      } else if (type === 'feed') {
+        // Kurzer Swoosh (Noise-Burst)
+        const bufLen = audioCtx.sampleRate * 0.15;
+        const buf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+        const ch = buf.getChannelData(0);
+        for (let i = 0; i < bufLen; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / bufLen);
+        const src = audioCtx.createBufferSource();
+        const g = audioCtx.createGain();
+        const filt = audioCtx.createBiquadFilter();
+        filt.type = 'bandpass'; filt.frequency.value = 2000; filt.Q.value = 0.5;
+        src.buffer = buf;
+        g.gain.value = 0.03;
+        src.connect(filt); filt.connect(g); g.connect(audioCtx.destination);
+        src.start(); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+      } else {
+        // Bestehende Sounds für notif, cookie, popup
+        const ping = audioCtx.createOscillator();
+        const pingGain = audioCtx.createGain();
+        ping.type = type === 'popup' ? 'triangle' : 'sine';
+        ping.frequency.value = type === 'notif' ? 880 : (type === 'cookie' ? 440 : 660);
+        pingGain.gain.value = 0.05;
+        ping.connect(pingGain);
+        pingGain.connect(audioCtx.destination);
+        ping.start();
+        pingGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+        ping.stop(audioCtx.currentTime + 0.2);
+        // Zweiter Ton bei Notifications (typisches Ding-Dong)
+        if (type === 'notif') {
+          const ping2 = audioCtx.createOscillator();
+          const pg2 = audioCtx.createGain();
+          ping2.type = 'sine';
+          ping2.frequency.value = 1100;
+          pg2.gain.value = 0.03;
+          ping2.connect(pg2);
+          pg2.connect(audioCtx.destination);
+          ping2.start(audioCtx.currentTime + 0.12);
+          pg2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+          ping2.stop(audioCtx.currentTime + 0.35);
+        }
       }
     }
   }
@@ -1293,6 +1443,213 @@ function drawDistractions() {
       ctx.fill();
       ctx.fillStyle = '#ffffff';
       ctx.fillText(pbLabel, pbX + pbW / 2, pbY + pbH / 2);
+
+      ctx.restore();
+      ctx.globalAlpha = 1;
+      ctx.textAlign = 'start';
+      ctx.textBaseline = 'alphabetic';
+
+    } else if (d.type === 'chat') {
+      // Chat-Bubble (WhatsApp-Style): gleitet von unten rein
+      const bubbleW = Math.min(260, W * (isMob ? 0.7 : 0.35));
+      const bubbleH = isMob ? 60 : 52;
+      const fromRight = d.data.fromRight;
+      const margin = 16;
+      const bx = fromRight ? W - bubbleW - margin : margin;
+      const slideUpFrom = H + bubbleH;
+      const targetY = H - margin - bubbleH - (isMob ? 60 : 40);
+      const by = slideUpFrom + (targetY - slideUpFrom) * easeOutCubic(slideIn) + (slideUpFrom - targetY) * (1 - slideOut) * 0.3;
+
+      ctx.globalAlpha = vis * 0.92;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+      ctx.shadowBlur = 12;
+
+      // Bubble body
+      ctx.beginPath();
+      ctx.roundRect(bx, by, bubbleW, bubbleH, 16);
+      ctx.fillStyle = '#25d366';
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Tail-Dreieck
+      const tailX = fromRight ? bx + bubbleW - 20 : bx + 16;
+      ctx.beginPath();
+      ctx.moveTo(tailX, by + bubbleH);
+      ctx.lineTo(tailX + 10, by + bubbleH + 10);
+      ctx.lineTo(tailX + 16, by + bubbleH);
+      ctx.fillStyle = '#25d366';
+      ctx.fill();
+
+      // Sender-Name
+      const cFont = Math.max(11, bubbleH * 0.2);
+      ctx.font = `700 ${cFont}px -apple-system, "SF Pro Display", sans-serif`;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(d.data.sender, bx + 12, by + 8);
+
+      // Tipp-Punkte oder Text (nach 800ms)
+      const typingDone = elapsed > 800;
+      if (!typingDone) {
+        // Drei pulsierende Punkte
+        const dotR = 3;
+        const dotY = by + bubbleH * 0.65;
+        for (let i = 0; i < 3; i++) {
+          const phase = (elapsed / 300 + i * 0.8) % (Math.PI * 2);
+          const dotAlpha = 0.4 + Math.sin(phase) * 0.5;
+          ctx.globalAlpha = vis * dotAlpha;
+          ctx.beginPath();
+          ctx.arc(bx + 16 + i * 12, dotY, dotR, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffffff';
+          ctx.fill();
+        }
+      } else {
+        ctx.globalAlpha = vis * 0.92;
+        ctx.font = `400 ${cFont * 0.9}px -apple-system, "SF Pro Display", sans-serif`;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.fillText(d.data.text, bx + 12, by + 8 + cFont * 1.4);
+      }
+
+      ctx.globalAlpha = 1;
+      ctx.textAlign = 'start';
+      ctx.textBaseline = 'alphabetic';
+
+    } else if (d.type === 'likes') {
+      // Like-Herzen (Instagram Live): steigen von unten auf
+      for (const h of d.data.hearts) {
+        const hElapsed = Math.max(0, t - h.delay);
+        if (hElapsed <= 0) continue;
+        const hProgress = Math.min(1, hElapsed / (h.speed * 0.8));
+        const hx = W * h.x + Math.sin(hProgress * Math.PI * 3 + h.wobble) * 25;
+        const hy = H * (1 - hProgress * 0.7);
+        const hAlpha = vis * Math.max(0, 1 - hProgress * 1.3);
+        if (hAlpha <= 0) continue;
+        ctx.globalAlpha = hAlpha;
+        ctx.font = `${h.size}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(h.emoji, hx, hy);
+      }
+      ctx.globalAlpha = 1;
+      ctx.textAlign = 'start';
+      ctx.textBaseline = 'alphabetic';
+
+    } else if (d.type === 'fomo') {
+      // FOMO-Countdown-Banner oben
+      const bannerH = isMob ? 36 : 40;
+      const slideY = -bannerH + bannerH * easeOutCubic(slideIn) - bannerH * (1 - slideOut) * 0.5;
+
+      ctx.globalAlpha = vis * 0.9;
+      // Gradient rot→orange
+      const grad = ctx.createLinearGradient(0, slideY, W, slideY);
+      grad.addColorStop(0, '#e63946');
+      grad.addColorStop(1, '#f77f00');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, slideY, W, bannerH);
+
+      // Text links
+      const fFont = Math.max(11, bannerH * 0.36);
+      ctx.font = `700 ${fFont}px -apple-system, "SF Pro Display", sans-serif`;
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(d.data.text, 14, slideY + bannerH / 2);
+
+      // Countdown rechts (tickt runter)
+      const elapsedSec = Math.floor(elapsed / 1000);
+      const remaining = Math.max(0, d.data.startSec - elapsedSec);
+      const min = Math.floor(remaining / 60);
+      const sec = remaining % 60;
+      const timeStr = `${min}:${sec < 10 ? '0' : ''}${sec}`;
+      ctx.font = `700 ${fFont * 1.1}px "Courier New", monospace`;
+      ctx.textAlign = 'right';
+      ctx.fillText(timeStr, W - 14, slideY + bannerH / 2);
+
+      // CTA-Button
+      const ctaFont = fFont * 0.85;
+      ctx.font = `600 ${ctaFont}px -apple-system, "SF Pro Display", sans-serif`;
+      const ctaW = ctx.measureText(d.data.cta).width + 16;
+      const ctaH = bannerH * 0.6;
+      const ctaX = W - 14 - ctx.measureText(timeStr).width - 20 - ctaW;
+      const ctaY = slideY + (bannerH - ctaH) / 2;
+      ctx.beginPath();
+      ctx.roundRect(ctaX, ctaY, ctaW, ctaH, ctaH / 2);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(d.data.cta, ctaX + ctaW / 2, ctaY + ctaH / 2);
+
+      ctx.globalAlpha = 1;
+      ctx.textAlign = 'start';
+      ctx.textBaseline = 'alphabetic';
+
+    } else if (d.type === 'feed') {
+      // Scroll-Feed (TikTok/Reels) am rechten Rand
+      const feedW = isMob ? 100 : 120;
+      const feedH = isMob ? 240 : 280;
+      const feedX = W - feedW - 10;
+      const feedY = H * 0.15;
+      const thumbH = 60;
+      const gap = 8;
+      const titleH = 18;
+      const itemH = thumbH + titleH + gap;
+
+      // Scroll-Offset: langsam nach oben
+      const scrollSpeed = 0.03;
+      const scrollOff = (elapsed * scrollSpeed) % (d.data.titles.length * itemH);
+
+      ctx.save();
+      ctx.globalAlpha = vis * 0.88;
+
+      // Slide-in von rechts
+      const feedSlideX = feedX + (feedW + 20) * (1 - easeOutCubic(slideIn)) + (feedW + 20) * (1 - slideOut) * 0.5;
+
+      // Clip-Region
+      ctx.beginPath();
+      ctx.roundRect(feedSlideX, feedY, feedW, feedH, 12);
+      ctx.clip();
+
+      // Dunkler Hintergrund
+      ctx.fillStyle = 'rgba(15, 15, 20, 0.95)';
+      ctx.fillRect(feedSlideX, feedY, feedW, feedH);
+
+      // Thumbnails + Titel
+      const fFont = Math.max(8, feedW * 0.08);
+      for (let i = 0; i < d.data.titles.length + 1; i++) {
+        const idx = i % d.data.titles.length;
+        const iy = feedY + 8 + i * itemH - scrollOff;
+        if (iy + itemH < feedY || iy > feedY + feedH) continue;
+
+        // Thumbnail (farbiger Rect)
+        ctx.fillStyle = d.data.colors[idx] || '#555';
+        ctx.beginPath();
+        ctx.roundRect(feedSlideX + 8, iy, feedW - 16, thumbH, 6);
+        ctx.fill();
+
+        // Play-Triangle
+        const triX = feedSlideX + feedW / 2;
+        const triY = iy + thumbH / 2;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.beginPath();
+        ctx.moveTo(triX - 8, triY - 10);
+        ctx.lineTo(triX - 8, triY + 10);
+        ctx.lineTo(triX + 10, triY);
+        ctx.closePath();
+        ctx.fill();
+
+        // Titel
+        ctx.font = `400 ${fFont}px -apple-system, "SF Pro Display", sans-serif`;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        const maxChars = Math.floor((feedW - 20) / (fFont * 0.55));
+        const title = d.data.titles[idx].length > maxChars
+          ? d.data.titles[idx].slice(0, maxChars - 1) + '…'
+          : d.data.titles[idx];
+        ctx.fillText(title, feedSlideX + 8, iy + thumbH + 2);
+      }
 
       ctx.restore();
       ctx.globalAlpha = 1;
@@ -1601,11 +1958,11 @@ function drawMenu() {
   const _prevLotus = menuButtons.lotus; // Hit-Area beibehalten falls Rendering fehlschlägt
   const _prevGk = menuButtons.gkLink;
   const _prevLink = menuButtons.link;
-  menuButtons = { timer: [], breathing: [], timerToggle: null, customTime: null, shake: [], meditation: [], start: null, faceSwap: [], faceSave: null, lotus: _prevLotus, gkLink: _prevGk, link: _prevLink };
+  menuButtons = { timer: [], breathing: [], timerToggle: null, customTime: null, shake: [], meditation: [], start: null, faceSwap: [], faceSave: null, lotus: _prevLotus, lotusHint: null, gkLink: _prevGk, link: _prevLink };
 
   // Vertikales Layout berechnen — dynamisch an Fensterhöhe angepasst
   const vScale = isMobilePortrait ? 1.0 : Math.max(0.7, Math.min(1.4, H / 800));
-  const titleSize = unit * 0.12;
+  const titleSize = unit * (isMobilePortrait ? 0.18 : 0.12);
   const subtitleSize = unit * (isMobilePortrait ? 0.02 : 0.028) * uiScale;
   const rowFont = unit * 0.02 * uiScale;
   const btnH = unit * 0.04 * uiScale;
@@ -2021,7 +2378,7 @@ function drawMenu() {
       rx += tBtnW + tGap;
     }
 
-    curY += tBtnH + sectionGap * (isMobilePortrait ? 2.5 : 1);
+    curY += tBtnH + sectionGap * (isMobilePortrait ? 2.5 : 2);
   }
 
   // --- ATMEN ---
@@ -2157,7 +2514,7 @@ function drawMenu() {
   ctx.textBaseline = 'middle';
   ctx.fillText(startLabel, cx, curY + startH / 2);
   ctx.shadowBlur = 0;
-  menuButtons.start = canStart ? { x: startX, y: curY, w: startW, h: startH } : null;
+  menuButtons.start = canStart ? { x: startX, y: curY, w: startW, h: startH } : { x: startX, y: curY, w: startW, h: startH, disabled: true };
 
   // Gesamte Inhaltshöhe berechnen (logische Koordinaten, ohne Scroll-Offset)
   menuContentHeight = curY + startH + sectionGap;
@@ -2311,7 +2668,7 @@ function drawMenu() {
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
 
-    // Hover-Tooltip (nur Desktop, nicht während Toast aktiv)
+    // Desktop: Hover-Tooltip ÜBER dem Lotus
     const toastActive = toastMsg && Date.now() - toastStart < 5000;
     if (hoverLotus && !isMobilePortrait && !toastActive) {
       const tipFont = Math.max(13, unit * 0.018);
@@ -2319,7 +2676,6 @@ function drawMenu() {
         ? (lang === 'de' ? 'Ablenkungen deaktivieren' : 'Disable distractions')
         : (lang === 'de' ? 'Ablenkungen aktivieren — echte digitale Versuchungen stören deine Meditation' : 'Enable distractions — real digital temptations will disrupt your meditation');
       ctx.font = `400 ${tipFont}px "Courier New", monospace`;
-      // Text umbrechen wenn nötig
       const maxTipW = Math.min(280, W * 0.35);
       const words = tipText.split(' ');
       const tipLines = [];
@@ -2336,7 +2692,7 @@ function drawMenu() {
       const tipH = tipLines.length * tipLineH + tipPad * 2;
       const tipW = Math.min(maxTipW + tipPad * 2, tipLines.reduce((max, l) => Math.max(max, ctx.measureText(l).width), 0) + tipPad * 2);
       const tipX = lx - tipW + iconSize * 0.3;
-      const tipY = iconY - tipH - 8;
+      const tipY = iconY - tipH - 10;
 
       ctx.globalAlpha = 0.92;
       ctx.beginPath();
@@ -2358,23 +2714,146 @@ function drawMenu() {
       ctx.textBaseline = 'alphabetic';
     }
 
-    // Wabernder Pfeil über dem Lotus wenn Ablenkungen aus
-    if (!lotusActive && !hoverLotus) {
-      const arrowT = Date.now() * 0.0015;
-      const arrowBob = Math.sin(arrowT) * 2.5;
-      const arrowAlpha = isMobilePortrait ? 0.3 : (0.18 + Math.sin(arrowT * 0.7) * 0.06);
-      const ay = iconY - iconSize * 0.35 + arrowBob;
-      const ax = lx;
-      const as = iconSize * (isMobilePortrait ? 0.22 : 0.18);
-      ctx.globalAlpha = arrowAlpha;
-      ctx.beginPath();
-      ctx.moveTo(ax, ay + as);
-      ctx.lineTo(ax - as * 0.6, ay);
-      ctx.lineTo(ax + as * 0.6, ay);
-      ctx.closePath();
-      ctx.fillStyle = 'rgba(42, 191, 191, 0.8)';
-      ctx.fill();
+    // Glow + Partikel um den Lotus — Teal wenn aus, Rot wenn aktiv
+    if (!hoverLotus) {
+      const idleTime = (Date.now() - (window._idleStart || Date.now())) / 1000;
+      if (!window._idleStart) window._idleStart = Date.now();
+      const now_ms = Date.now();
+
+      // Farbe: Teal (aus) vs Rot (aktiv)
+      const cr = lotusActive ? 232 : 42;
+      const cg = lotusActive ? 106 : 191;
+      const cb = lotusActive ? 122 : 191;
+      const hexCol = lotusActive ? '#e86a7a' : '#2abfbf';
+
+      // Phase 1: Aura sofort da, wird über 5s voller
+      const auraStrength = Math.min(1, 0.4 + idleTime / 8);
+      // Phase 2: Partikel sofort, werden über 8s mehr
+      const particleStrength = Math.min(1, 0.3 + idleTime / 10);
+
+      // --- Pulsierende Aura ---
+      if (auraStrength > 0.01) {
+        const breathe = Math.sin(now_ms * 0.0015) * 0.3 + 0.7;
+        const auraR = lr * (2.2 + breathe * 0.5);
+        const auraGrad = ctx.createRadialGradient(lx, ly, lr * 0.5, lx, ly, auraR);
+        auraGrad.addColorStop(0, `rgba(${cr}, ${cg}, ${cb}, ${0.15 * auraStrength * breathe})`);
+        auraGrad.addColorStop(0.5, `rgba(${cr}, ${cg}, ${cb}, ${0.06 * auraStrength * breathe})`);
+        auraGrad.addColorStop(1, `rgba(${cr}, ${cg}, ${cb}, 0)`);
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.arc(lx, ly, auraR, 0, Math.PI * 2);
+        ctx.fillStyle = auraGrad;
+        ctx.fill();
+
+        // Gelegentlicher Shimmer (alle ~5s)
+        const shimCycle = (now_ms / 1000) % 5.2;
+        if (shimCycle < 0.4 && auraStrength > 0.3) {
+          const shimAlpha = Math.sin(shimCycle / 0.4 * Math.PI) * 0.35 * auraStrength;
+          ctx.globalAlpha = shimAlpha;
+          ctx.beginPath();
+          ctx.arc(lx, ly, lr * 1.1, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+          ctx.fill();
+        }
+      }
+
+      // --- Schwebende Glühwürmchen-Partikel ---
+      if (particleStrength > 0.01) {
+        const count = Math.floor(3 + particleStrength * 5);
+        for (let i = 0; i < count; i++) {
+          const seed = i * 137.508;
+          const orbitSpeed = 0.0004 + (i % 3) * 0.0002;
+          const orbitR = lr * (1.6 + (i % 4) * 0.5);
+          const angle = now_ms * orbitSpeed + seed;
+          const px = lx + Math.cos(angle) * orbitR + Math.sin(angle * 1.7 + seed) * lr * 0.3;
+          const py = ly + Math.sin(angle) * orbitR * 0.6 + Math.cos(angle * 1.3 + seed) * lr * 0.2;
+          const pAlpha = particleStrength * (0.3 + Math.sin(now_ms * 0.003 + seed) * 0.2);
+          const pSize = 1.5 + Math.sin(now_ms * 0.002 + seed) * 0.8;
+
+          ctx.globalAlpha = pAlpha;
+          ctx.shadowColor = `rgba(${cr}, ${cg}, ${cb}, 0.8)`;
+          ctx.shadowBlur = 6;
+          ctx.beginPath();
+          ctx.arc(px, py, pSize, 0, Math.PI * 2);
+          ctx.fillStyle = hexCol;
+          ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+      }
       ctx.globalAlpha = 1;
+    }
+
+    // Mobile: Fragezeichen links neben dem Lotus + Hint-Bubble bei Tap
+    if (isMobilePortrait) {
+      const qSize = iconSize * 0.5;
+      const qx = iconRightX - qSize - 8;
+      const qy = iconY + (iconSize - qSize) / 2;
+      const qPad = 6;
+      menuButtons.lotusHint = { x: qx - qPad, y: qy - qPad, w: qSize + qPad * 2, h: qSize + qPad * 2 };
+
+      // Fragezeichen-Kreis
+      const qAlpha = lotusHintOpen ? 0.8 : 0.4;
+      ctx.globalAlpha = qAlpha;
+      ctx.beginPath();
+      ctx.arc(qx + qSize / 2, qy + qSize / 2, qSize / 2, 0, Math.PI * 2);
+      ctx.fillStyle = lotusHintOpen ? 'rgba(42, 191, 191, 0.3)' : 'rgba(42, 191, 191, 0.15)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(42, 191, 191, 0.6)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.font = `600 ${qSize * 0.7}px -apple-system, "SF Pro Display", sans-serif`;
+      ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('?', qx + qSize / 2, qy + qSize / 2 + 1);
+      ctx.globalAlpha = 1;
+
+      // Hint-Bubble wenn offen
+      if (lotusHintOpen) {
+        const hFont = Math.max(12, unit * 0.02);
+        const hText = lotusActive
+          ? (lang === 'de' ? 'Ablenkungen deaktivieren' : 'Disable distractions')
+          : (lang === 'de' ? 'Ablenkungen aktivieren — echte digitale Versuchungen stören deine Meditation' : 'Enable distractions — real digital temptations disrupt your meditation');
+        ctx.font = `400 ${hFont}px "Courier New", monospace`;
+        const maxHW = W * 0.7;
+        const hWords = hText.split(' ');
+        const hLines = [];
+        let hCur = '';
+        for (const w of hWords) {
+          const test = hCur ? hCur + ' ' + w : w;
+          if (ctx.measureText(test).width > maxHW && hCur) { hLines.push(hCur); hCur = w; }
+          else hCur = test;
+        }
+        if (hCur) hLines.push(hCur);
+
+        const hLineH = hFont * 1.5;
+        const hPad = hFont * 0.8;
+        const hH = hLines.length * hLineH + hPad * 2;
+        const hW = Math.min(maxHW + hPad * 2, hLines.reduce((max, l) => Math.max(max, ctx.measureText(l).width), 0) + hPad * 2);
+        const hX = Math.max(8, Math.min(W - hW - 8, lx - hW / 2));
+        const hY = iconY - hH - 12;
+
+        ctx.globalAlpha = 0.94;
+        ctx.beginPath();
+        ctx.roundRect(hX, hY, hW, hH, 10);
+        ctx.fillStyle = 'rgba(20, 22, 28, 0.96)';
+        ctx.fill();
+        ctx.strokeStyle = lotusActive ? 'rgba(232, 106, 122, 0.5)' : 'rgba(42, 191, 191, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = lotusActive ? 'rgba(232, 106, 122, 0.9)' : 'rgba(42, 191, 191, 0.9)';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        for (let li = 0; li < hLines.length; li++) {
+          ctx.fillText(hLines[li], hX + hPad, hY + hPad + li * hLineH);
+        }
+        ctx.globalAlpha = 1;
+      }
+      ctx.textAlign = 'start';
+      ctx.textBaseline = 'alphabetic';
+    } else {
+      menuButtons.lotusHint = null;
     }
 
   }
@@ -2949,7 +3428,7 @@ function handleMenuClick(x, y) {
   }
   // Start-Button
   const s = menuButtons.start;
-  if (s && x >= s.x && x <= s.x + s.w && sy >= s.y && sy <= s.y + s.h) {
+  if (s && !s.disabled && x >= s.x && x <= s.x + s.w && sy >= s.y && sy <= s.y + s.h) {
     disableMenuScroll();
     state = 'ready';
     // Audio-Session auf "playback" → Shake-Sound ignoriert iPhone-Stumm-Schalter
@@ -2967,6 +3446,7 @@ function handleMenuClick(x, y) {
 function returnToMenu() {
   if (state === 'idle') return;
   state = 'idle';
+  window._idleStart = Date.now(); // Pfeil-Animation neu starten
   // Audio-Session zurück auf "ambient" → Menü-Sounds respektieren Stumm-Schalter
   if (navigator.audioSession) {
     try { navigator.audioSession.type = 'ambient'; } catch(e) {}
@@ -3041,12 +3521,17 @@ canvas.addEventListener('click', (e) => {
   if (state === 'idle') {
     // Footer-Buttons direkt prüfen (Screen-Space)
     const _hitC = (b) => b && cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h;
+    if (_hitC(menuButtons.lotusHint)) {
+      lotusHintOpen = !lotusHintOpen;
+      return;
+    }
     if (_hitC(menuButtons.lotus)) {
+      lotusHintOpen = false;
       distractionModeIdx = distractionModeIdx === 1 ? 0 : 1;
       try { localStorage.setItem('msphere_distraction', distractionModeIdx); } catch(e) {}
       toastMsg = distractionModeIdx === 1
-        ? (lang === 'de' ? 'Ablenkungen aktiviert — widerstehe den Versuchungen!'
-                         : 'Distractions enabled — resist the temptations!')
+        ? (lang === 'de' ? 'Ablenkungen aktiviert — kannst du widerstehen?'
+                         : 'Distractions enabled — can you resist?')
         : (lang === 'de' ? 'Ablenkungen deaktiviert' : 'Distractions disabled');
       toastStart = Date.now();
       try { playTingsha(); } catch(err) { console.warn('playTingsha error:', err); }
@@ -3111,13 +3596,18 @@ canvas.addEventListener('touchend', (e) => {
     const _gk = menuButtons.gkLink;
     const _lnk = menuButtons.link;
     const _hitS = (b) => b && ftx >= b.x && ftx <= b.x + b.w && fty >= b.y && fty <= b.y + b.h;
+    if (_hitS(menuButtons.lotusHint)) {
+      lotusHintOpen = !lotusHintOpen;
+      return;
+    }
     if (_hitS(_lotus)) {
+      lotusHintOpen = false;
       try { ensureSound(); } catch(err) {}
       distractionModeIdx = distractionModeIdx === 1 ? 0 : 1;
       try { localStorage.setItem('msphere_distraction', distractionModeIdx); } catch(e) {}
       toastMsg = distractionModeIdx === 1
-        ? (lang === 'de' ? 'Ablenkungen aktiviert — widerstehe den Versuchungen!'
-                         : 'Distractions enabled — resist the temptations!')
+        ? (lang === 'de' ? 'Ablenkungen aktiviert — kannst du widerstehen?'
+                         : 'Distractions enabled — can you resist?')
         : (lang === 'de' ? 'Ablenkungen deaktiviert' : 'Distractions disabled');
       toastStart = Date.now();
       try { playTingsha(); } catch(err) { console.warn('playTingsha touch error:', err); }
@@ -4722,6 +5212,16 @@ function frame() {
   ctx.fillStyle = `rgb(${Math.round(bgR)}, ${Math.round(bgG)}, ${Math.round(bgB)})`;
   ctx.fillRect(0, 0, cW, cH);
 
+  // Dezentes Logo-Wasserzeichen im Hintergrund (nur idle)
+  if (state === 'idle' && bgLogoReady) {
+    const logoSize = Math.min(cW, cH) * 0.55;
+    const logoX = (cW - logoSize) / 2;
+    const logoY = (cH - logoSize) / 2 - cH * 0.02;
+    ctx.globalAlpha = 0.06;
+    ctx.drawImage(bgLogo, logoX, logoY, logoSize, logoSize);
+    ctx.globalAlpha = 1;
+  }
+
   const cx = cW / 2;
   const cy = cH / 2;
   let r = Math.min(cW, cH) * 0.35;
@@ -4932,7 +5432,18 @@ function frame() {
       const th = lineH * toastLines.length + toastFont * 1.2;
       const tx = (cW - tw) / 2;
       const lotusBtn = menuButtons.lotus;
-      const ty = (toastMobile && lotusBtn) ? lotusBtn.y - th - 12 : cH * 0.5 - th / 2;
+      const startBtn = menuButtons.start;
+      let ty;
+      if (toastMobile && lotusBtn) {
+        ty = lotusBtn.y - th - 12;
+      } else if (!toastMobile && startBtn && lotusBtn) {
+        // Desktop: zwischen Start-Button und Footer-Icons
+        const regionTop = startBtn.y + startBtn.h;
+        const regionBot = lotusBtn.y;
+        ty = regionTop + (regionBot - regionTop - th) / 2;
+      } else {
+        ty = cH * 0.5 - th / 2;
+      }
       ctx.globalAlpha = toastAlpha * 0.95;
       ctx.fillStyle = 'rgba(10, 22, 40, 0.9)';
       ctx.beginPath();
