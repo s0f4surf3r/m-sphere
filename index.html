@@ -104,7 +104,7 @@ const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 
 // --- Sprache (EN/DE) ---
-let lang = localStorage.getItem('msphere_lang') || 'de';
+let lang = localStorage.getItem('msphere_lang') || ((navigator.language || '').startsWith('de') ? 'de' : 'en');
 const TR = {
   de: {
     subtitle: 'INTERAKTIVE MEDITATION',
