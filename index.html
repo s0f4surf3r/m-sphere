@@ -804,6 +804,8 @@ let hoverGk = false;
 let hoverLangIdx = -1; // -1=kein Hover, 0=DE, 1=EN
 let hoverBurger = false;
 let hoverStopwatch = false;
+let hoverLegalClose = false;
+let hoverLegalBack = false;
 let lotusHintOpen = false; // Mobile: Fragezeichen-Hint offen
 let hoverMouseX = 0, hoverMouseY = 0; // aktuelle Mausposition für Hover-Checks
 function onMouseMove(e) {
@@ -874,6 +876,29 @@ function onMouseMove(e) {
       }
       const overLang = hoverLangIdx >= 0;
       canvas.style.cursor = overDial ? 'grab' : (overLink || hoverSection || overStart || overLotus || overTimeBtn || overGk || overBurger || overLang || hoverStopwatch) ? 'pointer' : 'default';
+    }
+    // Legal-Overlay: Hover für Close/Back-Button
+    if (legalOverlay) {
+      hoverLegalClose = false;
+      hoverLegalBack = false;
+      if (legalCloseBtn) {
+        const cb = legalCloseBtn;
+        hoverLegalClose = mx >= cb.x && mx <= cb.x + cb.w && my >= cb.y && my <= cb.y + cb.h;
+      }
+      if (legalBackBtn) {
+        const bb = legalBackBtn;
+        hoverLegalBack = mx >= bb.x && mx <= bb.x + bb.w && my >= bb.y && my <= bb.y + bb.h;
+      }
+      // Burger-Menü Items Hover
+      let overBurgerItem = false;
+      if (legalOverlay === 'menu') {
+        for (const item of burgerMenuItems) {
+          if (mx >= item.x && mx <= item.x + item.w && my >= item.y && my <= item.y + item.h) {
+            overBurgerItem = true; break;
+          }
+        }
+      }
+      canvas.style.cursor = (hoverLegalClose || hoverLegalBack || overBurgerItem) ? 'pointer' : 'default';
     }
     return;
   }
@@ -2359,7 +2384,8 @@ function drawMenu() {
 
   // Vertikales Layout berechnen — dynamisch an Fensterhöhe angepasst
   const vScale = isMobilePortrait ? 1.0 : Math.max(0.7, Math.min(1.4, H / 800));
-  const titleSize = unit * (isMobilePortrait ? 0.18 : 0.12);
+  let titleSize = unit * (isMobilePortrait ? 0.18 : 0.12);
+  if (isMobilePortrait && W < 375) titleSize = W * 0.14;
   const subtitleSize = unit * (isMobilePortrait ? 0.02 : 0.028) * uiScale;
   const rowFont = unit * 0.02 * uiScale;
   const btnH = unit * 0.04 * uiScale;
@@ -2951,7 +2977,7 @@ function drawMenu() {
   ctx.font = `${canStart ? '700' : '400'} ${startFont}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(startLabel, cx, curY + startH / 2);
+  ctx.fillText(startLabel, cx, curY + startH / 2 + startFont * 0.05);
   ctx.shadowBlur = 0;
   menuButtons.start = canStart ? { x: startX, y: curY, w: startW, h: startH } : { x: startX, y: curY, w: startW, h: startH, disabled: true };
 
@@ -3108,7 +3134,7 @@ function drawMenu() {
   {
     const credFont = subtitleSize * 0.65;
     const iconSize = burgerSize;
-    const iconY = H - (isMobilePortrait ? 24 : 20) - iconSize;
+    const iconY = H - burgerPad - iconSize;
     const credY = iconY + iconSize / 2; // vertikal zentriert mit Icons
     ctx.font = `${credFont}px "Courier New", monospace`;
     const credBase = isMobilePortrait ? 0.8 : 0.7;
@@ -3508,8 +3534,8 @@ function drawLegalOverlay() {
   const W = cW;
   const H = cH;
 
-  // Halbtransparenter Hintergrund
-  ctx.fillStyle = 'rgba(10, 22, 40, 0.94)';
+  // Halbtransparenter Hintergrund — warmes Dunkel statt kaltes Blau
+  ctx.fillStyle = 'rgba(8, 10, 16, 0.96)';
   ctx.fillRect(0, 0, W, H);
 
   const isMob = W < 600 && H > W;
@@ -3525,11 +3551,16 @@ function drawLegalOverlay() {
   const closeY = topPad;
   legalCloseBtn = { x: closeX, y: closeY, w: closeBtnSize, h: closeBtnSize };
 
-  ctx.fillStyle = 'rgba(42, 191, 191, 0.8)';
+  if (hoverLegalClose && !isMob) {
+    ctx.shadowColor = 'rgba(42, 191, 191, 0.7)';
+    ctx.shadowBlur = 10;
+  }
+  ctx.fillStyle = hoverLegalClose && !isMob ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.8)';
   ctx.font = `${closeBtnSize * 0.7}px "Courier New", monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('✕', closeX + closeBtnSize / 2, closeY + closeBtnSize / 2);
+  ctx.shadowBlur = 0;
 
   // --- Burger-Panel (Menu-State) ---
   if (legalOverlay === 'menu') {
@@ -3550,20 +3581,31 @@ function drawLegalOverlay() {
     const cardX = (W - cardW) / 2;
     const padX = itemFont * 0.8;
     const titleFontSize = itemFont * 1.1;
-    const titleH = titleFontSize * 2.2;
+    const titleGap = titleFontSize * 1.2;
+    const titleH = titleFontSize * 2.2 + titleGap;
     const totalH = titleH + items.length * itemH + (items.length - 1) * gap;
     const startY = (H - totalH) / 2;
 
-    // M-SPHERE / M-SPHÄRE Titel oben im Menü
+    // M-SPHERE / M-SPHÄRE Titel oben im Menü — heller, mehr Abstand
     ctx.save();
-    ctx.font = `600 ${titleFontSize}px ${sansFont}`;
+    ctx.font = `300 ${titleFontSize}px ${sansFont}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(240, 236, 230, 0.2)';
-    ctx.shadowBlur = 8;
-    ctx.fillStyle = 'rgba(240, 236, 230, 0.5)';
+    ctx.letterSpacing = `${titleFontSize * 0.15}px`;
+    ctx.shadowColor = 'rgba(42, 191, 191, 0.3)';
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = 'rgba(240, 236, 230, 0.7)';
     ctx.fillText(lang === 'de' ? 'M-SPHÄRE' : 'M-SPHERE', W / 2, startY + titleFontSize * 0.9);
     ctx.shadowBlur = 0;
+    ctx.letterSpacing = '0px';
+    // Dezente Trennlinie unter dem Titel
+    ctx.beginPath();
+    const lineW = isMob ? W * 0.3 : Math.min(120, W * 0.12);
+    ctx.moveTo(W / 2 - lineW / 2, startY + titleFontSize * 0.9 + titleFontSize * 0.8);
+    ctx.lineTo(W / 2 + lineW / 2, startY + titleFontSize * 0.9 + titleFontSize * 0.8);
+    ctx.strokeStyle = 'rgba(240, 236, 230, 0.12)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
     ctx.restore();
 
     ctx.textBaseline = 'middle';
@@ -3610,20 +3652,25 @@ function drawLegalOverlay() {
   // --- Text-Overlay (about/impressum/datenschutz) ---
   burgerMenuItems = [];
 
-  // ← Zurück-Button oben links
+  // ← Zurück-Button oben links — vertikal zentriert auf Close-Button
   const backFontSize = fontSize * 0.85;
   const backBtnH = backFontSize * 2;
   const backX = padding;
-  const backY = topPad;
+  const backY = closeY + (closeBtnSize - backBtnH) / 2;
   ctx.font = `${backFontSize}px "Courier New", monospace`;
   const backLabel = t('zurueck');
   const backTextW = ctx.measureText(backLabel).width;
   legalBackBtn = { x: backX, y: backY, w: backTextW + backFontSize * 0.3, h: backBtnH };
 
-  ctx.fillStyle = 'rgba(42, 191, 191, 0.8)';
+  if (hoverLegalBack && !isMob) {
+    ctx.shadowColor = 'rgba(42, 191, 191, 0.7)';
+    ctx.shadowBlur = 10;
+  }
+  ctx.fillStyle = hoverLegalBack && !isMob ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.8)';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillText(backLabel, backX, backY + backBtnH / 2);
+  ctx.shadowBlur = 0;
 
   // Inhaltsbereich (geclippt)
   const contentTop = topPad + backBtnH + fontSize * 3;
@@ -3779,6 +3826,16 @@ function drawLegalOverlay() {
   ctx.textBaseline = 'alphabetic';
 }
 
+// Karussell auf gewählten Button zentrieren
+function centerCarouselOnButton(collapseKey, btn) {
+  const area = menuScrollRowAreas[collapseKey];
+  if (!area) return;
+  const currentOff = menuScrollOffsets[collapseKey] || 0;
+  const btnCenterInContent = (btn.x - area.x) + currentOff + btn.w / 2;
+  const targetOff = Math.max(0, Math.min(area.maxOffset, btnCenterInContent - area.w / 2));
+  menuScrollOffsets[collapseKey] = targetOff;
+}
+
 function handleMenuClick(x, y) {
   // Legal-Overlay hat Vorrang
   if (legalOverlay) {
@@ -3920,6 +3977,7 @@ function handleMenuClick(x, y) {
     if (hitBtn(btn)) {
       breathingMode = btn.idx;
       localStorage.setItem('msphere_breathing', breathingMode);
+      centerCarouselOnButton('breathing', btn);
       return true;
     }
   }
@@ -3928,6 +3986,7 @@ function handleMenuClick(x, y) {
     if (hitBtn(btn)) {
       meditationSoundIdx = btn.idx;
       localStorage.setItem('msphere_medsound', meditationSoundIdx);
+      centerCarouselOnButton('meditation', btn);
       return true;
     }
   }
@@ -3936,6 +3995,7 @@ function handleMenuClick(x, y) {
     if (hitBtn(btn)) {
       thoughtModeIdx = btn.idx;
       localStorage.setItem('msphere_thought', thoughtModeIdx);
+      centerCarouselOnButton('thoughtMode', btn);
       return true;
     }
   }
@@ -3944,6 +4004,7 @@ function handleMenuClick(x, y) {
     if (hitBtn(btn)) {
       flowLevelIdx = FLOW_VISIBLE[btn.idx];
       localStorage.setItem('msphere_flow', flowLevelIdx);
+      centerCarouselOnButton('flowLevel', btn);
       return true;
     }
   }
@@ -3985,6 +4046,7 @@ function handleMenuClick(x, y) {
         stopWebcam();
         document.getElementById('faceLoadInput').click();
       }
+      centerCarouselOnButton('face', btn);
       menuExpanded.face = false;
       if (!Object.values(menuExpanded).some(v => v)) menuExpanded.breathing = true;
       return true;
