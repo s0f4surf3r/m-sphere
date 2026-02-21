@@ -903,32 +903,71 @@ canvas.addEventListener('mousedown', (e) => {
 });
 window.addEventListener('mouseup', (e) => {
   mouseDown = false;
-  // Dreh-Rad: Mouse-Drag beenden → Snap
+  // Dreh-Rad: Mouse-Drag beenden → Snap oder Klick
   if (dialTouchActive) {
     dialTouchActive = false;
-    const snapDial = () => {
-      if (dialTouchActive) return;
-      dialPos += dialVel;
-      dialVel *= 0.88;
-      dialPos = Math.max(-0.3, Math.min(DIAL_DURATIONS.length - 0.7, dialPos));
-      const nearest = Math.round(dialPos);
-      const snapForce = (nearest - dialPos) * 0.15;
-      dialPos += snapForce;
-      dialVel += snapForce * 0.5;
-      if (Math.abs(dialVel) > 0.005 || Math.abs(dialPos - nearest) > 0.01) {
-        requestAnimationFrame(snapDial);
-      } else {
-        dialPos = nearest;
-        dialVel = 0;
+    const [mx2] = canvasCoords(e.clientX, e.clientY);
+    const dragDist = Math.abs(mx2 - dialTouchStartX);
+    const elapsed = Date.now() - dialTouchStartTime;
+    // Klick-Erkennung: wenig Bewegung und kurze Dauer
+    if (dragDist < 5 && elapsed < 300 && dialHitArea) {
+      const dialCx = dialHitArea.x + dialHitArea.w / 2;
+      const current = Math.round(dialPos);
+      const target = mx2 < dialCx
+        ? Math.max(0, current - 1)
+        : Math.min(DIAL_DURATIONS.length - 1, current + 1);
+      if (target !== current) {
+        // Bounce-Animation: overshoot dann zurückfedern
+        const dir = target - current;
+        dialVel = dir * 0.35;
+        const bounceDial = () => {
+          if (dialTouchActive) return;
+          dialPos += dialVel;
+          dialVel *= 0.82;
+          const snapForce = (target - dialPos) * 0.18;
+          dialPos += snapForce;
+          dialVel += snapForce * 0.4;
+          if (Math.abs(dialVel) > 0.003 || Math.abs(dialPos - target) > 0.005) {
+            requestAnimationFrame(bounceDial);
+          } else {
+            dialPos = target;
+            dialVel = 0;
+          }
+          const snapped = Math.max(0, Math.min(DIAL_DURATIONS.length - 1, Math.round(dialPos)));
+          const durIdx = DIAL_DURATIONS[snapped];
+          if (durIdx !== undefined && durIdx < DURATION_OPTIONS.length) {
+            selectedDurationIdx = durIdx;
+            meditationDuration = DURATION_OPTIONS[durIdx].seconds;
+          }
+        };
+        requestAnimationFrame(bounceDial);
       }
-      const snapped = Math.max(0, Math.min(DIAL_DURATIONS.length - 1, Math.round(dialPos)));
-      const durIdx = DIAL_DURATIONS[snapped];
-      if (durIdx !== undefined && durIdx < DURATION_OPTIONS.length) {
-        selectedDurationIdx = durIdx;
-        meditationDuration = DURATION_OPTIONS[durIdx].seconds;
-      }
-    };
-    requestAnimationFrame(snapDial);
+    } else {
+      // Normaler Drag → Momentum-Snap
+      const snapDial = () => {
+        if (dialTouchActive) return;
+        dialPos += dialVel;
+        dialVel *= 0.88;
+        dialPos = Math.max(-0.3, Math.min(DIAL_DURATIONS.length - 0.7, dialPos));
+        const nearest = Math.round(dialPos);
+        const snapForce = (nearest - dialPos) * 0.15;
+        dialPos += snapForce;
+        dialVel += snapForce * 0.5;
+        if (Math.abs(dialVel) > 0.005 || Math.abs(dialPos - nearest) > 0.01) {
+          requestAnimationFrame(snapDial);
+        } else {
+          dialPos = nearest;
+          dialVel = 0;
+        }
+        const snapped = Math.max(0, Math.min(DIAL_DURATIONS.length - 1, Math.round(dialPos)));
+        const durIdx = DIAL_DURATIONS[snapped];
+        if (durIdx !== undefined && durIdx < DURATION_OPTIONS.length) {
+          selectedDurationIdx = durIdx;
+          meditationDuration = DURATION_OPTIONS[durIdx].seconds;
+        }
+      };
+      requestAnimationFrame(snapDial);
+    }
   }
 });
 canvas.addEventListener('dragstart', (e) => e.preventDefault());
@@ -3925,17 +3964,53 @@ canvas.addEventListener('touchend', (e) => {
     }
   }
   if (state === 'idle' && e.changedTouches.length > 0) {
-    // Dreh-Rad: Touch-End → Snap mit Momentum
+    // Dreh-Rad: Touch-End → Klick oder Snap mit Momentum
     if (dialTouchActive) {
       dialTouchActive = false;
-      // Momentum-Snap-Animation
+      const t0 = e.changedTouches[0];
+      const [tx2] = canvasCoords(t0.clientX, t0.clientY);
+      const dragDist = Math.abs(tx2 - dialTouchStartX);
+      const elapsed = Date.now() - dialTouchStartTime;
+      // Tap-Erkennung: wenig Bewegung und kurze Dauer
+      if (dragDist < 10 && elapsed < 300 && dialHitArea) {
+        const dialCx = dialHitArea.x + dialHitArea.w / 2;
+        const current = Math.round(dialPos);
+        const target = tx2 < dialCx
+          ? Math.max(0, current - 1)
+          : Math.min(DIAL_DURATIONS.length - 1, current + 1);
+        if (target !== current) {
+          const dir = target - current;
+          dialVel = dir * 0.35;
+          const bounceDial = () => {
+            if (dialTouchActive) return;
+            dialPos += dialVel;
+            dialVel *= 0.82;
+            const snapForce = (target - dialPos) * 0.18;
+            dialPos += snapForce;
+            dialVel += snapForce * 0.4;
+            if (Math.abs(dialVel) > 0.003 || Math.abs(dialPos - target) > 0.005) {
+              requestAnimationFrame(bounceDial);
+            } else {
+              dialPos = target;
+              dialVel = 0;
+            }
+            const snapped = Math.max(0, Math.min(DIAL_DURATIONS.length - 1, Math.round(dialPos)));
+            const durIdx = DIAL_DURATIONS[snapped];
+            if (durIdx !== undefined && durIdx < DURATION_OPTIONS.length) {
+              selectedDurationIdx = durIdx;
+              meditationDuration = DURATION_OPTIONS[durIdx].seconds;
+            }
+          };
+          requestAnimationFrame(bounceDial);
+        }
+        return;
+      }
+      // Normaler Drag → Momentum-Snap-Animation
       const snapDial = () => {
         if (dialTouchActive) return;
         dialPos += dialVel;
-        dialVel *= 0.88; // Deceleration
-        // Bounds
+        dialVel *= 0.88;
         dialPos = Math.max(-0.3, Math.min(DIAL_DURATIONS.length - 0.7, dialPos));
-        // Snap-Kraft zum nächsten Rastpunkt
         const nearest = Math.round(dialPos);
         const snapForce = (nearest - dialPos) * 0.15;
         dialPos += snapForce;
@@ -3946,7 +4021,6 @@ canvas.addEventListener('touchend', (e) => {
           dialPos = nearest;
           dialVel = 0;
         }
-        // Selektion aktualisieren
         const snapped = Math.max(0, Math.min(DIAL_DURATIONS.length - 1, Math.round(dialPos)));
         const durIdx = DIAL_DURATIONS[snapped];
         if (durIdx !== undefined && durIdx < DURATION_OPTIONS.length) {
