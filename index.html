@@ -802,6 +802,7 @@ let hoverSection = null; // welcher Sektions-Header wird gehovert
 let hoverLotus = false;
 let hoverGk = false;
 let hoverLangIdx = -1; // -1=kein Hover, 0=DE, 1=EN
+let hoverBurger = false;
 let lotusHintOpen = false; // Mobile: Fragezeichen-Hint offen
 let hoverMouseX = 0, hoverMouseY = 0; // aktuelle Mausposition für Hover-Checks
 function onMouseMove(e) {
@@ -861,7 +862,8 @@ function onMouseMove(e) {
         const d = dialHitArea;
         overDial = mx >= d.x && mx <= d.x + d.w && sy >= d.y && sy <= d.y + d.h;
       }
-      const overBurger = burgerBtnArea && mx >= burgerBtnArea.x && mx <= burgerBtnArea.x + burgerBtnArea.w && my >= burgerBtnArea.y && my <= burgerBtnArea.y + burgerBtnArea.h;
+      hoverBurger = !!(burgerBtnArea && mx >= burgerBtnArea.x && mx <= burgerBtnArea.x + burgerBtnArea.w && my >= burgerBtnArea.y && my <= burgerBtnArea.y + burgerBtnArea.h);
+      const overBurger = hoverBurger;
       hoverLangIdx = -1;
       for (let li = 0; li < (menuButtons.langToggle || []).length; li++) {
         const lb = menuButtons.langToggle[li];
@@ -2965,10 +2967,15 @@ function drawMenu() {
   const burgerY = Math.max(burgerPad, safeTop + burgerPad * 0.5);
   burgerBtnArea = { x: burgerX, y: burgerY, w: burgerSize, h: burgerSize };
 
-  ctx.strokeStyle = 'rgba(42, 191, 191, 0.9)';
-  ctx.lineWidth = isMobilePortrait ? 2.5 : 1.5;
+  if (hoverBurger && !isMobilePortrait) {
+    ctx.shadowColor = 'rgba(42, 191, 191, 0.7)';
+    ctx.shadowBlur = 12;
+  }
+  ctx.strokeStyle = hoverBurger && !isMobilePortrait ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.9)';
+  ctx.lineWidth = hoverBurger && !isMobilePortrait ? 2 : (isMobilePortrait ? 2.5 : 1.5);
   ctx.lineCap = 'round';
-  const lineLen = burgerSize * 0.7;
+  const burgerScale = hoverBurger && !isMobilePortrait ? 1.15 : 1;
+  const lineLen = burgerSize * 0.7 * burgerScale;
   const lineStartX = burgerX + (burgerSize - lineLen) / 2;
   for (let i = 0; i < 3; i++) {
     const ly = burgerY + burgerSize * (0.25 + i * 0.25);
@@ -2978,6 +2985,7 @@ function drawMenu() {
     ctx.stroke();
   }
   ctx.lineCap = 'butt';
+  ctx.shadowBlur = 0;
 
   // --- Language Toggle (EN / DE) — oben links, gegenüber Burger ---
   const langFont = burgerSize * (isMobilePortrait ? 0.42 : 0.38);
@@ -3514,15 +3522,15 @@ function drawLegalOverlay() {
     const totalH = titleH + items.length * itemH + (items.length - 1) * gap;
     const startY = (H - totalH) / 2;
 
-    // M-SPHERE Titel oben im Menü
+    // M-SPHERE / M-SPHÄRE Titel oben im Menü
     ctx.save();
     ctx.font = `600 ${titleFontSize}px ${sansFont}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(42, 191, 191, 0.4)';
-    ctx.shadowBlur = 12;
-    ctx.fillStyle = 'rgba(42, 191, 191, 0.7)';
-    ctx.fillText('M-SPHERE', W / 2, startY + titleFontSize * 0.9);
+    ctx.shadowColor = 'rgba(240, 236, 230, 0.2)';
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = 'rgba(240, 236, 230, 0.5)';
+    ctx.fillText(lang === 'de' ? 'M-SPHÄRE' : 'M-SPHERE', W / 2, startY + titleFontSize * 0.9);
     ctx.shadowBlur = 0;
     ctx.restore();
 
@@ -3544,40 +3552,33 @@ function drawLegalOverlay() {
       ctx.beginPath();
       ctx.roundRect(cardX, iy, cardW, itemH, cornerR);
       if (isHover) {
-        ctx.fillStyle = 'rgba(42, 191, 191, 0.12)';
+        ctx.fillStyle = 'rgba(240, 236, 230, 0.08)';
         ctx.fill();
-        ctx.strokeStyle = 'rgba(42, 191, 191, 0.5)';
+        ctx.strokeStyle = 'rgba(240, 236, 230, 0.35)';
         ctx.lineWidth = 1.5;
         ctx.stroke();
-        // Subtiler Glow
-        ctx.save();
-        ctx.shadowColor = 'rgba(42, 191, 191, 0.25)';
-        ctx.shadowBlur = 8;
-        ctx.strokeStyle = 'rgba(42, 191, 191, 0.3)';
-        ctx.stroke();
-        ctx.restore();
       } else {
-        ctx.fillStyle = 'rgba(26, 58, 92, 0.3)';
+        ctx.fillStyle = 'rgba(26, 42, 66, 0.35)';
         ctx.fill();
-        ctx.strokeStyle = 'rgba(42, 191, 191, 0.2)';
+        ctx.strokeStyle = 'rgba(240, 236, 230, 0.12)';
         ctx.lineWidth = 1;
         ctx.stroke();
       }
 
       // Label linksbündig
       ctx.textAlign = 'left';
-      ctx.fillStyle = isHover ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.9)';
+      ctx.fillStyle = isHover ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.75)';
       ctx.fillText(items[i].label, cardX + padX, iy + itemH / 2);
 
       // Chevron › rechtsbündig
       ctx.textAlign = 'right';
-      ctx.fillStyle = isHover ? 'rgba(42, 191, 191, 0.7)' : 'rgba(42, 191, 191, 0.35)';
+      ctx.fillStyle = isHover ? 'rgba(240, 236, 230, 0.6)' : 'rgba(240, 236, 230, 0.25)';
       ctx.fillText('›', cardX + cardW - padX, iy + itemH / 2);
     }
 
     // Versionsnummer unten
     ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(240, 236, 230, 0.15)';
+    ctx.fillStyle = 'rgba(240, 236, 230, 0.12)';
     ctx.font = `400 ${itemFont * 0.65}px ${sansFont}`;
     ctx.fillText('v1.5', W / 2, startY + totalH + itemFont * 1.8);
 
