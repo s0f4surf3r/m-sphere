@@ -2954,12 +2954,13 @@ function drawMenu() {
     ctx.textAlign = 'start';
   }
 
-  // Auf Mobile: Start-Text im oberen Drittel zwischen letztem Menüpunkt und Footer
+  // Auf Mobile: Start-Button mittig zwischen letztem Menüpunkt und Footer
   if (isMobilePortrait) {
-    const footerY = H - unit * 0.12; // Footer-Icons + Credits-Bereich
-    const availableSpace = footerY - curY;
+    const footerY = H - burgerPad - burgerSize; // Footer-Icons Oberkante
     const startBlockH = rowFont * 1.3 + rowFont * 1.3 * 0.6 * 2;
-    curY += sectionGap;
+    const availableSpace = footerY - curY;
+    const targetY = curY + (availableSpace - startBlockH) / 2;
+    curY = Math.max(curY + sectionGap, targetY);
   } else {
     curY += sectionGap * 2;
   }
