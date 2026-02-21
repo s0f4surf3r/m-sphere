@@ -2457,9 +2457,9 @@ function drawMenu() {
   // Vertikales Layout berechnen — dynamisch an Fensterhöhe angepasst
   const vScale = isMobilePortrait ? 1.0 : Math.max(0.7, Math.min(1.4, H / 800));
   let titleSize = unit * (isMobilePortrait ? 0.18 : 0.12);
-  // Titel darf nicht breiter sein als Burger/Lang-Begrenzung
+  // Titel darf nicht breiter sein als Burger/Lang-Begrenzung (burgerPad + burgerSize + Margin)
   if (isMobilePortrait) {
-    const maxTitleW = W - 2 * (unit * 0.04);
+    const maxTitleW = W - 2 * (unit * 0.14);
     ctx.font = `900 ${titleSize}px -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif`;
     ctx.letterSpacing = `${-titleSize * 0.02}px`;
     const measuredW = ctx.measureText(lang === 'de' ? 'M-SPHÄRE' : 'M-SPHERE').width;
