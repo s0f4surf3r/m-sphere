@@ -852,6 +852,7 @@ let hoverStopwatch = false;
 let hoverLegalClose = false;
 let hoverLegalBack = false;
 let lotusHintOpen = false; // Mobile: Fragezeichen-Hint offen
+let gkHintOpen = false; // Mobile: GK-Icon Hint offen
 let hoverMouseX = 0, hoverMouseY = 0; // aktuelle Mausposition für Hover-Checks
 function onMouseMove(e) {
   const [mx, my] = canvasCoords(e.clientX, e.clientY);
@@ -3276,6 +3277,48 @@ function drawMenu() {
     }
     menuButtons.gkLink = { x: iconLeftX, y: iconY, w: iconSize, h: iconSize };
 
+    // Mobile: GK Hint-Bubble wenn offen
+    if (gkHintOpen && isMobilePortrait) {
+      const ghFont = Math.max(12, unit * 0.02);
+      const ghText = lang === 'de'
+        ? 'Nochmal tippen um zum Gefühlskompass 5D zu wechseln'
+        : 'Tap again to switch to Gefühlskompass 5D';
+      ctx.font = `400 ${ghFont}px "Courier New", monospace`;
+      const ghMaxW = W * 0.7;
+      const ghWords = ghText.split(' ');
+      const ghLines = [];
+      let ghCur = '';
+      for (const w of ghWords) {
+        const test = ghCur ? ghCur + ' ' + w : w;
+        if (ctx.measureText(test).width > ghMaxW && ghCur) { ghLines.push(ghCur); ghCur = w; }
+        else ghCur = test;
+      }
+      if (ghCur) ghLines.push(ghCur);
+      const ghLineH = ghFont * 1.5;
+      const ghPad = ghFont * 0.8;
+      const ghH = ghLines.length * ghLineH + ghPad * 2;
+      const ghW = Math.min(ghMaxW + ghPad * 2, ghLines.reduce((max, l) => Math.max(max, ctx.measureText(l).width), 0) + ghPad * 2);
+      const ghX = Math.max(8, Math.min(W - ghW - 8, iconLeftX));
+      const ghY = iconY - ghH - 12;
+      ctx.globalAlpha = 0.94;
+      ctx.beginPath();
+      ctx.roundRect(ghX, ghY, ghW, ghH, 10);
+      ctx.fillStyle = 'rgba(20, 22, 28, 0.96)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(42, 191, 191, 0.5)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      for (let li = 0; li < ghLines.length; li++) {
+        ctx.fillText(ghLines[li], ghX + ghPad, ghY + ghPad + li * ghLineH);
+      }
+      ctx.globalAlpha = 1;
+      ctx.textAlign = 'start';
+      ctx.textBaseline = 'alphabetic';
+    }
+
     // Desktop: GK Hover-Tooltip ÜBER dem Icon
     if (hoverGk && !isMobilePortrait) {
       const tipFont = Math.max(13, unit * 0.018);
@@ -4274,16 +4317,16 @@ canvas.addEventListener('click', (e) => {
     const _hitC = (b) => b && cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h;
     if (_hitC(menuButtons.lotusHint)) {
       lotusHintOpen = !lotusHintOpen;
+      gkHintOpen = false;
       return;
     }
     if (_hitC(menuButtons.lotus)) {
+      gkHintOpen = false;
       if (!lotusHintOpen) {
-        // Erster Klick: Hint zeigen (erklärt was passiert)
         lotusHintOpen = true;
         try { playTingsha(); } catch(err) {}
         return;
       }
-      // Zweiter Klick (Hint offen): Modus toggeln
       lotusHintOpen = false;
       distractionModeIdx = distractionModeIdx === 1 ? 0 : 1;
       try { localStorage.setItem('msphere_distraction', distractionModeIdx); } catch(e) {}
@@ -4296,7 +4339,14 @@ canvas.addEventListener('click', (e) => {
       return;
     }
     if (_hitC(menuButtons.gkLink)) {
-      window.open('https://gefuehlskompass.vercel.app/de', '_blank');
+      lotusHintOpen = false;
+      if (!gkHintOpen) {
+        gkHintOpen = true;
+        try { playTingsha(); } catch(err) {}
+        return;
+      }
+      gkHintOpen = false;
+      window.open('https://gefuehlskompass.vercel.app/' + (lang === 'de' ? 'de' : 'en'), '_blank');
       return;
     }
     if (_hitC(menuButtons.link)) {
@@ -4462,17 +4512,17 @@ canvas.addEventListener('touchend', (e) => {
     const _hitS = (b) => b && ftx >= b.x && ftx <= b.x + b.w && fty >= b.y && fty <= b.y + b.h;
     if (_hitS(menuButtons.lotusHint)) {
       lotusHintOpen = !lotusHintOpen;
+      gkHintOpen = false;
       return;
     }
     if (_hitS(_lotus)) {
       try { ensureSound(); } catch(err) {}
+      gkHintOpen = false;
       if (!lotusHintOpen) {
-        // Erster Tap: Hint zeigen (erklärt was passiert)
         lotusHintOpen = true;
         try { playTingsha(); } catch(err) {}
         return;
       }
-      // Zweiter Tap (Hint offen): Modus toggeln
       lotusHintOpen = false;
       distractionModeIdx = distractionModeIdx === 1 ? 0 : 1;
       try { localStorage.setItem('msphere_distraction', distractionModeIdx); } catch(e) {}
@@ -4485,7 +4535,15 @@ canvas.addEventListener('touchend', (e) => {
       return;
     }
     if (_hitS(_gk)) {
-      window.open('https://gefuehlskompass.vercel.app/de', '_blank');
+      lotusHintOpen = false;
+      if (!gkHintOpen) {
+        gkHintOpen = true;
+        try { ensureSound(); } catch(err) {}
+        try { playTingsha(); } catch(err) {}
+        return;
+      }
+      gkHintOpen = false;
+      window.open('https://gefuehlskompass.vercel.app/' + (lang === 'de' ? 'de' : 'en'), '_blank');
       return;
     }
     if (_hitS(_lnk)) {
