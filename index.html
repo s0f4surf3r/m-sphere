@@ -1157,9 +1157,8 @@ function onTouchStart(e) {
     menuTouchDist = 0;
     titleTouchStartX = tx;
     titleTouchStartY = ty;
-    // Dreh-Rad: Touch-Start prüfen
-    const isMob = cW < 600 && cH > cW;
-    if (isMob && dialHitArea) {
+    // Dreh-Rad: Touch-Start prüfen (alle Touch-Geräte, inkl. iPad)
+    if (dialHitArea) {
       const sy = ty + (window.scrollY || 0);
       const d = dialHitArea;
       if (tx >= d.x && tx <= d.x + d.w && sy >= d.y && sy <= d.y + d.h) {
@@ -2471,10 +2470,38 @@ function drawMenu() {
   const rowFont = unit * 0.02 * uiScale;
   const btnH = unit * 0.04 * uiScale;
   const btnGap = unit * 0.012 * uiScale;
-  const sectionGap = unit * 0.025 * (isMobilePortrait ? 0.8 : 0.7) * vScale;
-
   const safeTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
   let curY = Math.max(H * (isMobilePortrait ? 0.08 : 0.1 * vScale), safeTop + unit * (isMobilePortrait ? 0.04 : 0.03));
+
+  // --- Zwei Gap-Systeme: sectionGap (eng, Settings) + layoutGap (weit, Struktur) ---
+  let sectionGap, layoutGap;
+  if (isMobilePortrait) {
+    // Settings-Items gehören als Gruppe zusammen → enger, fester Abstand
+    sectionGap = rowFont * 0.5;
+    // Strukturelle Trennung: verbleibender Raum proportional verteilt
+    const _dialH = btnH * 2.2;
+    const _rowCollapsed = rowFont * 2;
+    const _rowExpanded = rowFont * 2 + btnGap + btnH * 0.9;
+    let _sectionsH = 0;
+    for (const key of ['breathing', 'meditation', 'thoughtMode', 'flowLevel', 'face']) {
+      _sectionsH += menuExpanded[key] ? _rowExpanded : _rowCollapsed;
+    }
+    let _innerGapSum = 0;
+    for (const key of ['breathing', 'meditation', 'thoughtMode', 'flowLevel']) {
+      _innerGapSum += sectionGap * (menuExpanded[key] ? 0.6 : 1.0);
+    }
+    const _titleSubH = titleSize + subtitleSize * uiScale * 1.5;
+    const _startBtnH = rowFont * 1.3 * 2.2;
+    const _footerH = unit * 0.12;
+    const _fixedH = curY + _titleSubH + _dialH + _sectionsH + _startBtnH + _innerGapSum;
+    const _availH = H - _footerH;
+    // Gewichte: Titel→Sub(0.3) + Sub→Dial(2.5) + Dial→Settings(0.8) + Settings→Start(1.5) + Start→Footer(1.0)
+    const _outerWeight = 0.3 + 2.5 + 0.8 + 1.5 + 1.0;
+    layoutGap = Math.max(unit * 0.005, (_availH - _fixedH) / _outerWeight);
+  } else {
+    sectionGap = unit * 0.025 * 0.7 * vScale;
+    layoutGap = sectionGap;
+  }
 
   // Native Scrolling: Gesamten Menü-Inhalt um scrollY nach oben verschieben
   const scrollY = window.scrollY || 0;
@@ -2493,23 +2520,24 @@ function drawMenu() {
   ctx.font = `900 ${titleSize}px -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif`;
   ctx.letterSpacing = `${-titleSize * 0.02}px`;
 
-  // Glow Layer 1: breiter Teal-Schein
-  ctx.shadowColor = 'rgba(42, 191, 191, 0.7)';
-  ctx.shadowBlur = 80;
-  ctx.fillStyle = 'rgba(42, 191, 191, 0.35)';
+  // Glow Layer 1: breiter Teal-Schein (gedämpft auf Mobile)
+  const _glowMob = isMobilePortrait ? 0.5 : 1.0;
+  ctx.shadowColor = `rgba(42, 191, 191, ${0.4 * _glowMob})`;
+  ctx.shadowBlur = 60 * _glowMob;
+  ctx.fillStyle = `rgba(42, 191, 191, ${0.2 * _glowMob})`;
   ctx.fillText(titleText, cx, curY);
 
   // Glow Layer 2: mittlerer Teal-Schein
-  ctx.shadowColor = 'rgba(42, 191, 191, 1.0)';
-  ctx.shadowBlur = 35;
-  ctx.fillStyle = 'rgba(42, 191, 191, 0.5)';
+  ctx.shadowColor = `rgba(42, 191, 191, ${0.6 * _glowMob})`;
+  ctx.shadowBlur = 25 * _glowMob;
+  ctx.fillStyle = `rgba(42, 191, 191, ${0.3 * _glowMob})`;
   ctx.fillText(titleText, cx, curY);
 
-  // Layer 3: Haupttext mit kleinem Drop-Shadow
+  // Layer 3: Haupttext (auf Mobile dezenter)
   ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 2;
-  ctx.fillStyle = '#f0ece6';
+  ctx.fillStyle = isMobilePortrait ? 'rgba(240, 236, 230, 0.75)' : '#f0ece6';
   ctx.fillText(titleText, cx, curY);
   ctx.shadowOffsetY = 0;
   ctx.shadowBlur = 0;
@@ -2539,7 +2567,7 @@ function drawMenu() {
     ctx.fillStyle = `rgba(${eeColor}, 0.7)`;
     ctx.fillText(liebeText, cx, liebeY);
     // ♡ Name ♡ darüber
-    const nameY = liebeY - eeSize * 0.3;
+    const nameY = liebeY - eeSize * 0.7;
     ctx.font = `400 ${eeSize}px "Courier New", monospace`;
     const eeAlpha = easterEggFlash > 0 ? 1 : 0.85;
     ctx.fillStyle = `rgba(${eeColor}, ${eeAlpha})`;
@@ -2574,7 +2602,7 @@ function drawMenu() {
     ctx.textBaseline = 'top';
   }
 
-  curY += actualTitleH + unit * (isMobilePortrait ? 0.01 : 0.015) * vScale;
+  curY += actualTitleH + (isMobilePortrait ? layoutGap * 0.3 : unit * 0.015 * vScale);
 
   // Untertitel — auf Mobile gleich breit wie Titel
   ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.55)';
@@ -2594,7 +2622,7 @@ function drawMenu() {
   ctx.fillText(t('subtitle'), cx, curY);
   ctx.letterSpacing = '0px';
   ctx.shadowBlur = 0;
-  curY += stSize * (isMobilePortrait ? 2.8 : 2 + vScale * 1.5);
+  curY += stSize * 1.2 + (isMobilePortrait ? layoutGap * 2.5 : sectionGap + stSize * (vScale * 0.5));
 
   // Language Toggle wird außerhalb des Scroll-Bereichs gezeichnet (siehe unten)
 
@@ -2927,7 +2955,7 @@ function drawMenu() {
     ctx.fillStyle = 'rgba(255, 215, 0, 0.7)';
     ctx.fill();
 
-    curY += dialH + sectionGap;
+    curY += dialH + (isMobilePortrait ? layoutGap * 0.8 : sectionGap);
   }
 
   // --- ATMEN ---
@@ -2936,7 +2964,7 @@ function drawMenu() {
   const breathLabels = lang === 'de' ? BREATHING_MODES : [t('aus'), 'Coherent', 'Calming 4:6', '4-7-8', 'Box'];
   const breathRow = drawSettingsRow(t('atemrhythmus'), breathLabels, breathingMode, curY, null, 'breathing');
   menuButtons.breathing = breathRow.btns;
-  curY = breathRow.bottomY + sectionGap;
+  curY = breathRow.bottomY + sectionGap * (menuExpanded.breathing ? 0.6 : 1);
 
   // --- SOUNDS (Drone ausgeblendet) ---
   const medAllLabels = lang === 'de' ? MEDITATION_SOUNDS : [t('stille'), t('drone'), t('klangschale'), t('tanpura'), '528 Hz', '432 Hz', t('binaural')];
@@ -2944,7 +2972,7 @@ function drawMenu() {
   const medSelIdx = MED_VISIBLE.indexOf(meditationSoundIdx);
   const medRow = drawSettingsRow(t('meditationsSound'), medLabels, medSelIdx, curY, null, 'meditation');
   menuButtons.meditation = medRow.btns.map(btn => ({ ...btn, idx: MED_VISIBLE[btn.idx] }));
-  curY = medRow.bottomY + sectionGap;
+  curY = medRow.bottomY + sectionGap * (menuExpanded.meditation ? 0.6 : 1);
 
   // --- GEDANKENMODUS (nur sichtbare Modi) ---
   const thoughtTR = lang === 'de' ? THOUGHT_MODES : ['Float2', 'Float2-old', 'Float3-old', t('schwebenMitSog'), t('sinken'), t('reflektieren'), t('schweben')];
@@ -2953,14 +2981,14 @@ function drawMenu() {
   const thoughtRow = drawSettingsRow(t('gedankenmodus'), visLabels, visSelectedIdx, curY, null, 'thoughtMode');
   thoughtRow.btns.forEach((btn, i) => { btn.idx = THOUGHT_MODES_VISIBLE[i]; });
   menuButtons.thoughtMode = thoughtRow.btns;
-  curY = thoughtRow.bottomY + sectionGap;
+  curY = thoughtRow.bottomY + sectionGap * (menuExpanded.thoughtMode ? 0.6 : 1);
 
   // --- GEDANKENFLUSS (4x/5x ausgeblendet) — Buttons ---
   const visFlowLabels = FLOW_VISIBLE.map(i => FLOW_LEVELS[i]);
   const visFlowSelectedIdx = FLOW_VISIBLE.indexOf(flowLevelIdx);
   const flowRow = drawSettingsRow(t('gedankenfluss'), visFlowLabels, visFlowSelectedIdx, curY, null, 'flowLevel');
   menuButtons.flowLevel = flowRow.btns;
-  curY = flowRow.bottomY + sectionGap;
+  curY = flowRow.bottomY + sectionGap * (menuExpanded.flowLevel ? 0.6 : 1);
 
   // --- DEIN GESICHT ---
   const faceHasSwap = faceSwapStatus === 'done' && faceSwapImg;
@@ -2999,15 +3027,8 @@ function drawMenu() {
     ctx.textAlign = 'start';
   }
 
-  // Auf Mobile: Start-Button mittig zwischen letztem Menüpunkt und Footer
-  if (isMobilePortrait) {
-    const footerTop = H - unit * 0.04 - unit * 0.08;
-    const startBlockH = rowFont * 1.3 + rowFont * 1.3 * 0.6 * 2;
-    const targetY = curY + (footerTop - curY - startBlockH) / 2;
-    curY = Math.max(curY + sectionGap, targetY);
-  } else {
-    curY += sectionGap * 2;
-  }
+  // Start-Button: struktureller Abstand zur Settings-Gruppe
+  curY += isMobilePortrait ? layoutGap * 1.5 : sectionGap * 2;
 
   // --- START Button (Pill-Shape) ---
   const canStart = selectedDurationIdx >= 0;
@@ -3058,7 +3079,7 @@ function drawMenu() {
   ctx.font = `${canStart ? '700' : '400'} ${startFont}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(startLabel, cx, curY + startH / 2 + startFont * 0.05);
+  ctx.fillText(startLabel, cx, curY + startH / 2 + startFont * 0.08);
   ctx.shadowBlur = 0;
   menuButtons.start = canStart ? { x: startX, y: curY, w: startW, h: startH } : { x: startX, y: curY, w: startW, h: startH, disabled: true };
 
@@ -4130,8 +4151,11 @@ function handleMenuClick(x, y) {
         document.getElementById('faceLoadInput').click();
       }
       centerCarouselOnButton('face', btn);
-      menuExpanded.face = false;
-      if (!Object.values(menuExpanded).some(v => v)) menuExpanded.breathing = true;
+      // Menü nur zuklappen wenn "Aus" gewählt (sonst offen für Fortschritt)
+      if (faceModeIdx === 0) {
+        menuExpanded.face = false;
+        if (!Object.values(menuExpanded).some(v => v)) menuExpanded.breathing = true;
+      }
       return true;
     }
   }
@@ -4140,6 +4164,11 @@ function handleMenuClick(x, y) {
   if (tt && x >= tt.x && x <= tt.x + tt.w && sy >= tt.y && sy <= tt.y + tt.h) {
     timerVisible = !timerVisible;
     localStorage.setItem('msphere_timer', timerVisible);
+    try { playTingsha(); } catch(err) {}
+    toastMsg = timerVisible
+      ? (lang === 'de' ? 'Timer wird während der Meditation angezeigt' : 'Timer shown during meditation')
+      : (lang === 'de' ? 'Timer ausgeblendet' : 'Timer hidden');
+    toastStart = Date.now();
     return true;
   }
   // Custom-Time-Button
@@ -4248,6 +4277,13 @@ canvas.addEventListener('click', (e) => {
       return;
     }
     if (_hitC(menuButtons.lotus)) {
+      if (!lotusHintOpen) {
+        // Erster Klick: Hint zeigen (erklärt was passiert)
+        lotusHintOpen = true;
+        try { playTingsha(); } catch(err) {}
+        return;
+      }
+      // Zweiter Klick (Hint offen): Modus toggeln
       lotusHintOpen = false;
       distractionModeIdx = distractionModeIdx === 1 ? 0 : 1;
       try { localStorage.setItem('msphere_distraction', distractionModeIdx); } catch(e) {}
@@ -4429,8 +4465,15 @@ canvas.addEventListener('touchend', (e) => {
       return;
     }
     if (_hitS(_lotus)) {
-      lotusHintOpen = false;
       try { ensureSound(); } catch(err) {}
+      if (!lotusHintOpen) {
+        // Erster Tap: Hint zeigen (erklärt was passiert)
+        lotusHintOpen = true;
+        try { playTingsha(); } catch(err) {}
+        return;
+      }
+      // Zweiter Tap (Hint offen): Modus toggeln
+      lotusHintOpen = false;
       distractionModeIdx = distractionModeIdx === 1 ? 0 : 1;
       try { localStorage.setItem('msphere_distraction', distractionModeIdx); } catch(e) {}
       toastMsg = distractionModeIdx === 1
@@ -4791,18 +4834,18 @@ function playDialTick() {
   if (!soundInitialized) return;
   if (audioCtx.state !== 'running') return;
   const t = audioCtx.currentTime;
-  // Kurzer knackiger Tick: hoher Impuls + schneller Decay
+  // Sanfter, dumpfer Tick: tiefer Ton mit weichem Decay
   const osc = audioCtx.createOscillator();
-  osc.type = 'triangle';
-  osc.frequency.setValueAtTime(3200, t);
-  osc.frequency.exponentialRampToValueAtTime(1200, t + 0.03);
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(520, t);
+  osc.frequency.exponentialRampToValueAtTime(280, t + 0.05);
   const gain = audioCtx.createGain();
-  gain.gain.setValueAtTime(0.06, t);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+  gain.gain.setValueAtTime(0.04, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
   osc.connect(gain);
   gain.connect(audioCtx.destination);
   osc.start(t);
-  osc.stop(t + 0.08);
+  osc.stop(t + 0.12);
 }
 
 function playSparkle() {
@@ -5826,16 +5869,35 @@ document.getElementById('faceLoadInput').addEventListener('change', (e) => {
   e.target.value = '';
 });
 
-// Face-Swap-Bild als Download speichern
+// Face-Swap-Bild speichern (mit Share Sheet auf iOS/iPad für Speicherort-Wahl)
 function saveFaceSwapImage() {
   if (!faceSwapImg) return;
   const c = document.createElement('canvas');
   c.width = faceSwapImg.width;
   c.height = faceSwapImg.height;
   c.getContext('2d').drawImage(faceSwapImg, 0, 0);
+  const filename = 'msphere-monk-' + Date.now() + '.png';
+  // iOS/iPad: Share Sheet öffnen → "In Dateien sichern" mit Speicherort-Wahl
+  if (navigator.canShare && navigator.share) {
+    c.toBlob((blob) => {
+      if (!blob) { _faceDownloadFallback(c, filename); return; }
+      const file = new File([blob], filename, { type: 'image/png' });
+      try {
+        if (navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file] }).catch(() => {});
+          return;
+        }
+      } catch(e) {}
+      _faceDownloadFallback(c, filename);
+    }, 'image/png');
+    return;
+  }
+  _faceDownloadFallback(c, filename);
+}
+function _faceDownloadFallback(canvas, filename) {
   const a = document.createElement('a');
-  a.href = c.toDataURL('image/png');
-  a.download = 'msphere-monk-' + Date.now() + '.png';
+  a.href = canvas.toDataURL('image/png');
+  a.download = filename;
   a.click();
 }
 
