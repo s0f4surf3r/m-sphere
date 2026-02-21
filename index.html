@@ -143,6 +143,15 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
       font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">Abbrechen</button>
   </div>
 </div>
+<noscript><div style="position:fixed;inset:0;background:#000;color:#f0ece6;display:flex;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:2rem"><p>M-Sphere benötigt JavaScript.<br>Bitte aktiviere JavaScript in deinen Browser-Einstellungen.</p></div></noscript>
+<script>
+// Fallback für Browser ohne ES-Module oder importmap Support
+if (!('noModule' in HTMLScriptElement.prototype) || !HTMLScriptElement.supports || !HTMLScriptElement.supports('importmap')) {
+  document.addEventListener('DOMContentLoaded', function() {
+    document.body.innerHTML = '<div style="position:fixed;inset:0;background:#000;color:#f0ece6;display:flex;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:2rem;flex-direction:column"><h2 style="color:#2abfbf;margin-bottom:1rem">M-Sphere</h2><p>Dein Browser ist leider zu alt für M-Sphere.<br>Bitte verwende einen aktuellen Browser (Chrome, Safari, Firefox, Edge).</p></div>';
+  });
+}
+</script>
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -575,7 +584,7 @@ Für die Face-Swap-Funktion wird PayPal als Zahlungsdienstleister genutzt (Autor
 Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung).
 
 6. COOKIES
-M-Sphere verwendet keine Cookies und keine Tracking- oder Analyse-Tools.
+M-Sphere selbst verwendet keine Cookies und keine Tracking- oder Analyse-Tools. Das PayPal SDK, das bei Nutzung der Face-Swap-Bezahlfunktion geladen wird, kann eigene Cookies setzen. Details hierzu findest du in der Datenschutzerklärung von PayPal.
 
 7. DEINE RECHTE
 Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch. Beschwerden kannst du an die zuständige Aufsichtsbehörde richten:
@@ -1134,9 +1143,10 @@ function onTouchStart(e) {
   const [tx, ty] = canvasCoords(t.clientX, t.clientY);
   lastTouchX = tx;
   lastTouchY = ty;
-  // Pull-to-Refresh: Start tracken wenn ganz oben
+  // Pull-to-Refresh: Start tracken wenn ganz oben und oberhalb des Zeitrades
   ptrStartY = t.clientY;
-  ptrActive = state === 'idle' && !legalOverlay && (window.scrollY || 0) < 5;
+  const ptrAboveDial = !dialHitArea || ty + (window.scrollY || 0) < dialHitArea.y;
+  ptrActive = state === 'idle' && !legalOverlay && (window.scrollY || 0) < 5 && ptrAboveDial;
   ptrPull = 0;
   ptrTriggered = false;
   if (legalOverlay) {
