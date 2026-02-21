@@ -2491,13 +2491,17 @@ function drawMenu() {
   const btnGap = unit * 0.012 * uiScale;
   const safeTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
 
-  // --- Zwei Gap-Systeme: sectionGap (eng, Settings) + layoutGap (weit, Struktur) ---
-  let sectionGap, layoutGap, curY;
+  // --- Semantische Abstände: fest relativ zur Schriftgröße, nicht zur Bildschirmhöhe ---
+  // Was zusammengehört, bleibt eng. Was Raum braucht, bekommt Raum.
+  let sectionGap, curY;
+  const gapTitleSub = rowFont * 0.4;       // Titel → Untertitel (gehören zusammen → eng)
+  const gapSubDial = rowFont * 2.0;        // Untertitel → Drehrad (moderate Trennung)
+  const gapDialSettings = rowFont * 1.5;   // Drehrad → Settings (Übergang zur Steuerung)
+  const gapSettingsStart = rowFont * 2.5;  // Settings → Start-Button (CTA braucht Raum)
   if (isMobilePortrait) {
-    // Settings-Items gehören als Gruppe zusammen → enger, fester Abstand
     sectionGap = rowFont * 0.5;
-    // Strukturelle Trennung: verbleibender Raum proportional verteilt
     const safeTopPad = safeTop + unit * 0.02;
+    // Content-Höhe vorberechnen (alle Elemente + feste Abstände)
     const _dialH = btnH * 2.2;
     const _rowCollapsed = rowFont * 2;
     const _rowExpanded = rowFont * 2 + btnGap + btnH * 0.9;
@@ -2511,16 +2515,15 @@ function drawMenu() {
     }
     const _titleSubH = titleSize + subtitleSize * 1.2;
     const _startBtnH = rowFont * 1.3 * 2.2;
+    const _gapSum = gapTitleSub + gapSubDial + gapDialSettings + gapSettingsStart;
+    const _contentH = _titleSubH + _dialH + _sectionsH + _innerGapSum + _startBtnH + _gapSum;
+    // Vertikale Zentrierung: Goldener Schnitt (40% oben, 60% unten)
     const _footerH = unit * 0.12;
-    const _fixedH = safeTopPad + _titleSubH + _dialH + _sectionsH + _startBtnH + _innerGapSum;
-    const _availH = H - _footerH;
-    // Symmetrisch: Top→Titel(1.5) + Titel→Sub(0.3) + Sub→Dial(1.5) + Dial→Settings(0.8) + Settings→Start(1.5) + Start→Footer(1.0)
-    const _outerWeight = 1.5 + 0.3 + 1.5 + 0.8 + 1.5 + 1.0;
-    layoutGap = Math.max(unit * 0.005, (_availH - _fixedH) / _outerWeight);
-    curY = safeTopPad + layoutGap * 1.5;
+    const _availH = H - safeTopPad - _footerH;
+    const _topOffset = Math.max(0, (_availH - _contentH) * 0.4);
+    curY = safeTopPad + _topOffset;
   } else {
     sectionGap = unit * 0.025 * 0.7 * vScale;
-    layoutGap = sectionGap;
     curY = Math.max(H * 0.1 * vScale, safeTop + unit * 0.03);
   }
 
@@ -2623,7 +2626,7 @@ function drawMenu() {
     ctx.textBaseline = 'top';
   }
 
-  curY += actualTitleH + (isMobilePortrait ? layoutGap * 0.3 : unit * 0.015 * vScale);
+  curY += actualTitleH + (isMobilePortrait ? gapTitleSub : unit * 0.015 * vScale);
 
   // Untertitel — auf Mobile gleich breit wie Titel
   ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.55)';
@@ -2643,7 +2646,7 @@ function drawMenu() {
   ctx.fillText(t('subtitle'), cx, curY);
   ctx.letterSpacing = '0px';
   ctx.shadowBlur = 0;
-  curY += stSize * 1.2 + (isMobilePortrait ? layoutGap * 1.5 : sectionGap + stSize * (vScale * 0.5));
+  curY += stSize * 1.2 + (isMobilePortrait ? gapSubDial : sectionGap + stSize * (vScale * 0.5));
 
   // Language Toggle wird außerhalb des Scroll-Bereichs gezeichnet (siehe unten)
 
@@ -2976,7 +2979,7 @@ function drawMenu() {
     ctx.fillStyle = 'rgba(255, 215, 0, 0.7)';
     ctx.fill();
 
-    curY += dialH + (isMobilePortrait ? layoutGap * 0.8 : sectionGap);
+    curY += dialH + (isMobilePortrait ? gapDialSettings : sectionGap);
   }
 
   // --- ATMEN ---
@@ -3049,7 +3052,7 @@ function drawMenu() {
   }
 
   // Start-Button: struktureller Abstand zur Settings-Gruppe
-  curY += isMobilePortrait ? layoutGap * 1.5 : sectionGap * 2;
+  curY += isMobilePortrait ? gapSettingsStart : sectionGap * 2;
 
   // --- START Button (Pill-Shape) ---
   const canStart = selectedDurationIdx >= 0;
