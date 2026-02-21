@@ -4708,6 +4708,15 @@ function initSound() {
   // Wird erst bei Meditationsstart auf "playback" gesetzt (siehe state='meditating').
   audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
   audioCtx.resume();
+  // iOS Unlock: Kurzen stillen Puffer spielen, damit iOS den AudioContext tatsächlich aktiviert
+  // (resume() allein reicht auf manchen iOS-Versionen nicht aus)
+  try {
+    const unlockBuf = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
+    const unlockSrc = audioCtx.createBufferSource();
+    unlockSrc.buffer = unlockBuf;
+    unlockSrc.connect(audioCtx.destination);
+    unlockSrc.start(0);
+  } catch(e) {}
   // Auto-Recovery: AudioContext kann vom Browser/OS jederzeit suspended/interrupted werden
   audioCtx.onstatechange = () => {
     if (audioCtx.state !== 'running') {
@@ -4938,7 +4947,9 @@ function initSound() {
 
 // --- Interaction-Sounds ---
 function playTingsha() {
-  if (!soundInitialized) return;
+  try { ensureSound(); } catch(e) {}
+  if (!soundInitialized || !audioCtx) return;
+  if (audioCtx.state === 'suspended') { audioCtx.resume().catch(() => {}); }
   const t = audioCtx.currentTime;
   [2637, 2673].forEach((freq, i) => {
     const osc = audioCtx.createOscillator();
@@ -4957,8 +4968,9 @@ function playTingsha() {
 function playDialTick() {
   try { ensureSound(); } catch(e) {}
   if (!soundInitialized || !audioCtx) return;
-  if (audioCtx.state === 'suspended') { audioCtx.resume().catch(() => {}); return; }
-  if (audioCtx.state !== 'running') return;
+  // Suspended: resume() aufrufen, aber NICHT returnen — Sound wird abgespielt sobald Context läuft
+  if (audioCtx.state === 'suspended') { audioCtx.resume().catch(() => {}); }
+  if (audioCtx.state !== 'running' && audioCtx.state !== 'suspended') return;
   const t = audioCtx.currentTime;
   // Mechanischer Roulette-Klick: kurzer Noise-Burst durch Bandpass
   const len = Math.round(audioCtx.sampleRate * 0.012);
@@ -4982,12 +4994,13 @@ function playDialTick() {
 }
 
 function playSparkle() {
-  if (!soundInitialized) return;
+  try { ensureSound(); } catch(e) {}
+  if (!soundInitialized || !audioCtx) return;
   // iOS Stumm-Schalter umgehen
   if (navigator.audioSession) {
     try { navigator.audioSession.type = 'playback'; } catch(e) {}
   }
-  if (audioCtx.state !== 'running') { audioCtx.resume().catch(() => {}); return; }
+  if (audioCtx.state === 'suspended') { audioCtx.resume().catch(() => {}); }
   const t = audioCtx.currentTime;
   // Aufsteigende Glöckchen-Kaskade
   const notes = [1200, 1600, 2000, 2400, 3000, 3600, 4200];
