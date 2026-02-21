@@ -859,7 +859,8 @@ function onMouseMove(e) {
         const d = dialHitArea;
         overDial = mx >= d.x && mx <= d.x + d.w && sy >= d.y && sy <= d.y + d.h;
       }
-      canvas.style.cursor = overDial ? 'grab' : (overLink || hoverSection || overStart || overLotus || overTimeBtn || overGk) ? 'pointer' : 'default';
+      const overBurger = burgerBtnArea && mx >= burgerBtnArea.x && mx <= burgerBtnArea.x + burgerBtnArea.w && my >= burgerBtnArea.y && my <= burgerBtnArea.y + burgerBtnArea.h;
+      canvas.style.cursor = overDial ? 'grab' : (overLink || hoverSection || overStart || overLotus || overTimeBtn || overGk || overBurger) ? 'pointer' : 'default';
     }
     return;
   }
