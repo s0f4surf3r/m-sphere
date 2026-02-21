@@ -1768,25 +1768,33 @@ function drawDistractions() {
       ctx.textBaseline = 'alphabetic';
 
     } else if (d.type === 'fomo') {
-      // FOMO-Countdown-Banner oben
-      const bannerH = isMob ? 36 : 40;
-      const slideY = -bannerH + bannerH * easeOutCubic(slideIn) - bannerH * (1 - slideOut) * 0.5;
+      // FOMO-Countdown-Banner oben (iOS-Notification-Stil)
+      const bannerH = isMob ? 44 : 44;
+      const bannerW = Math.min(W - 24, 420);
+      const bx = (W - bannerW) / 2;
+      const bannerR = 14;
+      const slideY = -bannerH - 10 + (bannerH + 20) * easeOutCubic(slideIn) - (bannerH + 10) * (1 - slideOut) * 0.5;
 
-      ctx.globalAlpha = vis * 0.9;
+      ctx.globalAlpha = vis * 0.92;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+      ctx.shadowBlur = 16;
       // Gradient rot→orange
-      const grad = ctx.createLinearGradient(0, slideY, W, slideY);
+      const grad = ctx.createLinearGradient(bx, slideY, bx + bannerW, slideY);
       grad.addColorStop(0, '#e63946');
       grad.addColorStop(1, '#f77f00');
+      ctx.beginPath();
+      ctx.roundRect(bx, slideY, bannerW, bannerH, bannerR);
       ctx.fillStyle = grad;
-      ctx.fillRect(0, slideY, W, bannerH);
+      ctx.fill();
+      ctx.shadowBlur = 0;
 
       // Text links
-      const fFont = Math.max(11, bannerH * 0.36);
+      const fFont = Math.max(11, bannerH * 0.32);
       ctx.font = `700 ${fFont}px -apple-system, "SF Pro Display", sans-serif`;
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(d.data.text, 14, slideY + bannerH / 2);
+      ctx.fillText(d.data.text, bx + 14, slideY + bannerH / 2);
 
       // Countdown rechts (tickt runter)
       const elapsedSec = Math.floor(elapsed / 1000);
@@ -1796,14 +1804,14 @@ function drawDistractions() {
       const timeStr = `${min}:${sec < 10 ? '0' : ''}${sec}`;
       ctx.font = `700 ${fFont * 1.1}px "Courier New", monospace`;
       ctx.textAlign = 'right';
-      ctx.fillText(timeStr, W - 14, slideY + bannerH / 2);
+      ctx.fillText(timeStr, bx + bannerW - 14, slideY + bannerH / 2);
 
       // CTA-Button
       const ctaFont = fFont * 0.85;
       ctx.font = `600 ${ctaFont}px -apple-system, "SF Pro Display", sans-serif`;
       const ctaW = ctx.measureText(d.data.cta).width + 16;
       const ctaH = bannerH * 0.6;
-      const ctaX = W - 14 - ctx.measureText(timeStr).width - 20 - ctaW;
+      const ctaX = bx + bannerW - 14 - ctx.measureText(timeStr).width - 20 - ctaW;
       const ctaY = slideY + (bannerH - ctaH) / 2;
       ctx.beginPath();
       ctx.roundRect(ctaX, ctaY, ctaW, ctaH, ctaH / 2);
