@@ -14,6 +14,39 @@
 <meta name="twitter:title" content="M-Sphere — Interactive Meditation">
 <meta name="twitter:description" content="Schüttle die Schneekugel. Lass los. Finde Stille.">
 <meta name="twitter:image" content="https://msphere.jochenhornung.de/hero_msphere.png">
+<link rel="canonical" href="https://msphere.jochenhornung.de/">
+<link rel="alternate" hreflang="de" href="https://msphere.jochenhornung.de/">
+<link rel="alternate" hreflang="en" href="https://msphere.jochenhornung.de/">
+<link rel="alternate" hreflang="x-default" href="https://msphere.jochenhornung.de/">
+<meta name="theme-color" content="#0a1628">
+<meta name="keywords" content="meditation, interactive, mindfulness, snow globe, schneekugel, achtsamkeit, browser, webapp, M-Sphere">
+<meta name="author" content="Jochen Hornung">
+<meta name="robots" content="index, follow">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "M-Sphere",
+  "alternateName": "M-Sphäre",
+  "url": "https://msphere.jochenhornung.de/",
+  "description": "Schüttle die Schneekugel. Lass los. Finde Stille. Eine interaktive Meditations-Erfahrung im Browser.",
+  "applicationCategory": "HealthApplication",
+  "operatingSystem": "Any",
+  "browserRequirements": "Requires JavaScript, WebGL",
+  "author": {
+    "@type": "Person",
+    "name": "Jochen Hornung",
+    "url": "https://jochenhornung.de"
+  },
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "EUR"
+  },
+  "image": "https://msphere.jochenhornung.de/hero_msphere.png",
+  "inLanguage": ["de", "en"]
+}
+</script>
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
@@ -526,27 +559,30 @@ kontakt@jochenhornung.de
 Diese Webapp wird über GitHub Pages (GitHub Inc., USA) bereitgestellt. Beim Aufruf werden Server-Logdaten (IP-Adresse, Zugriffszeit, Browser) erfasst. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.
 
 2. LOKALE DATENSPEICHERUNG
-M-Sphäre speichert Einstellungen und das Face-Swap-Ergebnis im localStorage deines Browsers. Diese Daten verlassen dein Gerät nicht und können jederzeit über die Browsereinstellungen gelöscht werden.
+M-Sphere speichert Einstellungen und das Face-Swap-Ergebnis im localStorage deines Browsers. Diese Daten verlassen dein Gerät nicht und können jederzeit über die Browsereinstellungen gelöscht werden.
 
-3. FACE SWAP (GESICHTSTAUSCH)
+3. EXTERNE INHALTE (CDN)
+Für die 3D-Darstellung werden JavaScript-Bibliotheken (Three.js) über das CDN von jsDelivr (Prospect One, Polen) geladen. Dabei kann deine IP-Adresse an jsDelivr übermittelt werden. Für die Zahlungsabwicklung wird das PayPal SDK von paypal.com geladen. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.
+
+4. FACE SWAP (GESICHTSTAUSCH)
 Wenn du die Face-Swap-Funktion nutzt, wird dein Selfie zusammen mit einem gerenderten 3D-Modell an folgende Dienste übermittelt:
 - Vercel Inc. (USA): API-Proxy (keine dauerhafte Speicherung)
 - Replicate Inc. (USA): KI-Bildverarbeitung (temporäre Speicherung während der Verarbeitung)
 Die Übermittlung erfolgt verschlüsselt (HTTPS). Rechtsgrundlage: Art. 6 Abs. 1 lit. a DSGVO (Einwilligung durch aktive Nutzung der Funktion). Die Bilder werden nicht dauerhaft auf den Servern gespeichert.
 
-4. ZAHLUNG (PAYPAL)
+5. ZAHLUNG (PAYPAL)
 Für die Face-Swap-Funktion wird PayPal als Zahlungsdienstleister genutzt (Autorisierung, 0,50 €). Dabei werden Daten an PayPal (Europe) S.à r.l. et Cie, S.C.A. übermittelt. Es gelten die Datenschutzbestimmungen von PayPal. Die Zahlungsabwicklung erfolgt über einen API-Proxy bei Vercel Inc. (USA). Der Spenden-Button leitet ebenfalls zu PayPal weiter.
 Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung).
 
-5. COOKIES
-M-Sphäre verwendet keine Cookies und keine Tracking- oder Analyse-Tools.
+6. COOKIES
+M-Sphere verwendet keine Cookies und keine Tracking- oder Analyse-Tools.
 
-6. DEINE RECHTE
+7. DEINE RECHTE
 Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch. Beschwerden kannst du an die zuständige Aufsichtsbehörde richten:
 Berliner Beauftragte für Datenschutz und Informationsfreiheit
 Telefon: 030 13889-0
 
-7. SSL-VERSCHLÜSSELUNG
+8. SSL-VERSCHLÜSSELUNG
 Die Übertragung erfolgt per HTTPS/SSL.
 
 Stand: Februar 2026`;
@@ -3368,29 +3404,31 @@ function drawMenu() {
       ctx.globalAlpha = 1;
     }
 
-    // Mobile: Fragezeichen links neben dem Lotus + Hint-Bubble bei Tap
+    // Mobile: Fragezeichen kreist um das Lotus-Symbol + Hint-Bubble bei Tap
     if (isMobilePortrait) {
-      const qSize = iconSize * 0.5;
-      const qx = iconRightX - qSize - 8;
-      const qy = iconY + (iconSize - qSize) / 2;
-      const qPad = 6;
-      menuButtons.lotusHint = { x: qx - qPad, y: qy - qPad, w: qSize + qPad * 2, h: qSize + qPad * 2 };
+      const qSize = iconSize * 0.45;
+      const qOrbitR = lr * 2.2;
+      const qAngle = Date.now() * 0.0006 + 42;
+      const qCx = lx + Math.cos(qAngle) * qOrbitR;
+      const qCy = ly + Math.sin(qAngle) * qOrbitR * 0.6;
+      const qPad = 8;
+      menuButtons.lotusHint = { x: qCx - qSize / 2 - qPad, y: qCy - qSize / 2 - qPad, w: qSize + qPad * 2, h: qSize + qPad * 2 };
 
-      // Fragezeichen-Kreis
-      const qAlpha = lotusHintOpen ? 0.8 : 0.4;
+      // Fragezeichen-Kreis (kreisend)
+      const qAlpha = lotusHintOpen ? 0.85 : 0.45;
       ctx.globalAlpha = qAlpha;
       ctx.beginPath();
-      ctx.arc(qx + qSize / 2, qy + qSize / 2, qSize / 2, 0, Math.PI * 2);
-      ctx.fillStyle = lotusHintOpen ? 'rgba(42, 191, 191, 0.3)' : 'rgba(42, 191, 191, 0.15)';
+      ctx.arc(qCx, qCy, qSize / 2, 0, Math.PI * 2);
+      ctx.fillStyle = lotusHintOpen ? 'rgba(42, 191, 191, 0.3)' : 'rgba(42, 191, 191, 0.12)';
       ctx.fill();
-      ctx.strokeStyle = 'rgba(42, 191, 191, 0.6)';
+      ctx.strokeStyle = 'rgba(42, 191, 191, 0.5)';
       ctx.lineWidth = 1;
       ctx.stroke();
       ctx.font = `600 ${qSize * 0.7}px -apple-system, "SF Pro Display", sans-serif`;
       ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('?', qx + qSize / 2, qy + qSize / 2 + 1);
+      ctx.fillText('?', qCx, qCy + 1);
       ctx.globalAlpha = 1;
 
       // Hint-Bubble wenn offen
