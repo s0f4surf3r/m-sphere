@@ -3080,7 +3080,7 @@ function drawMenu() {
   ctx.font = `${canStart ? '700' : '400'} ${startFont}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(startLabel, cx, curY + startH / 2 + startFont * 0.08);
+  ctx.fillText(startLabel, cx, curY + startH / 2);
   ctx.shadowBlur = 0;
   menuButtons.start = canStart ? { x: startX, y: curY, w: startW, h: startH } : { x: startX, y: curY, w: startW, h: startH, disabled: true };
 
