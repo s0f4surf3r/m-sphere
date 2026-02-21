@@ -800,6 +800,7 @@ let hoverLink = false;
 let hoverSection = null; // welcher Sektions-Header wird gehovert
 let hoverLotus = false;
 let hoverGk = false;
+let hoverLangIdx = -1; // -1=kein Hover, 0=DE, 1=EN
 let lotusHintOpen = false; // Mobile: Fragezeichen-Hint offen
 let hoverMouseX = 0, hoverMouseY = 0; // aktuelle Mausposition für Hover-Checks
 function onMouseMove(e) {
@@ -860,7 +861,13 @@ function onMouseMove(e) {
         overDial = mx >= d.x && mx <= d.x + d.w && sy >= d.y && sy <= d.y + d.h;
       }
       const overBurger = burgerBtnArea && mx >= burgerBtnArea.x && mx <= burgerBtnArea.x + burgerBtnArea.w && my >= burgerBtnArea.y && my <= burgerBtnArea.y + burgerBtnArea.h;
-      canvas.style.cursor = overDial ? 'grab' : (overLink || hoverSection || overStart || overLotus || overTimeBtn || overGk || overBurger) ? 'pointer' : 'default';
+      hoverLangIdx = -1;
+      for (let li = 0; li < (menuButtons.langToggle || []).length; li++) {
+        const lb = menuButtons.langToggle[li];
+        if (mx >= lb.x && mx <= lb.x + lb.w && my >= lb.y && my <= lb.y + lb.h) { hoverLangIdx = li; break; }
+      }
+      const overLang = hoverLangIdx >= 0;
+      canvas.style.cursor = overDial ? 'grab' : (overLink || hoverSection || overStart || overLotus || overTimeBtn || overGk || overBurger || overLang) ? 'pointer' : 'default';
     }
     return;
   }
@@ -2782,14 +2789,22 @@ function drawMenu() {
   for (let li = 0; li < 2; li++) {
     const lx = langPad + li * (langBtnW + langGap);
     const sel = li === langSel;
+    const hov = !isMobilePortrait && hoverLangIdx === li && !sel;
+    const scale = hov ? 1.12 : 1;
+    const bw = langBtnW * scale;
+    const bh = langH * scale;
+    const bx = lx + (langBtnW - bw) / 2;
+    const by = langY + (langH - bh) / 2;
     ctx.beginPath();
-    ctx.roundRect(lx, langY, langBtnW, langH, langH * 0.3);
-    ctx.fillStyle = sel ? 'rgba(42, 191, 191, 0.15)' : 'rgba(26, 58, 92, 0.2)';
+    ctx.roundRect(bx, by, bw, bh, bh * 0.3);
+    ctx.fillStyle = sel ? 'rgba(42, 191, 191, 0.15)' : hov ? 'rgba(42, 191, 191, 0.1)' : 'rgba(26, 58, 92, 0.2)';
     ctx.fill();
-    ctx.strokeStyle = sel ? 'rgba(42, 191, 191, 0.6)' : 'rgba(200, 210, 220, 0.5)';
+    ctx.strokeStyle = sel ? 'rgba(42, 191, 191, 0.6)' : hov ? 'rgba(42, 191, 191, 0.5)' : 'rgba(200, 210, 220, 0.5)';
     ctx.lineWidth = 1;
     ctx.stroke();
-    ctx.fillStyle = sel ? '#2abfbf' : 'rgba(240, 236, 230, 0.9)';
+    const fontSize = langFont * scale;
+    ctx.font = `${hov ? '700 ' : ''}${fontSize}px "Courier New", monospace`;
+    ctx.fillStyle = sel ? '#2abfbf' : hov ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.9)';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(langLabels[li], lx + langBtnW / 2, langY + langH / 2);
