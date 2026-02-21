@@ -1255,6 +1255,9 @@ const DISTRACTION_MSGS = {
     cookie: [
       '🍪 Diese Seite verwendet Cookies.',
       '🍪 Wir respektieren deine Privatsphäre.',
+      '🍪 Wir nutzen Cookies für Werbung, Analyse und Personalisierung.',
+      '🍪 Um fortzufahren, akzeptiere bitte unsere 847 Tracking-Partner.',
+      '🍪 Deine Einwilligung ist uns wichtig! Wirklich!',
     ],
     popup: [
       ['⏰ Sitzung läuft ab!', 'Jetzt verlängern'],
@@ -1315,6 +1318,9 @@ const DISTRACTION_MSGS = {
     cookie: [
       '🍪 This site uses cookies.',
       '🍪 We respect your privacy.',
+      '🍪 We use cookies for ads, analytics and personalization.',
+      '🍪 To continue, please accept our 847 tracking partners.',
+      '🍪 Your consent matters to us! Really!',
     ],
     popup: [
       ['⏰ Session expiring!', 'Extend now'],
@@ -1375,7 +1381,7 @@ function updateDistractions() {
   if (distractions.length < maxActive && (now - lastDistractionSpawn > interval || burstChance)) {
     lastDistractionSpawn = now + (burstChance ? -interval * 0.7 : 0); // Burst: nächste kommt schneller
 
-    const types = ['notif', 'notif', 'chat', 'chat', 'cookie', 'popup', 'likes', 'fomo', 'feed'];
+    const types = ['notif', 'notif', 'chat', 'chat', 'cookie', 'cookie', 'popup', 'likes', 'fomo', 'feed', 'captcha'];
     const type = types[Math.floor(Math.random() * types.length)];
     const msgs = DISTRACTION_MSGS[lang] || DISTRACTION_MSGS.en;
 
@@ -1415,12 +1421,19 @@ function updateDistractions() {
       const feedColors = ['#ff006e', '#00bbf9', '#9b5de5', '#ff5400', '#00f5d4', '#ffbe0b'];
       const colors = titles.map(() => feedColors[Math.floor(Math.random() * feedColors.length)]);
       data = { titles, colors, scrollOffset: 0 };
+    } else if (type === 'captcha') {
+      // CAPTCHA mit verzerrtem Text
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+      let code = '';
+      for (let i = 0; i < 5 + Math.floor(Math.random() * 2); i++) code += chars[Math.floor(Math.random() * chars.length)];
+      data = { code, title: lang === 'de' ? 'Bestätige, dass du kein Roboter bist' : 'Verify you are not a robot' };
     }
 
     // Dauer stark variierend: 3-12 Sekunden, kein Muster
     let dur = 3000 + Math.random() * 5000 + Math.random() * Math.random() * 4000;
     if (type === 'likes') dur = Math.min(dur, 5000); // Likes kürzer
     if (type === 'fomo') dur = Math.max(dur, 6000); // FOMO länger
+    if (type === 'captcha') dur = Math.max(dur, 7000); // CAPTCHA länger
     distractions.push({ type, startTime: now, duration: dur, data });
 
     // Sounds je Typ
@@ -1572,45 +1585,66 @@ function drawDistractions() {
       ctx.textBaseline = 'alphabetic';
 
     } else if (d.type === 'cookie') {
-      // Cookie-Banner: slides up from bottom
-      const bannerH = isMob ? 70 : 56;
+      // Cookie-Banner: slides up from bottom (nerviger EU-Stil)
+      const bannerH = isMob ? 110 : 90;
       const slideY = H - bannerH + bannerH * (1 - easeOutCubic(slideIn)) - bannerH * (1 - slideOut) * 0.3;
       const bannerW = Math.min(W - 24, 500);
       const bx = (W - bannerW) / 2;
 
-      ctx.globalAlpha = vis * 0.9;
+      ctx.globalAlpha = vis * 0.92;
       ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
       ctx.shadowBlur = 12;
       ctx.beginPath();
-      ctx.roundRect(bx, slideY, bannerW, bannerH, [12, 12, 0, 0]);
-      ctx.fillStyle = 'rgba(30, 30, 35, 0.95)';
+      ctx.roundRect(bx, slideY, bannerW, bannerH, 14);
+      ctx.fillStyle = 'rgba(30, 30, 35, 0.96)';
       ctx.fill();
       ctx.shadowBlur = 0;
 
       // Cookie text
-      const cFont = Math.max(11, bannerH * 0.22);
+      const cFont = Math.max(11, bannerH * 0.14);
       ctx.font = `400 ${cFont}px -apple-system, "SF Pro Display", sans-serif`;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
       ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(d.data.text, bx + 16, slideY + bannerH * 0.38);
+      ctx.textBaseline = 'top';
+      // Mehrzeiliger Text
+      const maxTxtW = bannerW - 32;
+      const words = d.data.text.split(' ');
+      let line = '';
+      let ly = slideY + 14;
+      for (const w of words) {
+        const test = line ? line + ' ' + w : w;
+        if (ctx.measureText(test).width > maxTxtW && line) {
+          ctx.fillText(line, bx + 16, ly);
+          ly += cFont * 1.4;
+          line = w;
+        } else line = test;
+      }
+      if (line) ctx.fillText(line, bx + 16, ly);
 
-      // Accept-Button
+      // Buttons nebeneinander unten
       const msgs = DISTRACTION_MSGS[lang] || DISTRACTION_MSGS.en;
-      const btnLabel = msgs.accept;
-      ctx.font = `600 ${cFont}px -apple-system, "SF Pro Display", sans-serif`;
-      const btnW = ctx.measureText(btnLabel).width + cFont * 1.6;
+      const btnFont = cFont * 0.9;
       const btnH = cFont * 2;
-      const btnX = bx + bannerW - btnW - 12;
-      const btnY = slideY + (bannerH - btnH) / 2;
+      const btnY = slideY + bannerH - btnH - 10;
+      // "Alle akzeptieren" — großer farbiger Button
+      const acceptLabel = lang === 'de' ? 'Alle akzeptieren' : 'Accept all';
+      ctx.font = `600 ${btnFont}px -apple-system, "SF Pro Display", sans-serif`;
+      const acceptW = ctx.measureText(acceptLabel).width + btnFont * 2;
+      const acceptX = bx + bannerW - acceptW - 12;
       ctx.beginPath();
-      ctx.roundRect(btnX, btnY, btnW, btnH, btnH / 2);
-      ctx.fillStyle = '#007aff';
+      ctx.roundRect(acceptX, btnY, acceptW, btnH, btnH / 2);
+      ctx.fillStyle = '#34c759';
       ctx.fill();
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = '#fff';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(btnLabel, btnX + btnW / 2, btnY + btnH / 2);
+      ctx.fillText(acceptLabel, acceptX + acceptW / 2, btnY + btnH / 2);
+      // "Einstellungen" — kleiner grauer Link
+      const settLabel = lang === 'de' ? 'Einstellungen verwalten' : 'Manage preferences';
+      ctx.font = `400 ${btnFont * 0.85}px -apple-system, "SF Pro Display", sans-serif`;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.textAlign = 'left';
+      ctx.fillText(settLabel, bx + 16, btnY + btnH / 2);
 
       ctx.globalAlpha = 1;
       ctx.textAlign = 'start';
@@ -1891,6 +1925,121 @@ function drawDistractions() {
           : d.data.titles[idx];
         ctx.fillText(title, feedSlideX + 8, iy + thumbH + 2);
       }
+
+      ctx.restore();
+      ctx.globalAlpha = 1;
+      ctx.textAlign = 'start';
+      ctx.textBaseline = 'alphabetic';
+
+    } else if (d.type === 'captcha') {
+      // CAPTCHA-Dialog: nerviger Verifizierungs-Popup
+      const capW = Math.min(300, W * (isMob ? 0.82 : 0.38));
+      const capH = isMob ? 180 : 160;
+      const px = (W - capW) / 2;
+      const py = (H - capH) / 2 - H * 0.08;
+      const scale = 0.85 + easeOutCubic(slideIn) * 0.15;
+
+      ctx.globalAlpha = vis * 0.94;
+      ctx.save();
+      ctx.translate(px + capW / 2, py + capH / 2);
+      ctx.scale(scale, scale);
+      ctx.translate(-(px + capW / 2), -(py + capH / 2));
+
+      // Backdrop
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      ctx.fillRect(0, 0, W, H);
+
+      // Card
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowBlur = 20;
+      ctx.beginPath();
+      ctx.roundRect(px, py, capW, capH, 12);
+      ctx.fillStyle = '#f5f5f5';
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Header
+      const hFont = Math.max(11, capH * 0.085);
+      ctx.font = `600 ${hFont}px -apple-system, "SF Pro Display", sans-serif`;
+      ctx.fillStyle = '#333';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(d.data.title, px + capW / 2, py + 14);
+
+      // Verzerrter CAPTCHA-Code
+      const codeY = py + 42;
+      const codeH = capH * 0.32;
+      const codeW = capW - 40;
+      const codePad = 20;
+      // Hintergrund mit Noise-Linien
+      ctx.fillStyle = '#e8e8e8';
+      ctx.beginPath();
+      ctx.roundRect(px + codePad, codeY, codeW, codeH, 6);
+      ctx.fill();
+      ctx.strokeStyle = '#ccc';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      // Durchstreichende Linien
+      ctx.strokeStyle = 'rgba(100, 100, 100, 0.3)';
+      ctx.lineWidth = 1;
+      for (let ln = 0; ln < 4; ln++) {
+        ctx.beginPath();
+        ctx.moveTo(px + codePad, codeY + Math.random() * codeH);
+        ctx.lineTo(px + codePad + codeW, codeY + Math.random() * codeH);
+        ctx.stroke();
+      }
+      // Verzerrter Text
+      const cFont = Math.max(18, codeH * 0.55);
+      const code = d.data.code;
+      const charW = codeW / (code.length + 1);
+      for (let ci = 0; ci < code.length; ci++) {
+        const rot = (Math.random() - 0.5) * 0.5;
+        const yOff = (Math.random() - 0.5) * codeH * 0.3;
+        const charX = px + codePad + charW * (ci + 0.8);
+        const charY = codeY + codeH / 2 + yOff;
+        ctx.save();
+        ctx.translate(charX, charY);
+        ctx.rotate(rot);
+        ctx.font = `${Math.random() > 0.5 ? '700' : '400'} ${cFont * (0.8 + Math.random() * 0.4)}px "Courier New", monospace`;
+        ctx.fillStyle = `rgba(${40 + Math.random() * 60}, ${40 + Math.random() * 60}, ${80 + Math.random() * 80}, 0.85)`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(code[ci], 0, 0);
+        ctx.restore();
+      }
+
+      // Input-Feld (leer, blinkender Cursor)
+      const inputY = codeY + codeH + 10;
+      const inputH = Math.max(24, capH * 0.15);
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.roundRect(px + codePad, inputY, codeW, inputH, 4);
+      ctx.fill();
+      ctx.strokeStyle = '#4a90d9';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // Blinkender Cursor
+      if (Math.floor(elapsed / 500) % 2 === 0) {
+        ctx.fillStyle = '#333';
+        ctx.fillRect(px + codePad + 8, inputY + 4, 1.5, inputH - 8);
+      }
+
+      // Submit-Button
+      const btnFont = Math.max(11, capH * 0.08);
+      const btnLabel = lang === 'de' ? 'Bestätigen' : 'Submit';
+      ctx.font = `600 ${btnFont}px -apple-system, "SF Pro Display", sans-serif`;
+      const btnW = ctx.measureText(btnLabel).width + btnFont * 2;
+      const btnH2 = btnFont * 2.2;
+      const btnX = px + capW / 2 - btnW / 2;
+      const btnY2 = inputY + inputH + 8;
+      ctx.beginPath();
+      ctx.roundRect(btnX, btnY2, btnW, btnH2, 4);
+      ctx.fillStyle = '#4a90d9';
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(btnLabel, btnX + btnW / 2, btnY2 + btnH2 / 2);
 
       ctx.restore();
       ctx.globalAlpha = 1;
