@@ -2518,9 +2518,8 @@ function drawMenu() {
     const _gapSum = gapTitleSub + gapSubDial + gapDialSettings + gapSettingsStart;
     const _contentH = _titleSubH + _dialH + _sectionsH + _innerGapSum + _startBtnH + _gapSum;
     // Vertikale Zentrierung: Goldener Schnitt (40% oben, 60% unten)
-    // Minimum: Titel muss unter Header-Controls starten (Burger + Lang-Toggle)
-    const _headerClearance = unit * 0.08 + unit * 0.04 + rowFont;  // burgerSize + burgerPad + Luft
-    const _minTop = _headerClearance - unit * 0.02;  // abzgl. safeTopPad-Offset
+    // Minimum: Titel muss unter Header-Controls starten (Burger-Unterkante + Luft)
+    const _minTop = unit * 0.08 + rowFont * 0.5;  // burgerSize + halbe Zeile Luft
     const _footerH = unit * 0.12;
     const _availH = H - safeTopPad - _footerH;
     const _topOffset = Math.max(_minTop, (_availH - _contentH) * 0.4);
@@ -3110,8 +3109,9 @@ function drawMenu() {
   ctx.shadowBlur = 0;
   menuButtons.start = canStart ? { x: startX, y: curY, w: startW, h: startH } : { x: startX, y: curY, w: startW, h: startH, disabled: true };
 
-  // Gesamte Inhaltshöhe berechnen (logische Koordinaten, ohne Scroll-Offset)
-  menuContentHeight = curY + startH + sectionGap;
+  // Gesamte Inhaltshöhe berechnen (+ Footer-Reserve, damit Start-Button über dem Footer scrollbar ist)
+  const _footerReserve = isMobilePortrait ? unit * 0.12 + sectionGap : 0;
+  menuContentHeight = curY + startH + sectionGap + _footerReserve;
   ctx.restore(); // Scroll-Translate aufheben
 
   // Spacer-Höhe für natives Scrolling setzen
