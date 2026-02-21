@@ -539,6 +539,9 @@ let legalScrollY = 0;
 let legalCloseBtn = null;
 let legalBackBtn = null;
 let legalTouchLastY = 0;
+let legalScrollVel = 0;
+let legalScrollMax = 0;
+let legalTouchSamples = [];
 let burgerBtnArea = null;
 let burgerMenuItems = [];
 
@@ -1081,9 +1084,18 @@ function onTouchMove(e) {
     const t = e.touches[0];
     const [tx, ty] = canvasCoords(t.clientX, t.clientY);
     const dy = ty - legalTouchLastY;
-    legalScrollY = Math.max(0, legalScrollY - dy);
+    // Rubber banding: Widerstand an den Rändern (iOS-like)
+    if ((legalScrollY <= 0 && dy > 0) || (legalScrollMax > 0 && legalScrollY >= legalScrollMax && dy < 0)) {
+      legalScrollY -= dy * 0.3;
+    } else {
+      legalScrollY -= dy;
+    }
     legalTouchLastY = ty;
     menuTouchDist += Math.abs(dy);
+    // Velocity-Samples für Momentum (letzte 100ms)
+    const _now = Date.now();
+    legalTouchSamples.push({ y: ty, t: _now });
+    legalTouchSamples = legalTouchSamples.filter(s => _now - s.t < 100);
     return;
   }
   if (state === 'idle') {
@@ -1157,6 +1169,8 @@ function onTouchStart(e) {
   if (legalOverlay) {
     legalTouchLastY = ty;
     menuTouchDist = 0;
+    legalScrollVel = 0;
+    legalTouchSamples = [{ y: ty, t: Date.now() }];
   }
   if (state === 'idle') {
     menuTouchDist = 0;
@@ -3684,6 +3698,24 @@ function wrapLegalText(ctx, text, maxWidth) {
 function drawLegalOverlay() {
   if (!legalOverlay) return;
 
+  // iOS-like Momentum + Bounce-Back
+  if (Math.abs(legalScrollVel) > 0.1 || legalScrollY < 0 || (legalScrollMax > 0 && legalScrollY > legalScrollMax)) {
+    legalScrollY += legalScrollVel;
+    legalScrollVel *= 0.95; // Deceleration
+    // Bounce zurück bei Overscroll
+    if (legalScrollY < 0) {
+      legalScrollY += (-legalScrollY) * 0.12;
+      legalScrollVel *= 0.6;
+    } else if (legalScrollMax > 0 && legalScrollY > legalScrollMax) {
+      legalScrollY -= (legalScrollY - legalScrollMax) * 0.12;
+      legalScrollVel *= 0.6;
+    }
+    if (Math.abs(legalScrollVel) < 0.1 && legalScrollY >= -0.5 && legalScrollY <= legalScrollMax + 0.5) {
+      legalScrollVel = 0;
+      legalScrollY = Math.max(0, Math.min(legalScrollY, legalScrollMax));
+    }
+  }
+
   const W = cW;
   const H = cH;
 
@@ -3874,7 +3906,7 @@ function drawLegalOverlay() {
   const introTextH = wrappedLines.length * lineHeight + fontSize;
   const totalTextHeight = introTextH + (isLiteratur ? BOOK_RECOMMENDATIONS.length * bookCardH + fontSize * 2.5 : 0);
   const maxScroll = Math.max(0, totalTextHeight - contentHeight);
-  legalScrollY = Math.max(0, Math.min(legalScrollY, maxScroll));
+  legalScrollMax = maxScroll; // Cache für Momentum/Bounce
 
   let y = contentTop - legalScrollY;
 
@@ -3966,7 +3998,7 @@ function drawLegalOverlay() {
 
   // Scroll-Indikator
   if (maxScroll > 0) {
-    const scrollPct = maxScroll > 0 ? legalScrollY / maxScroll : 0;
+    const scrollPct = Math.max(0, Math.min(1, maxScroll > 0 ? legalScrollY / maxScroll : 0));
     const barH = Math.max(20, contentHeight * (contentHeight / totalTextHeight));
     const barY = contentTop + scrollPct * (contentHeight - barH);
     ctx.fillStyle = 'rgba(42, 191, 191, 0.3)';
@@ -3996,7 +4028,7 @@ function handleMenuClick(x, y) {
     if (legalCloseBtn) {
       const cb = legalCloseBtn;
       if (x >= cb.x && x <= cb.x + cb.w && y >= cb.y && y <= cb.y + cb.h) {
-        legalOverlay = null;
+        legalOverlay = null; legalScrollVel = 0;
         return true;
       }
     }
@@ -4006,16 +4038,16 @@ function handleMenuClick(x, y) {
         if (x >= item.x && x <= item.x + item.w && y >= item.y && y <= item.y + item.h) {
           if (item.target === '_moreTools') {
             window.open('https://jochenhornung.de/werkzeuge/', '_blank');
-            legalOverlay = null;
+            legalOverlay = null; legalScrollVel = 0;
             return true;
           }
           legalOverlay = item.target;
-          legalScrollY = 0;
+          legalScrollY = 0; legalScrollVel = 0;
           return true;
         }
       }
       // Klick außerhalb → schließen
-      legalOverlay = null;
+      legalOverlay = null; legalScrollVel = 0;
       return true;
     }
     // Text-Overlays: ← Zurück-Button
@@ -4023,7 +4055,7 @@ function handleMenuClick(x, y) {
       const bb = legalBackBtn;
       if (x >= bb.x && x <= bb.x + bb.w && y >= bb.y && y <= bb.y + bb.h) {
         legalOverlay = 'menu';
-        legalScrollY = 0;
+        legalScrollY = 0; legalScrollVel = 0;
         return true;
       }
     }
@@ -4057,7 +4089,7 @@ function handleMenuClick(x, y) {
     const b = burgerBtnArea;
     if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
       legalOverlay = 'menu';
-      legalScrollY = 0;
+      legalScrollY = 0; legalScrollVel = 0;
       return true;
     }
   }
@@ -4280,7 +4312,7 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (document.getElementById('customTimeOverlay').style.display !== 'none') { hideCustomTimeOverlay(); return; }
     if (document.getElementById('cameraOverlay').style.display !== 'none') { hideCameraOverlay(); faceModeIdx = 0; return; }
-    if (legalOverlay) { legalOverlay = null; legalScrollY = 0; return; }
+    if (legalOverlay) { legalOverlay = null; legalScrollY = 0; legalScrollVel = 0; return; }
     if (state !== 'idle') returnToMenu();
   }
   // Easter Egg: Geheimcodes im Menü tippen → Stimme toggle
@@ -4386,6 +4418,16 @@ canvas.addEventListener('touchend', (e) => {
   }
   lastTouchEndTime = Date.now();
   try { ensureSound(); } catch(err) { console.warn('ensureSound touch error:', err); }
+  // Legal-Overlay: Momentum aus Velocity-Samples berechnen
+  if (legalOverlay && legalTouchSamples.length >= 2) {
+    const _first = legalTouchSamples[0];
+    const _last = legalTouchSamples[legalTouchSamples.length - 1];
+    const _dt = _last.t - _first.t;
+    if (_dt > 0 && _dt < 300) {
+      legalScrollVel = -(_last.y - _first.y) / _dt * 16; // px/frame bei 60fps
+    }
+    legalTouchSamples = [];
+  }
   // Zurück-Button (ready/shaking/meditating)
   if (backBtnArea && state !== 'idle' && state !== 'done' && e.changedTouches.length > 0) {
     const t = e.changedTouches[0];
