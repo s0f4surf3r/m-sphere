@@ -859,7 +859,9 @@ function onMouseMove(e) {
   // Dreh-Rad: Mouse-Drag
   if (dialTouchActive) {
     const dx = mx - dialTouchLastX;
-    const itemSpacing = (cW < 600 && cH > cW) ? cW * 0.18 : Math.min(450, cW * 0.4) * 0.16;
+    const _isMob = cW < 1024 && cH > cW;
+    const _dW = _isMob ? cW - 2 * (Math.min(cW, cH) * 0.14) : Math.min(450, cW * 0.4);
+    const itemSpacing = _dW * (_isMob ? 0.21 : 0.16);
     dialPos -= dx / itemSpacing;
     dialPos = Math.max(-0.4, Math.min(DIAL_DURATIONS.length - 0.6, dialPos));
     dialVel = -dx / itemSpacing;
@@ -1090,7 +1092,9 @@ function onTouchMove(e) {
     // Dreh-Rad: Touch-Move
     if (dialTouchActive) {
       const dx = tx - dialTouchLastX;
-      const itemSpacing = cW * 0.18; // px pro Item
+      const _isMob = cW < 1024 && cH > cW;
+      const _dW = _isMob ? cW - 2 * (Math.min(cW, cH) * 0.14) : Math.min(450, cW * 0.4);
+      const itemSpacing = _dW * (_isMob ? 0.21 : 0.16);
       dialPos -= dx / itemSpacing;
       dialPos = Math.max(-0.4, Math.min(DIAL_DURATIONS.length - 0.6, dialPos));
       dialVel = -dx / itemSpacing;
@@ -2458,28 +2462,28 @@ function drawMenu() {
   // Vertikales Layout berechnen — dynamisch an Fensterhöhe angepasst
   const vScale = isMobilePortrait ? 1.0 : Math.max(0.7, Math.min(1.4, H / 800));
   let titleSize = unit * (isMobilePortrait ? 0.18 : 0.12);
-  // Titel darf nicht breiter sein als Burger/Lang-Begrenzung (burgerPad + burgerSize + Margin)
+  // Titel-Breite = Dial-Breite (Burger-konformer Content-Bereich)
+  const menuContentW = isMobilePortrait ? W - 2 * (unit * 0.14) : null;
   if (isMobilePortrait) {
-    const maxTitleW = W - 2 * (unit * 0.14);
     ctx.font = `900 ${titleSize}px -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif`;
     ctx.letterSpacing = `${-titleSize * 0.02}px`;
     const measuredW = ctx.measureText(lang === 'de' ? 'M-SPHÄRE' : 'M-SPHERE').width;
     ctx.letterSpacing = '0px';
-    if (measuredW > maxTitleW) titleSize *= maxTitleW / measuredW;
+    if (measuredW > 0) titleSize *= menuContentW / measuredW;
   }
   const subtitleSize = unit * (isMobilePortrait ? 0.02 : 0.028) * uiScale;
   const rowFont = unit * 0.02 * uiScale;
   const btnH = unit * 0.04 * uiScale;
   const btnGap = unit * 0.012 * uiScale;
   const safeTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
-  let curY = Math.max(H * (isMobilePortrait ? 0.08 : 0.1 * vScale), safeTop + unit * (isMobilePortrait ? 0.04 : 0.03));
 
   // --- Zwei Gap-Systeme: sectionGap (eng, Settings) + layoutGap (weit, Struktur) ---
-  let sectionGap, layoutGap;
+  let sectionGap, layoutGap, curY;
   if (isMobilePortrait) {
     // Settings-Items gehören als Gruppe zusammen → enger, fester Abstand
     sectionGap = rowFont * 0.5;
     // Strukturelle Trennung: verbleibender Raum proportional verteilt
+    const safeTopPad = safeTop + unit * 0.02;
     const _dialH = btnH * 2.2;
     const _rowCollapsed = rowFont * 2;
     const _rowExpanded = rowFont * 2 + btnGap + btnH * 0.9;
@@ -2494,14 +2498,16 @@ function drawMenu() {
     const _titleSubH = titleSize + subtitleSize * uiScale * 1.5;
     const _startBtnH = rowFont * 1.3 * 2.2;
     const _footerH = unit * 0.12;
-    const _fixedH = curY + _titleSubH + _dialH + _sectionsH + _startBtnH + _innerGapSum;
+    const _fixedH = safeTopPad + _titleSubH + _dialH + _sectionsH + _startBtnH + _innerGapSum;
     const _availH = H - _footerH;
-    // Gewichte: Titel→Sub(0.3) + Sub→Dial(2.5) + Dial→Settings(0.8) + Settings→Start(1.5) + Start→Footer(1.0)
-    const _outerWeight = 0.3 + 2.5 + 0.8 + 1.5 + 1.0;
+    // Symmetrisch: Top→Titel(1.5) + Titel→Sub(0.3) + Sub→Dial(1.5) + Dial→Settings(0.8) + Settings→Start(1.5) + Start→Footer(1.0)
+    const _outerWeight = 1.5 + 0.3 + 1.5 + 0.8 + 1.5 + 1.0;
     layoutGap = Math.max(unit * 0.005, (_availH - _fixedH) / _outerWeight);
+    curY = safeTopPad + layoutGap * 1.5;
   } else {
     sectionGap = unit * 0.025 * 0.7 * vScale;
     layoutGap = sectionGap;
+    curY = Math.max(H * 0.1 * vScale, safeTop + unit * 0.03);
   }
 
   // Native Scrolling: Gesamten Menü-Inhalt um scrollY nach oben verschieben
@@ -2623,7 +2629,7 @@ function drawMenu() {
   ctx.fillText(t('subtitle'), cx, curY);
   ctx.letterSpacing = '0px';
   ctx.shadowBlur = 0;
-  curY += stSize * 1.2 + (isMobilePortrait ? layoutGap * 2.5 : sectionGap + stSize * (vScale * 0.5));
+  curY += stSize * 1.2 + (isMobilePortrait ? layoutGap * 1.5 : sectionGap + stSize * (vScale * 0.5));
 
   // Language Toggle wird außerhalb des Scroll-Bereichs gezeichnet (siehe unten)
 
@@ -2868,11 +2874,11 @@ function drawMenu() {
 
     // ====== Dreh-Rad (Mobile + Desktop) ======
     const dialH = isMobilePortrait ? btnH * 2.2 : btnH * 1.8;
-    const dialW = isMobilePortrait ? W * 0.85 : Math.min(450, W * 0.4);
+    const dialW = isMobilePortrait ? menuContentW : Math.min(450, W * 0.4);
     const dialX = (W - dialW) / 2;
     const dialCx = cx;
     const dialCy = curY + dialH / 2;
-    const itemSpacing = isMobilePortrait ? W * 0.18 : dialW * 0.16;
+    const itemSpacing = dialW * (isMobilePortrait ? 0.21 : 0.16);
 
     // Hit-Area für Touch/Mouse-Detection
     dialHitArea = { x: dialX, y: curY, w: dialW, h: dialH };
