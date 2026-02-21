@@ -803,6 +803,7 @@ let hoverLotus = false;
 let hoverGk = false;
 let hoverLangIdx = -1; // -1=kein Hover, 0=DE, 1=EN
 let hoverBurger = false;
+let hoverStopwatch = false;
 let lotusHintOpen = false; // Mobile: Fragezeichen-Hint offen
 let hoverMouseX = 0, hoverMouseY = 0; // aktuelle Mausposition für Hover-Checks
 function onMouseMove(e) {
@@ -862,6 +863,8 @@ function onMouseMove(e) {
         const d = dialHitArea;
         overDial = mx >= d.x && mx <= d.x + d.w && sy >= d.y && sy <= d.y + d.h;
       }
+      const twBtn = menuButtons.timerToggle;
+      hoverStopwatch = !!(twBtn && mx >= twBtn.x && mx <= twBtn.x + twBtn.w && my >= twBtn.y && my <= twBtn.y + twBtn.h);
       hoverBurger = !!(burgerBtnArea && mx >= burgerBtnArea.x && mx <= burgerBtnArea.x + burgerBtnArea.w && my >= burgerBtnArea.y && my <= burgerBtnArea.y + burgerBtnArea.h);
       const overBurger = hoverBurger;
       hoverLangIdx = -1;
@@ -870,7 +873,7 @@ function onMouseMove(e) {
         if (mx >= lb.x && mx <= lb.x + lb.w && my >= lb.y && my <= lb.y + lb.h) { hoverLangIdx = li; break; }
       }
       const overLang = hoverLangIdx >= 0;
-      canvas.style.cursor = overDial ? 'grab' : (overLink || hoverSection || overStart || overLotus || overTimeBtn || overGk || overBurger || overLang) ? 'pointer' : 'default';
+      canvas.style.cursor = overDial ? 'grab' : (overLink || hoverSection || overStart || overLotus || overTimeBtn || overGk || overBurger || overLang || hoverStopwatch) ? 'pointer' : 'default';
     }
     return;
   }
@@ -3029,13 +3032,16 @@ function drawMenu() {
     const twX = cx;
     const twY = burgerY + burgerSize / 2;
     const twR = twSize * 0.35;
-    const twCol = timerVisible ? 'rgba(255, 215, 0, 0.9)' : 'rgba(240, 236, 230, 0.25)';
-    if (timerVisible) {
-      ctx.shadowColor = 'rgba(255, 215, 0, 0.5)';
-      ctx.shadowBlur = 10;
+    const twHov = hoverStopwatch && !isMobilePortrait;
+    const twCol = timerVisible
+      ? (twHov ? 'rgba(255, 225, 50, 1.0)' : 'rgba(255, 215, 0, 0.9)')
+      : (twHov ? 'rgba(240, 236, 230, 0.7)' : 'rgba(240, 236, 230, 0.25)');
+    if (timerVisible || twHov) {
+      ctx.shadowColor = timerVisible ? 'rgba(255, 215, 0, 0.5)' : 'rgba(240, 236, 230, 0.4)';
+      ctx.shadowBlur = twHov ? 14 : 10;
     }
     ctx.strokeStyle = twCol;
-    ctx.lineWidth = isMobilePortrait ? 2 : 1.5;
+    ctx.lineWidth = twHov ? 2 : (isMobilePortrait ? 2 : 1.5);
     // Kreis
     ctx.beginPath(); ctx.arc(twX, twY + twR * 0.1, twR, 0, Math.PI * 2); ctx.stroke();
     // Zeiger
@@ -3049,6 +3055,32 @@ function drawMenu() {
     ctx.shadowBlur = 0;
     const twHitSize = burgerSize;
     menuButtons.timerToggle = { x: twX - twHitSize / 2, y: twY - twHitSize / 2, w: twHitSize, h: twHitSize };
+
+    // Desktop: Hover-Tooltip unter der Stoppuhr
+    if (twHov) {
+      const tipFont = Math.max(13, unit * 0.018);
+      const tipText = timerVisible
+        ? (lang === 'de' ? 'Timer-Anzeige ausblenden' : 'Hide timer display')
+        : (lang === 'de' ? 'Timer-Anzeige einblenden' : 'Show timer display');
+      ctx.font = `400 ${tipFont}px "Courier New", monospace`;
+      const tipW = ctx.measureText(tipText).width + tipFont * 1.6;
+      const tipH = tipFont * 2.2;
+      const tipX = twX - tipW / 2;
+      const tipY = twY + twHitSize / 2 + 6;
+      ctx.globalAlpha = 0.92;
+      ctx.beginPath();
+      ctx.roundRect(tipX, tipY, tipW, tipH, 8);
+      ctx.fillStyle = 'rgba(20, 22, 28, 0.94)';
+      ctx.fill();
+      ctx.strokeStyle = timerVisible ? 'rgba(255, 215, 0, 0.4)' : 'rgba(240, 236, 230, 0.3)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = timerVisible ? 'rgba(255, 215, 0, 0.9)' : 'rgba(240, 236, 230, 0.85)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(tipText, tipX + tipW / 2, tipY + tipH / 2);
+      ctx.globalAlpha = 1;
+    }
   }
   ctx.textAlign = 'start';
   ctx.textBaseline = 'alphabetic';
