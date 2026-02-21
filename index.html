@@ -6310,7 +6310,8 @@ function frame() {
     const timerFontSize = Math.min(cW, cH) * (timerMob ? 0.06 : 0.035);
     ctx.font = `200 ${timerFontSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText(timeStr, cx, cy + r + (timerMob ? 40 : 55));
+    const timerY = timerMob ? cH - Math.min(cW, cH) * 0.04 - Math.min(cW, cH) * 0.08 / 2 : cH - Math.min(cW, cH) * 0.03 - Math.min(cW, cH) * 0.04 / 2;
+    ctx.fillText(timeStr, cx, timerY);
     ctx.textAlign = 'start';
   }
 
