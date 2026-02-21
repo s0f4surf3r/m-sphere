@@ -205,7 +205,7 @@ const TR = {
     letGo: 'Du darfst jetzt loslassen ...',
     relapseHint1: 'Schüttle weiter —',
     relapseHint2: 'bis der Kreis wieder voll ist.',
-    handyAblegen: 'Lege dein Handy ruhig hin ...',
+    handyAblegen: 'Lege dein Gerät ruhig hin ...',
     handyAblegen2: '... wenn du es kannst ;)',
     youAreWater: 'Du bist das Wasser',
     tapRestart: 'Zurück ins Menü',
@@ -276,7 +276,7 @@ const TR = {
     letGo: 'You may let go now ...',
     relapseHint1: 'Keep shaking —',
     relapseHint2: 'until the circle is full again.',
-    handyAblegen: 'Put your phone down gently ...',
+    handyAblegen: 'Put your device down gently ...',
     handyAblegen2: '... if you can ;)',
     youAreWater: 'You are the water',
     tapRestart: 'Back to menu',
@@ -6803,9 +6803,9 @@ function frame() {
     if (medElapsed < 5) {
       const fadeAlpha = medElapsed < 3.5 ? 1 : 1 - (medElapsed - 3.5) / 1.5; // 3.5s voll, dann 1.5s ausblenden
       const hcx = cx;
-      const hMob = cW < 600 && cH > cW;
+      const hMob = cW < 1024 && cH > cW;
       const hFont = Math.min(cW, cH) * (hMob ? 0.045 : 0.03);
-      const hcy = cy - r - hFont * 5;
+      const hcy = cy - r - hFont * (hMob ? 6.5 : 5);
       ctx.font = `300 ${hFont}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
