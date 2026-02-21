@@ -2518,9 +2518,12 @@ function drawMenu() {
     const _gapSum = gapTitleSub + gapSubDial + gapDialSettings + gapSettingsStart;
     const _contentH = _titleSubH + _dialH + _sectionsH + _innerGapSum + _startBtnH + _gapSum;
     // Vertikale Zentrierung: Goldener Schnitt (40% oben, 60% unten)
+    // Minimum: Titel muss unter Header-Controls starten (Burger + Lang-Toggle)
+    const _headerClearance = unit * 0.08 + unit * 0.04 + rowFont;  // burgerSize + burgerPad + Luft
+    const _minTop = _headerClearance - unit * 0.02;  // abzgl. safeTopPad-Offset
     const _footerH = unit * 0.12;
     const _availH = H - safeTopPad - _footerH;
-    const _topOffset = Math.max(0, (_availH - _contentH) * 0.4);
+    const _topOffset = Math.max(_minTop, (_availH - _contentH) * 0.4);
     curY = safeTopPad + _topOffset;
   } else {
     sectionGap = unit * 0.025 * 0.7 * vScale;
