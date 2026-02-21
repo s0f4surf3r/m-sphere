@@ -373,9 +373,10 @@ let dialTouchStartX = 0;
 let dialTouchLastX = 0;
 let dialTouchStartTime = 0;
 let dialHitArea = null; // {x, y, w, h} für Touch-Detection
+let dialLastSnappedIdx = 3; // letzter gerundeter Index — für Tick-Sound
 
 // Atem-Modi: 0=Aus, 1=Kohärent (5.5s/5.5s), 2=Beruhigend (4s/6s)
-const BREATHING_MODES = ['Aus', 'Kohärent', 'Beruhigend 4:6', '4-7-8', 'Box 4-4-4-4'];
+const BREATHING_MODES = ['Aus', 'Kohärent', 'Beruhigend 4:6', '4-7-8', 'Box'];
 const BREATHING_TIMING = [
   null,
   { in: 5.5, holdIn: 0, out: 5.5, holdOut: 0 },
@@ -914,8 +915,8 @@ window.addEventListener('mouseup', (e) => {
       const dialCx = dialHitArea.x + dialHitArea.w / 2;
       const current = Math.round(dialPos);
       const target = mx2 < dialCx
-        ? Math.max(0, current - 1)
-        : Math.min(DIAL_DURATIONS.length - 1, current + 1);
+        ? Math.min(DIAL_DURATIONS.length - 1, current + 1)
+        : Math.max(0, current - 1);
       if (target !== current) {
         // Bounce-Animation: overshoot dann zurückfedern
         const dir = target - current;
@@ -2741,6 +2742,13 @@ function drawMenu() {
       if (dialIdx >= 0 && Math.abs(dialPos - dialIdx) > 0.5) dialPos = dialIdx;
     }
 
+    // Tick-Sound wenn Position über Rastpunkt springt
+    const currentSnapped = Math.max(0, Math.min(DIAL_DURATIONS.length - 1, Math.round(dialPos)));
+    if (currentSnapped !== dialLastSnappedIdx) {
+      dialLastSnappedIdx = currentSnapped;
+      try { playDialTick(); } catch(e) {}
+    }
+
     // Hintergrund-Spur
     ctx.save();
     ctx.beginPath();
@@ -2813,7 +2821,7 @@ function drawMenu() {
   // --- ATMEN ---
   menuToggleAreas = {};
   menuScrollRowAreas = {};
-  const breathLabels = lang === 'de' ? BREATHING_MODES : [t('aus'), 'Coherent', 'Calming 4:6', '4-7-8', 'Box 4-4-4-4'];
+  const breathLabels = lang === 'de' ? BREATHING_MODES : [t('aus'), 'Coherent', 'Calming 4:6', '4-7-8', 'Box'];
   const breathRow = drawSettingsRow(t('atemrhythmus'), breathLabels, breathingMode, curY, null, 'breathing');
   menuButtons.breathing = breathRow.btns;
   curY = breathRow.bottomY + sectionGap;
@@ -4133,8 +4141,8 @@ canvas.addEventListener('touchend', (e) => {
         const dialCx = dialHitArea.x + dialHitArea.w / 2;
         const current = Math.round(dialPos);
         const target = tx2 < dialCx
-          ? Math.max(0, current - 1)
-          : Math.min(DIAL_DURATIONS.length - 1, current + 1);
+          ? Math.min(DIAL_DURATIONS.length - 1, current + 1)
+          : Math.max(0, current - 1);
         if (target !== current) {
           const dir = target - current;
           dialVel = dir * 0.35;
@@ -4601,6 +4609,24 @@ function playTingsha() {
     osc.start(t);
     osc.stop(t + 2);
   });
+}
+
+function playDialTick() {
+  if (!soundInitialized) return;
+  if (audioCtx.state !== 'running') return;
+  const t = audioCtx.currentTime;
+  // Kurzer knackiger Tick: hoher Impuls + schneller Decay
+  const osc = audioCtx.createOscillator();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(3200, t);
+  osc.frequency.exponentialRampToValueAtTime(1200, t + 0.03);
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.06, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(t);
+  osc.stop(t + 0.08);
 }
 
 function playSparkle() {
