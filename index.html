@@ -4831,7 +4831,9 @@ function playTingsha() {
 }
 
 function playDialTick() {
-  if (!soundInitialized) return;
+  try { ensureSound(); } catch(e) {}
+  if (!soundInitialized || !audioCtx) return;
+  if (audioCtx.state === 'suspended') { audioCtx.resume().catch(() => {}); return; }
   if (audioCtx.state !== 'running') return;
   const t = audioCtx.currentTime;
   // Sanfter, dumpfer Tick: tiefer Ton mit weichem Decay
