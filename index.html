@@ -519,6 +519,8 @@ try {
 let menuButtons = {};
 let menuTouchDist = 0;
 let menuContentHeight = 0; // Gesamte Menü-Inhaltshöhe für native Scrolling
+let _prevMenuFixedH = 0;   // Echte Content-Höhe (ohne strukturelle Gaps) vom vorherigen Frame
+let _prevMenuGs = 1;        // Gap-Scale vom vorherigen Frame
 
 // Horizontales Scroll-Karussell für Mobile Menü-Buttons
 const menuScrollOffsets = {}; // Key = collapseKey, Value = px-Offset
@@ -2492,45 +2494,32 @@ function drawMenu() {
   const safeTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
 
   // --- Semantische Abstände: feste Verhältnisse, skaliert bei knappem Viewport ---
-  // Was zusammengehört, bleibt eng. Was Raum braucht, bekommt Raum.
-  // Verhältnisse (0.4 : 2.0 : 1.5 : 2.5) bleiben IMMER gleich.
-  let sectionGap, curY, _gs = 1;  // _gs = gap scale (1 = volle Abstände)
+  // Echte Content-Höhe vom vorherigen Frame → keine Schätzfehler.
+  let sectionGap, curY, _gs = 1;
   const gapTitleSub = rowFont * 0.4;       // Titel → Untertitel (gehören zusammen → eng)
   const gapSubDial = rowFont * 2.0;        // Untertitel → Drehrad (moderate Trennung)
   const gapDialSettings = rowFont * 1.5;   // Drehrad → Settings (Übergang zur Steuerung)
   const gapSettingsStart = rowFont * 2.5;  // Settings → Start-Button (CTA braucht Raum)
+  const _gapSum = gapTitleSub + gapSubDial + gapDialSettings + gapSettingsStart;
   if (isMobilePortrait) {
     sectionGap = rowFont * 0.5;
     const safeTopPad = safeTop + unit * 0.02;
-    // Content-Höhe vorberechnen (Elemente OHNE strukturelle Abstände)
-    const _dialH = btnH * 2.2;
-    const _rowCollapsed = rowFont * 2;
-    const _rowExpanded = rowFont * 2 + btnGap + btnH * 0.9;
-    let _sectionsH = 0;
-    for (const key of ['breathing', 'meditation', 'thoughtMode', 'flowLevel', 'face']) {
-      _sectionsH += menuExpanded[key] ? _rowExpanded : _rowCollapsed;
-    }
-    let _innerGapSum = 0;
-    for (const key of ['breathing', 'meditation', 'thoughtMode', 'flowLevel']) {
-      _innerGapSum += sectionGap * (menuExpanded[key] ? 0.6 : 1.0);
-    }
-    const _titleSubH = titleSize + subtitleSize * 1.2;
-    const _startBtnH = rowFont * 1.3 * 2.2;
-    const _gapSum = gapTitleSub + gapSubDial + gapDialSettings + gapSettingsStart;
-    const _fixedH = _titleSubH + _dialH + _sectionsH + _innerGapSum + _startBtnH;
-    const _minTop = unit * 0.08 + rowFont * 0.5;  // burgerSize + halbe Zeile Luft
+    const _minTop = unit * 0.08 + rowFont * 0.5;
     const _footerH = unit * 0.12;
     const _availH = H - safeTopPad - _footerH;
+    // Echte fixe Content-Höhe: vom vorherigen Frame gemessen (exakt!)
+    // Fallback für ersten Frame: grobe Schätzung
+    const _fixedH = _prevMenuFixedH > 0
+      ? _prevMenuFixedH
+      : (titleSize + subtitleSize * 1.2 + btnH * 2.2 + rowFont * 2 * 5 + sectionGap * 4 + rowFont * 1.3 * 2.2);
     // Goldener Schnitt wenn Platz reicht, sonst Abstände proportional stauchen
     const _goldenTop = (_availH - _fixedH - _gapSum) * 0.4;
     if (_goldenTop >= _minTop) {
-      // Genug Platz → Goldener Schnitt, volle Abstände
       curY = safeTopPad + _goldenTop;
     } else {
-      // Knapper Viewport → minimaler Top-Offset, Abstände skalieren
       curY = safeTopPad + _minTop;
       const _availForGaps = _availH - _minTop - _fixedH;
-      _gs = Math.max(0.2, Math.min(1, _availForGaps / _gapSum));
+      _gs = Math.max(0.15, Math.min(1, _availForGaps / _gapSum));
     }
   } else {
     sectionGap = unit * 0.025 * 0.7 * vScale;
@@ -2546,6 +2535,9 @@ function drawMenu() {
   if (easterEggFlash > 0) easterEggFlash = Math.max(0, easterEggFlash - 0.015);
 
 
+
+  // Startmarke für Content-Höhen-Messung (wird am Ende mit curY verglichen)
+  const _curYStart = curY;
 
   // --- Titel: M-SPHÄRE (DE) / M-SPHERE (EN) mit ZPMA-Glow ---
   const titleText = lang === 'de' ? 'M-SPHÄRE' : 'M-SPHERE';
@@ -3117,6 +3109,12 @@ function drawMenu() {
   ctx.shadowBlur = 0;
   menuButtons.start = canStart ? { x: startX, y: curY, w: startW, h: startH } : { x: startX, y: curY, w: startW, h: startH, disabled: true };
 
+  // Echte Content-Höhe messen → wird im NÄCHSTEN Frame für exakte Positionierung verwendet
+  if (isMobilePortrait) {
+    const _actualFlowH = curY + startH - _curYStart;
+    _prevMenuFixedH = _actualFlowH - _gapSum * _gs;  // Feste Elemente (ohne strukturelle Gaps)
+    _prevMenuGs = _gs;
+  }
   // Gesamte Inhaltshöhe berechnen (+ Footer-Reserve, damit Start-Button über dem Footer scrollbar ist)
   const _footerReserve = isMobilePortrait ? unit * 0.12 + sectionGap : 0;
   menuContentHeight = curY + startH + sectionGap + _footerReserve;
