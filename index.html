@@ -2641,12 +2641,8 @@ function drawMenu() {
   // --- DEIN GESICHT ---
   const faceHasSwap = faceSwapStatus === 'done' && faceSwapImg;
   const faceLabel = faceHasSwap && !menuExpanded.face ? t('deinGesicht') + ' ✓' : t('deinGesicht');
-  const faceMobileLabels = isMobilePortrait
-    ? [t('aus'), t('laden')]
-    : [t('aus'), t('mediathek'), t('kamera'), t('laden')];
-  const faceMobileIdx = isMobilePortrait
-    ? (faceModeIdx === 3 ? 1 : faceModeIdx === 0 ? 0 : 0)
-    : faceModeIdx;
+  const faceMobileLabels = [t('aus'), t('mediathek'), t('kamera'), t('laden')];
+  const faceMobileIdx = faceModeIdx;
   const faceRow = drawSettingsRow(faceLabel, faceMobileLabels, faceMobileIdx, curY, faceHasSwap && !menuExpanded.face ? '#2abfbf' : null, 'face');
   menuButtons.faceSwap = faceRow.btns;
   curY = faceRow.bottomY;
@@ -3714,8 +3710,7 @@ function handleMenuClick(x, y) {
   for (const btn of menuButtons.faceSwap || []) {
     if (hitBtn(btn)) {
       const prevMode = faceModeIdx;
-      const isMob = cW < 600 && cH > cW;
-      faceModeIdx = (isMob && btn.idx === 1) ? 3 : btn.idx;
+      faceModeIdx = btn.idx;
       if (faceModeIdx === 0) {
         faceSwapImg = null;
         faceSwapStatus = 'idle';
@@ -3733,7 +3728,7 @@ function handleMenuClick(x, y) {
           fi.click();
         }
       } else if (faceModeIdx === 2) {
-        if (isMob) {
+        if (cW < 600 && cH > cW) {
           stopWebcam();
           if (faceSwapStatus === 'idle') {
             const fi = document.getElementById('faceInput');
