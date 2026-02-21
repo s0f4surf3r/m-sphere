@@ -2420,8 +2420,8 @@ function drawMenu() {
   const W = cW, H = cH;
   const unit = Math.min(W, H);
   const cx = W / 2;
-  const isMobilePortrait = W < 600 && H > W;
-  const uiScale = isMobilePortrait ? 2.5 : 1;
+  const isMobilePortrait = W < 1024 && H > W;
+  const uiScale = isMobilePortrait ? Math.max(1.5, Math.min(2.5, 2.5 * 500 / W)) : 1;
 
   // Mobile: Kontrast boosten (kleine Screens, helles Umgebungslicht)
   const menuBg = 'rgba(0, 0, 0, 1)';
@@ -4836,18 +4836,25 @@ function playDialTick() {
   if (audioCtx.state === 'suspended') { audioCtx.resume().catch(() => {}); return; }
   if (audioCtx.state !== 'running') return;
   const t = audioCtx.currentTime;
-  // Sanfter, dumpfer Tick: tiefer Ton mit weichem Decay
-  const osc = audioCtx.createOscillator();
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(520, t);
-  osc.frequency.exponentialRampToValueAtTime(280, t + 0.05);
+  // Mechanischer Roulette-Klick: kurzer Noise-Burst durch Bandpass
+  const len = Math.round(audioCtx.sampleRate * 0.012);
+  const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) {
+    d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (len * 0.15));
+  }
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf;
+  const bp = audioCtx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = 1200;
+  bp.Q.value = 3;
   const gain = audioCtx.createGain();
-  gain.gain.setValueAtTime(0.04, t);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
-  osc.connect(gain);
+  gain.gain.value = 0.1;
+  src.connect(bp);
+  bp.connect(gain);
   gain.connect(audioCtx.destination);
-  osc.start(t);
-  osc.stop(t + 0.12);
+  src.start(t);
 }
 
 function playSparkle() {
