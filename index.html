@@ -490,7 +490,7 @@ let menuScrollRowAreas = {};  // Key = collapseKey, Value = {x, y, w, h, maxOffs
 // --- Legal Overlay (Impressum/Datenschutz/About/Menu) ---
 let legalOverlay = null; // 'menu' | 'about' | 'impressum' | 'datenschutz' | null
 // Ausklappbare Menü-Sektionen (true = offen)
-const menuExpanded = { breathing: false, meditation: false, thoughtMode: false, flowLevel: false, face: false };
+const menuExpanded = { breathing: true, meditation: false, thoughtMode: false, flowLevel: false, face: false };
 let menuToggleAreas = {}; // Hit-Areas für Sektions-Header
 let legalScrollY = 0;
 let legalCloseBtn = null;
@@ -2855,7 +2855,7 @@ function drawMenu() {
     const iconY = H - (isMobilePortrait ? 18 : 14) - iconSize;
     const credY = iconY + iconSize / 2; // vertikal zentriert mit Icons
     ctx.font = `${credFont}px "Courier New", monospace`;
-    const credBase = isMobilePortrait ? 0.5 : 0.3;
+    const credBase = isMobilePortrait ? 0.8 : 0.7;
     if (hoverLink) {
       ctx.shadowColor = 'rgba(42, 191, 191, 0.6)';
       ctx.shadowBlur = 12;
@@ -2891,6 +2891,46 @@ function drawMenu() {
       ctx.shadowBlur = 0;
     }
     menuButtons.gkLink = { x: iconLeftX, y: iconY, w: iconSize, h: iconSize };
+
+    // Desktop: GK Hover-Tooltip ÜBER dem Icon
+    if (hoverGk && !isMobilePortrait) {
+      const tipFont = Math.max(13, unit * 0.018);
+      const tipText = lang === 'de' ? 'Wenn du hier klickst, wechselst du zum Gefühlskompass 5D' : 'Click here to switch to Gefühlskompass 5D';
+      ctx.font = `400 ${tipFont}px "Courier New", monospace`;
+      const maxTipW = Math.min(280, W * 0.35);
+      const words = tipText.split(' ');
+      const tipLines = [];
+      let curLine = '';
+      for (const w of words) {
+        const test = curLine ? curLine + ' ' + w : w;
+        if (ctx.measureText(test).width > maxTipW && curLine) { tipLines.push(curLine); curLine = w; }
+        else curLine = test;
+      }
+      if (curLine) tipLines.push(curLine);
+      const tipLineH = tipFont * 1.5;
+      const tipPad = tipFont * 0.8;
+      const tipH = tipLines.length * tipLineH + tipPad * 2;
+      const tipW = Math.min(maxTipW + tipPad * 2, tipLines.reduce((max, l) => Math.max(max, ctx.measureText(l).width), 0) + tipPad * 2);
+      const tipX = iconLeftX;
+      const tipY = iconY - tipH - 10;
+      ctx.globalAlpha = 0.92;
+      ctx.beginPath();
+      ctx.roundRect(tipX, tipY, tipW, tipH, 8);
+      ctx.fillStyle = 'rgba(20, 22, 28, 0.94)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(42, 191, 191, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      for (let li = 0; li < tipLines.length; li++) {
+        ctx.fillText(tipLines[li], tipX + tipPad, tipY + tipPad + li * tipLineH);
+      }
+      ctx.globalAlpha = 1;
+      ctx.textAlign = 'start';
+      ctx.textBaseline = 'alphabetic';
+    }
 
     // Hit-Areas ZUERST setzen (bevor Rendering fehlschlagen könnte)
     const hitPadLotus = isMobilePortrait ? 12 : 6;
@@ -3558,7 +3598,8 @@ function handleMenuClick(x, y) {
     if (sv && x >= sv.x && x <= sv.x + sv.w && y >= sv.y && y <= sv.y + sv.h) {
       saveFaceSwapImage();
       faceSwapShowSave = false;
-      menuExpanded.face = false; // Menü zuklappen nach Speichern
+      menuExpanded.face = false;
+      if (!Object.values(menuExpanded).some(v => v)) menuExpanded.breathing = true;
       return true;
     }
     return true; // Klicks außerhalb ignorieren (Overlay bleibt, User muss speichern)
@@ -3606,8 +3647,8 @@ function handleMenuClick(x, y) {
       const wasOpen = menuExpanded[key];
       // Alle zuklappen
       for (const k in menuExpanded) menuExpanded[k] = false;
-      // Toggle: nur öffnen wenn vorher zu
-      if (!wasOpen) menuExpanded[key] = true;
+      // Öffne den angeklickten — oder Atemrhythmus als Fallback (immer eins offen)
+      menuExpanded[wasOpen ? 'breathing' : key] = true;
       return true;
     }
   }
@@ -3709,6 +3750,7 @@ function handleMenuClick(x, y) {
         document.getElementById('faceLoadInput').click();
       }
       menuExpanded.face = false;
+      if (!Object.values(menuExpanded).some(v => v)) menuExpanded.breathing = true;
       return true;
     }
   }
@@ -4530,7 +4572,7 @@ function updateMeditationSound(t, progress) {
     const breathTime2 = (Date.now() - meditationStartTime) / 1000;
     const bw = calcBreathWave(bt, breathTime2);
     const breathMod = (bw + 1) / 2; // 0=Ausatmen, 1=Einatmen
-    const breathNoiseVol = breathMod * 0.06 * envelope;
+    const breathNoiseVol = breathMod * 0.12 * envelope;
     noiseGain.gain.setTargetAtTime(breathNoiseVol, t, 0.08);
     filterNode.frequency.setTargetAtTime(350 + breathMod * 400, t, 0.08);
     filterNode.Q.setTargetAtTime(0.8 + breathMod * 0.5, t, 0.08);
