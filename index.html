@@ -1040,8 +1040,30 @@ window.addEventListener('mouseup', (e) => {
 canvas.addEventListener('dragstart', (e) => e.preventDefault());
 canvas.addEventListener('selectstart', (e) => e.preventDefault());
 
+// --- Pull-to-Refresh (Mobile Homescreen App) ---
+let ptrStartY = 0;
+let ptrActive = false;
+let ptrPull = 0; // 0..1 Pull-Fortschritt
+let ptrTriggered = false;
+const PTR_THRESHOLD = 120; // px zum Auslösen
+
 let lastTouchX = 0, lastTouchY = 0;
 function onTouchMove(e) {
+  // Pull-to-Refresh
+  if (ptrActive && e.touches.length === 1) {
+    const dy = e.touches[0].clientY - ptrStartY;
+    if (dy > 10) {
+      ptrPull = Math.min(1, dy / PTR_THRESHOLD);
+      if (dy >= PTR_THRESHOLD && !ptrTriggered) {
+        ptrTriggered = true;
+        try { navigator.vibrate(15); } catch(e) {}
+      }
+      e.preventDefault();
+      return;
+    } else if (dy < -5) {
+      ptrActive = false;
+    }
+  }
   if (legalOverlay) {
     e.preventDefault();
     const t = e.touches[0];
@@ -1112,6 +1134,11 @@ function onTouchStart(e) {
   const [tx, ty] = canvasCoords(t.clientX, t.clientY);
   lastTouchX = tx;
   lastTouchY = ty;
+  // Pull-to-Refresh: Start tracken wenn ganz oben
+  ptrStartY = t.clientY;
+  ptrActive = state === 'idle' && !legalOverlay && (window.scrollY || 0) < 5;
+  ptrPull = 0;
+  ptrTriggered = false;
   if (legalOverlay) {
     legalTouchLastY = ty;
     menuTouchDist = 0;
@@ -4245,6 +4272,16 @@ canvas.addEventListener('click', (e) => {
 
 canvas.addEventListener('touchend', (e) => {
   e.preventDefault(); // verhindert synthetischen Click (Double-Firing)
+  // Pull-to-Refresh: Auslösen oder Zurücksetzen
+  if (ptrActive || ptrTriggered) {
+    if (ptrTriggered) {
+      try { navigator.vibrate(30); } catch(ex) {}
+      setTimeout(() => location.reload(), 300);
+      return;
+    }
+    ptrActive = false;
+    ptrPull = 0;
+  }
   lastTouchEndTime = Date.now();
   try { ensureSound(); } catch(err) { console.warn('ensureSound touch error:', err); }
   // Zurück-Button (ready/shaking/meditating)
@@ -6204,6 +6241,36 @@ function frame() {
   if (state === 'idle') {
     drawMenu();
     drawLegalOverlay();
+    // Pull-to-Refresh Indikator
+    if (ptrPull > 0.01) {
+      const prY = ptrPull * 70 - 20;
+      const prR = 14;
+      const prCx = cW / 2;
+      const rotation = ptrPull * Math.PI * 2.5;
+      const alpha = Math.min(1, ptrPull * 1.5);
+      ctx.save();
+      ctx.globalAlpha = alpha * 0.9;
+      ctx.translate(prCx, prY);
+      ctx.rotate(rotation);
+      // Kreisbogen-Pfeil
+      ctx.beginPath();
+      ctx.arc(0, 0, prR, 0, Math.PI * 1.6);
+      ctx.strokeStyle = ptrTriggered ? 'rgba(42, 191, 191, 1.0)' : 'rgba(240, 236, 230, 0.7)';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      // Pfeilspitze
+      const tipAngle = Math.PI * 1.6;
+      const tipX = Math.cos(tipAngle) * prR;
+      const tipY = Math.sin(tipAngle) * prR;
+      ctx.beginPath();
+      ctx.moveTo(tipX - 5, tipY - 6);
+      ctx.lineTo(tipX, tipY);
+      ctx.lineTo(tipX + 6, tipY - 4);
+      ctx.stroke();
+      ctx.restore();
+      ctx.lineCap = 'butt';
+    }
     // Toast-Notification
     if (toastMsg && Date.now() - toastStart < 5000) {
       const toastElapsed = Date.now() - toastStart;
