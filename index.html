@@ -5277,7 +5277,7 @@ function updateMeditationSound(t, progress) {
     const breathTime2 = (Date.now() - meditationStartTime) / 1000;
     const bw = calcBreathWave(bt, breathTime2);
     const breathMod = (bw + 1) / 2; // 0=Ausatmen, 1=Einatmen
-    const breathNoiseVol = breathMod * 0.12 * envelope;
+    const breathNoiseVol = breathMod * 0.22 * envelope;
     noiseGain.gain.setTargetAtTime(breathNoiseVol, t, 0.08);
     filterNode.frequency.setTargetAtTime(350 + breathMod * 400, t, 0.08);
     filterNode.Q.setTargetAtTime(0.8 + breathMod * 0.5, t, 0.08);
