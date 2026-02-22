@@ -519,8 +519,6 @@ try {
 let menuButtons = {};
 let menuTouchDist = 0;
 let menuContentHeight = 0; // Gesamte Menü-Inhaltshöhe für native Scrolling
-let _prevMenuFixedH = 0;   // Echte Content-Höhe (ohne strukturelle Gaps) vom vorherigen Frame
-let _prevMenuGs = 1;        // Gap-Scale vom vorherigen Frame
 
 // Horizontales Scroll-Karussell für Mobile Menü-Buttons
 const menuScrollOffsets = {}; // Key = collapseKey, Value = px-Offset
@@ -2493,43 +2491,36 @@ function drawMenu() {
   const btnGap = unit * 0.012 * uiScale;
   const safeTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
 
-  // --- Semantische Abstände: feste Verhältnisse, skaliert bei knappem Viewport ---
-  // Berechnung gegen die EXAKTE Footer-Position, keine Schätzungen.
-  let sectionGap, curY, _gs = 1;
-  const gapTitleSub = rowFont * 0.4;
-  const gapSubDial = rowFont * 2.0;
-  const gapDialSettings = rowFont * 1.5;
-  const gapSettingsStart = rowFont * 2.5;
-  let _allGaps = gapTitleSub + gapSubDial + gapDialSettings + gapSettingsStart;
+  // --- Zwei Gap-Systeme: sectionGap (eng, Settings) + layoutGap (weit, Struktur) ---
+  let sectionGap, layoutGap, curY;
   if (isMobilePortrait) {
+    // Settings-Items gehören als Gruppe zusammen → enger, fester Abstand
     sectionGap = rowFont * 0.5;
+    // Strukturelle Trennung: verbleibender Raum proportional verteilt
+    const safeTopPad = safeTop + unit * 0.02;
+    const _dialH = btnH * 2.2;
+    const _rowCollapsed = rowFont * 2;
+    const _rowExpanded = rowFont * 2 + btnGap + btnH * 0.9;
+    let _sectionsH = 0;
+    for (const key of ['breathing', 'meditation', 'thoughtMode', 'flowLevel', 'face']) {
+      _sectionsH += menuExpanded[key] ? _rowExpanded : _rowCollapsed;
+    }
     let _innerGapSum = 0;
     for (const key of ['breathing', 'meditation', 'thoughtMode', 'flowLevel']) {
       _innerGapSum += sectionGap * (menuExpanded[key] ? 0.6 : 1.0);
     }
-    _allGaps += _innerGapSum;
-    // Exakte Grenzen: Header-Unterkante → Footer-Oberkante
-    const _contentTop = safeTop + unit * 0.02 + unit * 0.08 + rowFont * 0.5;  // unter Burger
-    const _footerTop = H - unit * 0.12;                                        // exakte Footer-Position
-    const _bottomGap = rowFont;                                                 // Luft über Footer
-    const _maxContentH = _footerTop - _bottomGap - _contentTop;
-    // Fixe Content-Höhe (ohne Gaps): vom vorherigen Frame gemessen
-    const _fixedH = _prevMenuFixedH > 0
-      ? _prevMenuFixedH
-      : (titleSize + subtitleSize * 1.2 + btnH * 2.2 + rowFont * 2 * 5 + rowFont * 1.3 * 2.2);
-    const _fullContentH = _fixedH + _allGaps;
-    if (_fullContentH <= _maxContentH) {
-      // Genug Platz → Goldener Schnitt (40% oben, 60% unten), volle Gaps
-      const _extra = _maxContentH - _fullContentH;
-      curY = _contentTop + _extra * 0.4;
-    } else {
-      // Stauchen → Gaps proportional reduzieren, Content direkt unter Header
-      curY = _contentTop;
-      const _availForGaps = Math.max(0, _maxContentH - _fixedH);
-      _gs = Math.max(0.15, Math.min(1, _availForGaps / _allGaps));
-    }
+    const _titleSubH = titleSize + subtitleSize * 1.2;
+    const _startBtnH = rowFont * 1.3 * 2.2;
+    const _footerH = unit * 0.12;
+    const _fixedH = safeTopPad + _titleSubH + _dialH + _sectionsH + _startBtnH + _innerGapSum;
+    const _availH = H - _footerH;
+    // Symmetrisch: Top→Titel(1.5) + Titel→Sub(0.3) + Sub→Dial(1.5) + Dial→Settings(0.8) + Settings→Start(1.5) + Start→Footer(1.0)
+    const _outerWeight = 1.5 + 0.3 + 1.5 + 0.8 + 1.5 + 1.0;
+    layoutGap = Math.max(unit * 0.005, (_availH - _fixedH) / _outerWeight);
+    curY = safeTopPad + layoutGap * 1.5;
   } else {
     sectionGap = unit * 0.025 * 0.7 * vScale;
+    layoutGap = sectionGap;
     curY = Math.max(H * 0.1 * vScale, safeTop + unit * 0.03);
   }
 
@@ -2542,9 +2533,6 @@ function drawMenu() {
   if (easterEggFlash > 0) easterEggFlash = Math.max(0, easterEggFlash - 0.015);
 
 
-
-  // Startmarke für Content-Höhen-Messung (wird am Ende mit curY verglichen)
-  const _curYStart = curY;
 
   // --- Titel: M-SPHÄRE (DE) / M-SPHERE (EN) mit ZPMA-Glow ---
   const titleText = lang === 'de' ? 'M-SPHÄRE' : 'M-SPHERE';
@@ -2635,7 +2623,7 @@ function drawMenu() {
     ctx.textBaseline = 'top';
   }
 
-  curY += actualTitleH + (isMobilePortrait ? gapTitleSub * _gs : unit * 0.015 * vScale);
+  curY += actualTitleH + (isMobilePortrait ? layoutGap * 0.3 : unit * 0.015 * vScale);
 
   // Untertitel — auf Mobile gleich breit wie Titel
   ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.55)';
@@ -2655,7 +2643,7 @@ function drawMenu() {
   ctx.fillText(t('subtitle'), cx, curY);
   ctx.letterSpacing = '0px';
   ctx.shadowBlur = 0;
-  curY += stSize * 1.2 + (isMobilePortrait ? gapSubDial * _gs : sectionGap + stSize * (vScale * 0.5));
+  curY += stSize * 1.2 + (isMobilePortrait ? layoutGap * 1.5 : sectionGap + stSize * (vScale * 0.5));
 
   // Language Toggle wird außerhalb des Scroll-Bereichs gezeichnet (siehe unten)
 
@@ -2988,7 +2976,7 @@ function drawMenu() {
     ctx.fillStyle = 'rgba(255, 215, 0, 0.7)';
     ctx.fill();
 
-    curY += dialH + (isMobilePortrait ? gapDialSettings * _gs : sectionGap);
+    curY += dialH + (isMobilePortrait ? layoutGap * 0.8 : sectionGap);
   }
 
   // --- ATMEN ---
@@ -2997,7 +2985,7 @@ function drawMenu() {
   const breathLabels = lang === 'de' ? BREATHING_MODES : [t('aus'), 'Coherent', 'Calming 4:6', '4-7-8', 'Box'];
   const breathRow = drawSettingsRow(t('atemrhythmus'), breathLabels, breathingMode, curY, null, 'breathing');
   menuButtons.breathing = breathRow.btns;
-  curY = breathRow.bottomY + sectionGap * _gs * (menuExpanded.breathing ? 0.6 : 1);
+  curY = breathRow.bottomY + sectionGap * (menuExpanded.breathing ? 0.6 : 1);
 
   // --- SOUNDS (Drone ausgeblendet) ---
   const medAllLabels = lang === 'de' ? MEDITATION_SOUNDS : [t('stille'), t('drone'), t('klangschale'), t('tanpura'), '528 Hz', '432 Hz', t('binaural')];
@@ -3005,7 +2993,7 @@ function drawMenu() {
   const medSelIdx = MED_VISIBLE.indexOf(meditationSoundIdx);
   const medRow = drawSettingsRow(t('meditationsSound'), medLabels, medSelIdx, curY, null, 'meditation');
   menuButtons.meditation = medRow.btns.map(btn => ({ ...btn, idx: MED_VISIBLE[btn.idx] }));
-  curY = medRow.bottomY + sectionGap * _gs * (menuExpanded.meditation ? 0.6 : 1);
+  curY = medRow.bottomY + sectionGap * (menuExpanded.meditation ? 0.6 : 1);
 
   // --- GEDANKENMODUS (nur sichtbare Modi) ---
   const thoughtTR = lang === 'de' ? THOUGHT_MODES : ['Float2', 'Float2-old', 'Float3-old', t('schwebenMitSog'), t('sinken'), t('reflektieren'), t('schweben')];
@@ -3014,14 +3002,14 @@ function drawMenu() {
   const thoughtRow = drawSettingsRow(t('gedankenmodus'), visLabels, visSelectedIdx, curY, null, 'thoughtMode');
   thoughtRow.btns.forEach((btn, i) => { btn.idx = THOUGHT_MODES_VISIBLE[i]; });
   menuButtons.thoughtMode = thoughtRow.btns;
-  curY = thoughtRow.bottomY + sectionGap * _gs * (menuExpanded.thoughtMode ? 0.6 : 1);
+  curY = thoughtRow.bottomY + sectionGap * (menuExpanded.thoughtMode ? 0.6 : 1);
 
   // --- GEDANKENFLUSS (4x/5x ausgeblendet) — Buttons ---
   const visFlowLabels = FLOW_VISIBLE.map(i => FLOW_LEVELS[i]);
   const visFlowSelectedIdx = FLOW_VISIBLE.indexOf(flowLevelIdx);
   const flowRow = drawSettingsRow(t('gedankenfluss'), visFlowLabels, visFlowSelectedIdx, curY, null, 'flowLevel');
   menuButtons.flowLevel = flowRow.btns;
-  curY = flowRow.bottomY + sectionGap * _gs * (menuExpanded.flowLevel ? 0.6 : 1);
+  curY = flowRow.bottomY + sectionGap * (menuExpanded.flowLevel ? 0.6 : 1);
 
   // --- DEIN GESICHT ---
   const faceHasSwap = faceSwapStatus === 'done' && faceSwapImg;
@@ -3061,7 +3049,7 @@ function drawMenu() {
   }
 
   // Start-Button: struktureller Abstand zur Settings-Gruppe
-  curY += isMobilePortrait ? gapSettingsStart * _gs : sectionGap * 2;
+  curY += isMobilePortrait ? layoutGap * 1.5 : sectionGap * 2;
 
   // --- START Button (Pill-Shape) ---
   const canStart = selectedDurationIdx >= 0;
@@ -3116,14 +3104,8 @@ function drawMenu() {
   ctx.shadowBlur = 0;
   menuButtons.start = canStart ? { x: startX, y: curY, w: startW, h: startH } : { x: startX, y: curY, w: startW, h: startH, disabled: true };
 
-  // Echte Content-Höhe messen → wird im NÄCHSTEN Frame für exakte Positionierung verwendet
-  if (isMobilePortrait) {
-    const _actualFlowH = curY + startH - _curYStart;
-    _prevMenuFixedH = _actualFlowH - _allGaps * _gs;  // Feste Elemente (ohne ALLE Gaps)
-    _prevMenuGs = _gs;
-  }
-  // Gesamte Inhaltshöhe: Content + Footer-Reserve (damit man über den Footer scrollen kann)
-  menuContentHeight = curY + startH + (isMobilePortrait ? unit * 0.12 + rowFont : sectionGap);
+  // Gesamte Inhaltshöhe berechnen (logische Koordinaten, ohne Scroll-Offset)
+  menuContentHeight = curY + startH + sectionGap;
   ctx.restore(); // Scroll-Translate aufheben
 
   // Spacer-Höhe für natives Scrolling setzen
