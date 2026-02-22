@@ -4665,7 +4665,7 @@ canvas.addEventListener('touchend', (e) => {
     // Language Toggle (Screen-Space, vor menuTouchDist-Check)
     for (const lb of menuButtons.langToggle || []) {
       if (_hitS(lb)) {
-        lang = isMobilePortrait ? (lang === 'de' ? 'en' : 'de') : lb.lang;
+        lang = lang === 'de' ? 'en' : 'de';
         localStorage.setItem('msphere_lang', lang);
         voiceBuffer = null;
         return;
@@ -6849,7 +6849,7 @@ function frame() {
         const donBtnW = donTxtW + donFont * 2;
         const donBtnH = donFont * 2.2;
         const donBtnX = cx - donBtnW / 2;
-        const donBtnY = cy + r + 18;
+        const donBtnY = cy + r + 35;
         ctx.beginPath();
         ctx.roundRect(donBtnX, donBtnY, donBtnW, donBtnH, donBtnH * 0.25);
         ctx.fillStyle = `rgba(232, 106, 122, ${donAlpha * 0.25})`;
