@@ -5431,18 +5431,9 @@ let lastAudioCheck = 0;
 function ensureSound() {
   if (!soundInitialized) {
     initSound();
-    return;
+  } else if (audioCtx && audioCtx.state !== 'running') {
+    audioCtx.resume().catch(() => {});
   }
-  if (!audioCtx) { soundInitialized = false; initSound(); return; }
-  // Alles OK
-  if (audioCtx.state === 'running') return;
-  // Suspended/Interrupted: resume() + silent buffer (wir sind im User-Gesture)
-  audioCtx.resume().catch(() => {});
-  try {
-    const buf = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
-    const src = audioCtx.createBufferSource();
-    src.buffer = buf; src.connect(audioCtx.destination); src.start(0);
-  } catch(e) {}
 }
 // Auf alle Interaktionen reagieren (Browser erlaubt resume() nur in User-Gesture-Callbacks)
 canvas.addEventListener('mousedown', ensureSound, { once: false });
@@ -5458,7 +5449,7 @@ function checkAudioHealth() {
     audioCtx.resume().catch(() => {});
   }
 }
-// iOS: Sofort resume versuchen wenn App wieder sichtbar wird
+// iOS: Recovery nach 'interrupted' State (Tab-Wechsel, Anruf, etc.)
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && audioCtx && audioCtx.state !== 'running') {
     audioCtx.resume().catch(() => {});
