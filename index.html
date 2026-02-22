@@ -2572,36 +2572,65 @@ function drawMenu() {
   // Titel-Hit-Area für Easter Egg (Triple-Tap / Long-Press)
   menuButtons.title = { x: cx - titleW / 2, y: curY, w: titleW, h: actualTitleH };
 
-  // --- Easter Egg: ♡ Name ♡ über dem Titel (positioniert, ohne Layout zu verschieben) ---
+  // --- Easter Egg: ♡ Name ♡ über dem Titel (als Hinweisschild mit Hintergrund) ---
   if (easterEggVoice) {
-    const eeSize = subtitleSize * 1.2;
+    const eeSize = subtitleSize * 1.3;
     const eeName = easterEggVoice === 'levi' ? 'Levi' : 'Zoe';
     const eeColor = '255, 180, 200';
     const now = performance.now() * 0.001;
-    // Widmungstext oberhalb des Titels
     const liebeSize = eeSize * 0.7;
     const liebeText = easterEggVoice === 'zoe' ? 'In Liebe von deinem Liebling Jochen!' : 'In Liebe von deinem Papa!';
-    const liebeY = curY - liebeSize * 0.6;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.font = `300 ${liebeSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
-    ctx.fillStyle = `rgba(${eeColor}, 0.7)`;
-    ctx.fillText(liebeText, cx, liebeY);
-    // ♡ Name ♡ darüber
-    const nameY = liebeY - eeSize * 0.7;
+
+    // Maße für das Schild berechnen
     ctx.font = `400 ${eeSize}px "Courier New", monospace`;
-    const eeAlpha = easterEggFlash > 0 ? 1 : 0.85;
-    ctx.fillStyle = `rgba(${eeColor}, ${eeAlpha})`;
-    ctx.shadowColor = `rgba(${eeColor}, 0.5)`;
-    ctx.shadowBlur = 15;
-    ctx.fillText(`\u2661 ${eeName} \u2661`, cx, nameY);
+    const nameText = `\u2661 ${eeName} \u2661`;
+    const nameW2 = ctx.measureText(nameText).width;
+    ctx.font = `300 ${liebeSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+    const liebeW = ctx.measureText(liebeText).width;
+    const cardPadX = eeSize * 1.2;
+    const cardPadY = eeSize * 0.6;
+    const cardW = Math.max(nameW2, liebeW) + cardPadX * 2;
+    const cardH = eeSize + liebeSize + cardPadY * 2 + eeSize * 0.3;
+    const cardX = cx - cardW / 2;
+    const cardY = curY - cardH - eeSize * 0.4;
+
+    // Hintergrund-Pill mit Glow
+    ctx.save();
+    ctx.shadowColor = `rgba(${eeColor}, 0.3)`;
+    ctx.shadowBlur = 20;
+    ctx.beginPath();
+    ctx.roundRect(cardX, cardY, cardW, cardH, cardH * 0.25);
+    ctx.fillStyle = 'rgba(20, 15, 25, 0.85)';
+    ctx.fill();
+    ctx.strokeStyle = `rgba(${eeColor}, 0.4)`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
     ctx.shadowBlur = 0;
-    // Funkeln um den Namen
-    const nameW2 = ctx.measureText(`\u2661 ${eeName} \u2661`).width;
+    ctx.restore();
+
+    // ♡ Name ♡
+    const nameY = cardY + cardPadY + eeSize * 0.5;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `400 ${eeSize}px "Courier New", monospace`;
+    const eeAlpha = easterEggFlash > 0 ? 1 : 0.9;
+    ctx.shadowColor = `rgba(${eeColor}, 0.6)`;
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = `rgba(${eeColor}, ${eeAlpha})`;
+    ctx.fillText(nameText, cx, nameY);
+    ctx.shadowBlur = 0;
+
+    // Widmungstext darunter
+    const liebeY = nameY + eeSize * 0.5 + liebeSize * 0.5 + eeSize * 0.15;
+    ctx.font = `300 ${liebeSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+    ctx.fillStyle = `rgba(${eeColor}, 0.8)`;
+    ctx.fillText(liebeText, cx, liebeY);
+
+    // Funkeln um das Schild
     for (let si = 0; si < 7; si++) {
       const phase = si * 1.37 + now * 1.5;
-      const sx = cx + (Math.sin(phase * 0.7 + si) * 0.5) * (nameW2 * 0.7 + eeSize);
-      const sy = nameY - eeSize * 0.4 + Math.cos(phase * 0.9 + si * 2.1) * eeSize * 0.6;
+      const sx = cx + (Math.sin(phase * 0.7 + si) * 0.5) * (cardW * 0.5 + eeSize * 0.5);
+      const sy = cardY + cardH * 0.5 + Math.cos(phase * 0.9 + si * 2.1) * cardH * 0.6;
       const sparkleAlpha = (Math.sin(phase) * 0.5 + 0.5) * 0.8;
       const starR = eeSize * (0.1 + Math.sin(phase * 1.3) * 0.04);
       ctx.fillStyle = `rgba(255, 220, 240, ${sparkleAlpha})`;
