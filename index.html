@@ -2543,17 +2543,18 @@ function drawMenu() {
   ctx.font = `900 ${titleSize}px -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif`;
   ctx.letterSpacing = `${-titleSize * 0.02}px`;
 
-  // Glow Layer 1: breiter Teal-Schein (gedämpft auf Mobile)
+  // Glow Layer 1: breiter Schein (Teal normal, Rosa bei Zoe-Modus, gedämpft auf Mobile)
   const _glowMob = isMobilePortrait ? 0.5 : 1.0;
-  ctx.shadowColor = `rgba(42, 191, 191, ${0.4 * _glowMob})`;
+  const _gc = easterEggVoice === 'zoe' ? '232, 140, 170' : '42, 191, 191';
+  ctx.shadowColor = `rgba(${_gc}, ${0.4 * _glowMob})`;
   ctx.shadowBlur = 60 * _glowMob;
-  ctx.fillStyle = `rgba(42, 191, 191, ${0.2 * _glowMob})`;
+  ctx.fillStyle = `rgba(${_gc}, ${0.2 * _glowMob})`;
   ctx.fillText(titleText, cx, curY);
 
-  // Glow Layer 2: mittlerer Teal-Schein
-  ctx.shadowColor = `rgba(42, 191, 191, ${0.6 * _glowMob})`;
+  // Glow Layer 2: mittlerer Schein
+  ctx.shadowColor = `rgba(${_gc}, ${0.6 * _glowMob})`;
   ctx.shadowBlur = 25 * _glowMob;
-  ctx.fillStyle = `rgba(42, 191, 191, ${0.3 * _glowMob})`;
+  ctx.fillStyle = `rgba(${_gc}, ${0.3 * _glowMob})`;
   ctx.fillText(titleText, cx, curY);
 
   // Layer 3: Haupttext (auf Mobile dezenter)
