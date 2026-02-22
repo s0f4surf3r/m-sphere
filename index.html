@@ -5421,11 +5421,37 @@ function updateSound() {
 
 // Sound starten bei erster Interaktion (Browser-Policy)
 let lastAudioCheck = 0;
+let _audioRecoveryPending = false;
 function ensureSound() {
   if (!soundInitialized) {
     initSound();
-  } else if (audioCtx && audioCtx.state !== 'running') {
-    audioCtx.resume().catch(() => {});
+    return;
+  }
+  if (!audioCtx) return;
+  if (audioCtx.state === 'running') return;
+  // iOS 'interrupted': resume() + Silent-Buffer-Trick (muss in User-Gesture sein)
+  audioCtx.resume().then(() => {
+    if (audioCtx.state === 'running') { _audioRecoveryPending = false; return; }
+    // Fallback: Silent-Buffer nochmal spielen
+    try {
+      const buf = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf; src.connect(audioCtx.destination); src.start(0);
+    } catch(e) {}
+  }).catch(() => {});
+  // Wenn nach 500ms immer noch nicht running → AudioContext komplett neu aufbauen
+  if (!_audioRecoveryPending) {
+    _audioRecoveryPending = true;
+    setTimeout(() => {
+      if (audioCtx && audioCtx.state !== 'running') {
+        console.warn('AudioContext stuck in', audioCtx.state, '— rebuilding');
+        try { audioCtx.close(); } catch(e) {}
+        soundInitialized = false;
+        audioCtx = null;
+        initSound();
+      }
+      _audioRecoveryPending = false;
+    }, 500);
   }
 }
 // Auf alle Interaktionen reagieren (Browser erlaubt resume() nur in User-Gesture-Callbacks)
@@ -5442,10 +5468,16 @@ function checkAudioHealth() {
     audioCtx.resume().catch(() => {});
   }
 }
-// iOS: Recovery nach 'interrupted' State (Tab-Wechsel, Anruf, etc.)
+// iOS: Recovery nach 'interrupted' State (Tab-Wechsel, Anruf, Ruhezustand, etc.)
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && audioCtx && audioCtx.state !== 'running') {
     audioCtx.resume().catch(() => {});
+    // Silent-Buffer-Trick nochmal (visibilitychange gilt als User-Gesture auf manchen Browsern)
+    try {
+      const buf = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf; src.connect(audioCtx.destination); src.start(0);
+    } catch(e) {}
   }
 });
 
