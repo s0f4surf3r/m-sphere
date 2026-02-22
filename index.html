@@ -3238,7 +3238,7 @@ function drawMenu() {
     const twHitSize = burgerSize;
     menuButtons.timerToggle = { x: twX - twHitSize / 2, y: twY - twHitSize / 2, w: twHitSize, h: twHitSize };
 
-    // Desktop: Hover-Tooltip über der Stoppuhr
+    // Desktop: Hover-Tooltip unter der Stoppuhr
     if (twHov) {
       const tipFont = Math.max(13, unit * 0.018);
       const tipText = timerVisible
@@ -3248,7 +3248,7 @@ function drawMenu() {
       const tipW = ctx.measureText(tipText).width + tipFont * 1.6;
       const tipH = tipFont * 2.2;
       const tipX = twX - tipW / 2;
-      const tipY = twY - twHitSize / 2 - tipH - 6;
+      const tipY = twY + twHitSize / 2 + 6;
       ctx.beginPath();
       ctx.roundRect(tipX, tipY, tipW, tipH, 8);
       ctx.fillStyle = 'rgb(16, 18, 24)';
@@ -4262,10 +4262,14 @@ function handleMenuClick(x, y) {
     timerVisible = !timerVisible;
     localStorage.setItem('msphere_timer', timerVisible);
     try { playTingsha(); } catch(err) {}
-    toastMsg = timerVisible
-      ? (lang === 'de' ? 'Timer wird während der Meditation angezeigt' : 'Timer shown during meditation')
-      : (lang === 'de' ? 'Timer ausgeblendet' : 'Timer hidden');
-    toastStart = Date.now();
+    // Toast nur auf Mobile (Desktop hat Hover-Tooltip)
+    const _isMob = cW < 600 && cH > cW;
+    if (_isMob) {
+      toastMsg = timerVisible
+        ? (lang === 'de' ? 'Timer wird während der Meditation angezeigt' : 'Timer shown during meditation')
+        : (lang === 'de' ? 'Timer ausgeblendet' : 'Timer hidden');
+      toastStart = Date.now();
+    }
     return true;
   }
   // Custom-Time-Button
