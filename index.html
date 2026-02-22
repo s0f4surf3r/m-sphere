@@ -348,6 +348,7 @@ let breathDoneFinished = false; // Atem-Zyklus nach Meditation beendet
 let relapseFlash = 0; // Rückfall-Blitz (0–1, decays)
 let wasRelapse = false; // Rückfall-Modus (zeigt Hint-Text)
 let donateHitArea = null; // PayPal-Spenden-Link Hit-Area
+let backToMenuHitArea = null; // "Zurück ins Menü" Button Hit-Area (Desktop)
 let counterFullFlash = 0; // Gold-Flash bei 100% Counter
 
 // --- Wake Lock: Bildschirm bleibt an während Meditation ---
@@ -3449,8 +3450,8 @@ function drawMenu() {
     if (hoverLotus && !isMobilePortrait && !toastActive) {
       const tipFont = Math.max(13, unit * 0.018);
       const tipText = lotusActive
-        ? (lang === 'de' ? 'Ablenkungen deaktivieren' : 'Disable distractions')
-        : (lang === 'de' ? 'Ablenkungen aktivieren — echte digitale Versuchungen stören deine Meditation' : 'Enable distractions — real digital temptations will disrupt your meditation');
+        ? (lang === 'de' ? 'Nochmal klicken zum Deaktivieren' : 'Click again to disable')
+        : (lang === 'de' ? 'Nochmal klicken zum Aktivieren — echte digitale Versuchungen stören deine Meditation' : 'Click again to enable — real digital temptations will disrupt your meditation');
       ctx.font = `400 ${tipFont}px "Courier New", monospace`;
       const maxTipW = Math.min(280, W * 0.35);
       const words = tipText.split(' ');
@@ -3590,8 +3591,8 @@ function drawMenu() {
       if (lotusHintOpen) {
         const hFont = Math.max(14, unit * 0.032);
         const hText = lotusActive
-          ? (lang === 'de' ? 'Ablenkungen deaktivieren' : 'Disable distractions')
-          : (lang === 'de' ? 'Ablenkungen aktivieren — echte digitale Versuchungen stören deine Meditation' : 'Enable distractions — real digital temptations disrupt your meditation');
+          ? (lang === 'de' ? 'Nochmal tippen zum Deaktivieren' : 'Tap again to disable')
+          : (lang === 'de' ? 'Nochmal tippen zum Aktivieren — echte digitale Versuchungen stören deine Meditation' : 'Tap again to enable — real digital temptations will disrupt your meditation');
         ctx.font = `400 ${hFont}px "Courier New", monospace`;
         const maxHW = W * 0.7;
         const hWords = hText.split(' ');
@@ -4439,7 +4440,16 @@ canvas.addEventListener('click', (e) => {
         return;
       }
     }
-    returnToMenu();
+    if (backToMenuHitArea) {
+      const b = backToMenuHitArea;
+      if (cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h) {
+        returnToMenu();
+        return;
+      }
+      // Desktop: nur Back-Button führt zurück, nicht irgendwo klicken
+    } else {
+      returnToMenu();
+    }
   }
 });
 
@@ -5188,7 +5198,7 @@ function updateShakeSound(t) {
   const mode = SHAKE_SOUNDS[shakeSoundIdx];
   // Mobile: kleinere Lautsprecher betonen Höhen → leiser + Bandpass tiefer
   const _mob = cW < 600 && cH > cW;
-  const _mg = _mob ? 0.4 : 1.0;  // mobile gain factor
+  const _mg = _mob ? 0.55 : 1.0;  // mobile gain factor
 
   // Alle nicht-aktiven Shake-Sounds stumm schalten
   if (mode !== 'Rauschen') muteGroup([noiseGain], t, 0.1);
@@ -5242,11 +5252,14 @@ function updateShakeSound(t) {
 function updateMeditationSound(t, progress) {
   const mode = MEDITATION_SOUNDS[meditationSoundIdx];
   const bt = BREATHING_TIMING[breathingMode];
+  // Mobile: Meditations-Sounds etwas leiser (Ausgewogenheit mit gedämpften Shake-Sounds)
+  const _mob = cW < 600 && cH > cW;
+  const _mmg = _mob ? 0.65 : 1.0;
 
   // Envelope: sanftes Ein-/Ausblenden
-  const envelope = progress < 0.12 ? progress / 0.12
+  const envelope = (progress < 0.12 ? progress / 0.12
     : progress > 0.88 ? (1 - progress) / 0.12
-    : 1.0;
+    : 1.0) * _mmg;
 
   // --- Atem-Sound (unabhängig vom Meditations-Sound) ---
   // Nasen-Atem-Geräusch: gefiltertes Rauschen das mit dem Atem anschwillt
@@ -6776,37 +6789,83 @@ function frame() {
       const doneIsMob = cW < 600 && cH > cW;
       const hintFont = Math.min(cW, cH) * (doneIsMob ? 0.055 : 0.022);
       const hintAlpha = Math.min(0.9, (elapsed - 45) / 3 * 0.9);
-      ctx.font = `300 ${hintFont}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
       ctx.textAlign = 'center';
-      // "Zurück ins Menü"
-      const isTouchDone = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-      ctx.fillStyle = `rgba(240, 236, 230, ${hintAlpha})`;
-      ctx.fillText(isTouchDone ? t('tapRestart') : t('clickRestart'), cx, cy + r + 35);
-      // Spenden-Button
-      const donAlpha = Math.min(0.9, (elapsed - 45) / 4 * 0.9);
-      const donFont = hintFont * (doneIsMob ? 0.8 : 1.0);
-      ctx.font = `${donFont}px "Courier New", monospace`;
-      const donText = t('donate');
-      const donTxtW = ctx.measureText(donText).width;
-      const donBtnWRaw = donTxtW + donFont * 2;
-      const donBtnW = doneIsMob ? Math.min(donBtnWRaw, r * 2) : donBtnWRaw;
-      const donBtnH = donFont * 2.2;
-      const donBtnX = cx - donBtnW / 2;
-      const donBtnY = cy + r + 35 + hintFont * 1.8;
-      ctx.beginPath();
-      ctx.roundRect(donBtnX, donBtnY, donBtnW, donBtnH, donBtnH * 0.25);
-      ctx.fillStyle = `rgba(232, 106, 122, ${donAlpha * 0.25})`;
-      ctx.fill();
-      ctx.strokeStyle = `rgba(232, 106, 122, ${donAlpha * 0.8})`;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.fillStyle = `rgba(232, 106, 122, ${donAlpha})`;
-      ctx.textBaseline = 'middle';
-      ctx.fillText(donText, cx, donBtnY + donBtnH / 2);
-      donateHitArea = { x: donBtnX, y: donBtnY, w: donBtnW, h: donBtnH };
+
+      if (doneIsMob) {
+        // Mobile: einfacher Text unter der Kugel + Spenden-Button darunter
+        ctx.font = `300 ${hintFont}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+        ctx.fillStyle = `rgba(240, 236, 230, ${hintAlpha})`;
+        ctx.fillText(t('tapRestart'), cx, cy + r + 35);
+        backToMenuHitArea = null;
+        // Spenden-Button
+        const donAlpha = Math.min(0.9, (elapsed - 45) / 4 * 0.9);
+        const donFont = hintFont * 0.8;
+        ctx.font = `${donFont}px "Courier New", monospace`;
+        const donText = t('donate');
+        const donTxtW = ctx.measureText(donText).width;
+        const donBtnW = Math.min(donTxtW + donFont * 2, r * 2);
+        const donBtnH = donFont * 2.2;
+        const donBtnX = cx - donBtnW / 2;
+        const donBtnY = cy + r + 35 + hintFont * 1.8;
+        ctx.beginPath();
+        ctx.roundRect(donBtnX, donBtnY, donBtnW, donBtnH, donBtnH * 0.25);
+        ctx.fillStyle = `rgba(232, 106, 122, ${donAlpha * 0.25})`;
+        ctx.fill();
+        ctx.strokeStyle = `rgba(232, 106, 122, ${donAlpha * 0.8})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = `rgba(232, 106, 122, ${donAlpha})`;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(donText, cx, donBtnY + donBtnH / 2);
+        donateHitArea = { x: donBtnX, y: donBtnY, w: donBtnW, h: donBtnH };
+      } else {
+        // Desktop: "Zurück ins Menü" als Button ÜBER der Kugel, Spenden näher unter der Kugel
+        // --- Zurück-Button oben ---
+        const backFont = hintFont * 1.1;
+        ctx.font = `400 ${backFont}px "Courier New", monospace`;
+        const backText = t('clickRestart');
+        const backTxtW = ctx.measureText(backText).width;
+        const backBtnW = backTxtW + backFont * 2;
+        const backBtnH = backFont * 2.2;
+        const backBtnX = cx - backBtnW / 2;
+        const backBtnY = cy - r - backBtnH - 18;
+        ctx.beginPath();
+        ctx.roundRect(backBtnX, backBtnY, backBtnW, backBtnH, backBtnH * 0.3);
+        ctx.fillStyle = `rgba(26, 58, 92, ${hintAlpha * 0.2})`;
+        ctx.fill();
+        ctx.strokeStyle = `rgba(200, 210, 220, ${hintAlpha * 0.5})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = `rgba(240, 236, 230, ${hintAlpha})`;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(backText, cx, backBtnY + backBtnH / 2);
+        backToMenuHitArea = { x: backBtnX, y: backBtnY, w: backBtnW, h: backBtnH };
+        // --- Spenden-Button unten (näher an Kugel) ---
+        const donAlpha = Math.min(0.9, (elapsed - 45) / 4 * 0.9);
+        const donFont = hintFont;
+        ctx.font = `${donFont}px "Courier New", monospace`;
+        const donText = t('donate');
+        const donTxtW = ctx.measureText(donText).width;
+        const donBtnW = donTxtW + donFont * 2;
+        const donBtnH = donFont * 2.2;
+        const donBtnX = cx - donBtnW / 2;
+        const donBtnY = cy + r + 18;
+        ctx.beginPath();
+        ctx.roundRect(donBtnX, donBtnY, donBtnW, donBtnH, donBtnH * 0.25);
+        ctx.fillStyle = `rgba(232, 106, 122, ${donAlpha * 0.25})`;
+        ctx.fill();
+        ctx.strokeStyle = `rgba(232, 106, 122, ${donAlpha * 0.8})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = `rgba(232, 106, 122, ${donAlpha})`;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(donText, cx, donBtnY + donBtnH / 2);
+        donateHitArea = { x: donBtnX, y: donBtnY, w: donBtnW, h: donBtnH };
+      }
       ctx.textAlign = 'start';
     } else {
       donateHitArea = null;
+      backToMenuHitArea = null;
     }
   }
 
