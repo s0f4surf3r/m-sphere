@@ -4159,15 +4159,6 @@ function handleMenuClick(x, y) {
   // Footer-Buttons (Lotus, GK, Link) werden direkt in touchend/click behandelt,
   // nicht hier — verhindert Double-Firing-Probleme auf Touch-Geräten.
 
-  // Language Toggle (Screen-Space) — Mobile: Tap auf irgendeinen Button toggelt
-  for (const btn of menuButtons.langToggle || []) {
-    if (hitScreenBtn(btn)) {
-      lang = isMobilePortrait ? (lang === 'de' ? 'en' : 'de') : btn.lang;
-      localStorage.setItem('msphere_lang', lang);
-      voiceBuffer = null;
-      return true;
-    }
-  }
   // Spenden-Link
   const don = menuButtons.donate;
   if (don && hitBtn(don)) {
@@ -4376,8 +4367,17 @@ canvas.addEventListener('click', (e) => {
     }
   }
   if (state === 'idle') {
-    // Footer-Buttons direkt prüfen (Screen-Space)
+    // Language Toggle (Screen-Space, höchste Priorität)
     const _hitC = (b) => b && cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h;
+    for (const lb of menuButtons.langToggle || []) {
+      if (_hitC(lb)) {
+        const isMob = cW < 600 && cH > cW;
+        lang = isMob ? (lang === 'de' ? 'en' : 'de') : (lang === 'de' ? 'en' : 'de');
+        localStorage.setItem('msphere_lang', lang);
+        voiceBuffer = null;
+        return;
+      }
+    }
     // Hint offen? Tap woanders → Hint schließen, nichts weiter tun
     if (lotusHintOpen || gkHintOpen) {
       const onHintBtn = _hitC(menuButtons.lotusHint) || _hitC(menuButtons.lotus) || _hitC(menuButtons.gkLink);
