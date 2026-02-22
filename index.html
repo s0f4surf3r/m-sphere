@@ -2495,7 +2495,7 @@ function drawMenu() {
   let sectionGap, layoutGap, curY;
   if (isMobilePortrait) {
     // Settings-Items gehören als Gruppe zusammen → enger, fester Abstand
-    sectionGap = rowFont * 0.3;
+    sectionGap = rowFont * 0.2;
     // Strukturelle Trennung: verbleibender Raum proportional verteilt
     const safeTopPad = safeTop + unit * 0.02;
     const _dialH = btnH * 2.2;
@@ -2514,8 +2514,8 @@ function drawMenu() {
     const _footerH = unit * 0.12;
     const _fixedH = safeTopPad + _titleSubH + _dialH + _sectionsH + _startBtnH + _innerGapSum;
     const _availH = H - _footerH;
-    // Top→Titel(2.2) + Titel→Sub(0.3) + Sub→Dial(1.5) + Dial→Settings(0.8) + Settings→Start(0.8) + Start→Footer(1.0)
-    const _outerWeight = 2.2 + 0.3 + 1.5 + 0.8 + 0.8 + 1.0;
+    // Top→Titel(2.2) + Titel→Sub(0.3) + Sub→Dial(1.5) + Dial→Settings(0.8) + Settings→Start(0.5) + Start→Footer(1.5)
+    const _outerWeight = 2.2 + 0.3 + 1.5 + 0.8 + 0.5 + 1.5;
     layoutGap = Math.max(unit * 0.005, (_availH - _fixedH) / _outerWeight);
     curY = safeTopPad + layoutGap * 2.2;
   } else {
@@ -3049,7 +3049,7 @@ function drawMenu() {
   }
 
   // Start-Button: struktureller Abstand zur Settings-Gruppe
-  curY += isMobilePortrait ? layoutGap * 0.8 : sectionGap * 2;
+  curY += isMobilePortrait ? layoutGap * 0.5 : sectionGap * 2;
 
   // --- START Button (Pill-Shape) ---
   const canStart = selectedDurationIdx >= 0;
