@@ -2481,7 +2481,7 @@ function drawMenu() {
   if (isMobilePortrait) {
     ctx.font = `900 ${titleSize}px -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif`;
     ctx.letterSpacing = `${-titleSize * 0.02}px`;
-    const measuredW = ctx.measureText(lang === 'de' ? 'M-SPHÄRE' : 'M-SPHERE').width;
+    const measuredW = ctx.measureText('M-SPHERE').width;
     ctx.letterSpacing = '0px';
     if (measuredW > 0) titleSize *= menuContentW / measuredW;
   }
@@ -2534,8 +2534,8 @@ function drawMenu() {
 
 
 
-  // --- Titel: M-SPHÄRE (DE) / M-SPHERE (EN) mit ZPMA-Glow ---
-  const titleText = lang === 'de' ? 'M-SPHÄRE' : 'M-SPHERE';
+  // --- Titel: M-SPHERE mit ZPMA-Glow ---
+  const titleText = 'M-SPHERE';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   ctx.font = `900 ${titleSize}px -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif`;
@@ -3140,10 +3140,10 @@ function drawMenu() {
   ctx.shadowBlur = 0;
 
   // --- Language Toggle (EN / DE) — oben links, gegenüber Burger ---
-  const langFont = burgerSize * (isMobilePortrait ? 0.42 : 0.38);
+  const langFont = burgerSize * (isMobilePortrait ? 0.55 : 0.38);
   ctx.font = `${langFont}px "Courier New", monospace`;
-  const langH = burgerSize * (isMobilePortrait ? 0.55 : 0.5);
-  const langBtnW = langFont * 2.2;
+  const langH = burgerSize * (isMobilePortrait ? 0.7 : 0.5);
+  const langBtnW = langFont * 2.4;
   const langGap = langFont * 0.3;
   const langPad = isMobilePortrait ? burgerPad : titleLeftX;
   const langY = burgerY + (burgerSize - langH) / 2;
@@ -3172,7 +3172,8 @@ function drawMenu() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(langLabels[li], lx + langBtnW / 2, langY + langH / 2);
-    menuButtons.langToggle.push({ x: lx, y: langY, w: langBtnW, h: langH, lang: li === 0 ? 'de' : 'en' });
+    const hitPad = isMobilePortrait ? 6 : 0;
+    menuButtons.langToggle.push({ x: lx - hitPad, y: langY - hitPad, w: langBtnW + hitPad * 2, h: langH + hitPad * 2, lang: li === 0 ? 'de' : 'en' });
   }
 
   // --- Stoppuhr-Icon oben Mitte (Timer-Toggle) ---
@@ -3771,7 +3772,7 @@ function drawLegalOverlay() {
     const totalH = titleH + items.length * itemH + (items.length - 1) * gap;
     const startY = (H - totalH) / 2;
 
-    // M-SPHERE / M-SPHÄRE Titel oben im Menü — heller, mehr Abstand
+    // M-SPHERE Titel oben im Menü — heller, mehr Abstand
     ctx.save();
     ctx.font = `300 ${titleFontSize}px ${sansFont}`;
     ctx.textAlign = 'center';
@@ -3780,7 +3781,7 @@ function drawLegalOverlay() {
     ctx.shadowColor = 'rgba(42, 191, 191, 0.3)';
     ctx.shadowBlur = 12;
     ctx.fillStyle = 'rgba(240, 236, 230, 0.7)';
-    ctx.fillText(lang === 'de' ? 'M-SPHÄRE' : 'M-SPHERE', W / 2, startY + titleFontSize * 0.9);
+    ctx.fillText('M-SPHERE', W / 2, startY + titleFontSize * 0.9);
     ctx.shadowBlur = 0;
     ctx.letterSpacing = '0px';
     // Dezente Trennlinie unter dem Titel
@@ -3838,7 +3839,7 @@ function drawLegalOverlay() {
   burgerMenuItems = [];
 
   // ← Zurück-Button oben links — vertikal zentriert auf Close-Button
-  const backFontSize = fontSize * 0.85;
+  const backFontSize = fontSize * 1.05;
   const backBtnH = backFontSize * 2;
   const backX = padding;
   const backY = closeY + (closeBtnSize - backBtnH) / 2;
@@ -4360,18 +4361,24 @@ canvas.addEventListener('click', (e) => {
     }
     if (_hitC(menuButtons.lotus)) {
       gkHintOpen = false;
+      // Wenn aktiv → direkt ausschalten (kein Hint)
+      if (distractionModeIdx === 1) {
+        lotusHintOpen = false;
+        distractionModeIdx = 0;
+        try { localStorage.setItem('msphere_distraction', 0); } catch(e) {}
+        try { playTingsha(); } catch(err) {}
+        return;
+      }
       if (!lotusHintOpen) {
         lotusHintOpen = true;
         try { playTingsha(); } catch(err) {}
         return;
       }
       lotusHintOpen = false;
-      distractionModeIdx = distractionModeIdx === 1 ? 0 : 1;
-      try { localStorage.setItem('msphere_distraction', distractionModeIdx); } catch(e) {}
-      toastMsg = distractionModeIdx === 1
-        ? (lang === 'de' ? 'Ablenkungen aktiviert — kannst du widerstehen?'
-                         : 'Distractions enabled — can you resist?')
-        : (lang === 'de' ? 'Ablenkungen deaktiviert' : 'Distractions disabled');
+      distractionModeIdx = 1;
+      try { localStorage.setItem('msphere_distraction', 1); } catch(e) {}
+      toastMsg = lang === 'de' ? 'Ablenkungen aktiviert — kannst du widerstehen?'
+                               : 'Distractions enabled — can you resist?';
       toastStart = Date.now();
       try { playTingsha(); } catch(err) { console.warn('playTingsha error:', err); }
       return;
@@ -4566,18 +4573,24 @@ canvas.addEventListener('touchend', (e) => {
     if (_hitS(_lotus)) {
       try { ensureSound(); } catch(err) {}
       gkHintOpen = false;
+      // Wenn aktiv → direkt ausschalten (kein Hint)
+      if (distractionModeIdx === 1) {
+        lotusHintOpen = false;
+        distractionModeIdx = 0;
+        try { localStorage.setItem('msphere_distraction', 0); } catch(e) {}
+        try { playTingsha(); } catch(err) {}
+        return;
+      }
       if (!lotusHintOpen) {
         lotusHintOpen = true;
         try { playTingsha(); } catch(err) {}
         return;
       }
       lotusHintOpen = false;
-      distractionModeIdx = distractionModeIdx === 1 ? 0 : 1;
-      try { localStorage.setItem('msphere_distraction', distractionModeIdx); } catch(e) {}
-      toastMsg = distractionModeIdx === 1
-        ? (lang === 'de' ? 'Ablenkungen aktiviert — kannst du widerstehen?'
-                         : 'Distractions enabled — can you resist?')
-        : (lang === 'de' ? 'Ablenkungen deaktiviert' : 'Distractions disabled');
+      distractionModeIdx = 1;
+      try { localStorage.setItem('msphere_distraction', 1); } catch(e) {}
+      toastMsg = lang === 'de' ? 'Ablenkungen aktiviert — kannst du widerstehen?'
+                               : 'Distractions enabled — can you resist?';
       toastStart = Date.now();
       try { playTingsha(); } catch(err) { console.warn('playTingsha touch error:', err); }
       return;
@@ -6478,7 +6491,7 @@ function frame() {
       if (toastElapsed < 300) toastAlpha = toastElapsed / 300;
       else if (toastElapsed > 4000) toastAlpha = 1 - (toastElapsed - 4000) / 1000;
       const toastMobile = cW < 600 && cH > cW;
-      const toastFont = Math.max(15, Math.min(cW, cH) * (toastMobile ? 0.035 : 0.022));
+      const toastFont = Math.max(15, Math.min(cW, cH) * (toastMobile ? 0.042 : 0.022));
       ctx.font = `400 ${toastFont}px "Courier New", monospace`;
       // Word-wrap für lange Texte auf Mobile
       const maxTW = cW * 0.85;
@@ -6500,8 +6513,9 @@ function frame() {
       const lotusBtn = menuButtons.lotus;
       const startBtn = menuButtons.start;
       let ty;
-      if (toastMobile && lotusBtn) {
-        ty = lotusBtn.y - th - 12;
+      if (toastMobile) {
+        const _safeT = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
+        ty = _safeT + Math.min(cW, cH) * 0.14;
       } else if (!toastMobile && startBtn && lotusBtn) {
         // Desktop: zwischen Start-Button und Footer-Icons
         const regionTop = startBtn.y + startBtn.h;
