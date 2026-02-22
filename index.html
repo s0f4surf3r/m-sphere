@@ -3450,8 +3450,8 @@ function drawMenu() {
     if (hoverLotus && !isMobilePortrait && !toastActive) {
       const tipFont = Math.max(13, unit * 0.018);
       const tipText = lotusActive
-        ? (lang === 'de' ? 'Nochmal klicken zum Deaktivieren' : 'Click again to disable')
-        : (lang === 'de' ? 'Nochmal klicken zum Aktivieren — echte digitale Versuchungen stören deine Meditation' : 'Click again to enable — real digital temptations will disrupt your meditation');
+        ? (lang === 'de' ? 'Klicke hier zum Deaktivieren' : 'Click here to disable')
+        : (lang === 'de' ? 'Klicke hier zum Aktivieren — echte digitale Versuchungen stören deine Meditation' : 'Click here to enable — real digital temptations will disrupt your meditation');
       ctx.font = `400 ${tipFont}px "Courier New", monospace`;
       const maxTipW = Math.min(280, W * 0.35);
       const words = tipText.split(' ');
@@ -6849,23 +6849,23 @@ function frame() {
         ctx.textBaseline = 'middle';
         ctx.fillText(backText, cx, backBtnY + backBtnH / 2);
         backToMenuHitArea = { x: backBtnX, y: backBtnY, w: backBtnW, h: backBtnH };
-        // Spenden-Button — so breit wie die Kugel
+        // Spenden-Button — so breit wie die Kugel, proportional groß
         const donAlpha = Math.min(0.9, (elapsed - 45) / 4 * 0.9);
-        const donFont = hintFont * 0.8;
-        ctx.font = `${donFont}px "Courier New", monospace`;
+        const donFont = hintFont * 1.15;
+        ctx.font = `600 ${donFont}px "Courier New", monospace`;
         const donText = t('donate');
         const donBtnW = r * 2;
-        const donBtnH = donFont * 2.4;
+        const donBtnH = donFont * 2.8;
         const donBtnX = cx - donBtnW / 2;
         const donBtnY = cy + r + 20;
         ctx.beginPath();
         ctx.roundRect(donBtnX, donBtnY, donBtnW, donBtnH, donBtnH * 0.25);
-        ctx.fillStyle = `rgba(232, 106, 122, ${donAlpha * 0.25})`;
+        ctx.fillStyle = `rgba(232, 106, 122, ${donAlpha * 0.3})`;
         ctx.fill();
-        ctx.strokeStyle = `rgba(232, 106, 122, ${donAlpha * 0.8})`;
+        ctx.strokeStyle = `rgba(255, 130, 150, ${donAlpha * 0.9})`;
         ctx.lineWidth = 2;
         ctx.stroke();
-        ctx.fillStyle = `rgba(232, 106, 122, ${donAlpha})`;
+        ctx.fillStyle = `rgba(255, 140, 158, ${donAlpha})`;
         ctx.textBaseline = 'middle';
         ctx.fillText(donText, cx, donBtnY + donBtnH / 2);
         donateHitArea = { x: donBtnX, y: donBtnY, w: donBtnW, h: donBtnH };
