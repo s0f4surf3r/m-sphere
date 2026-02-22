@@ -53,8 +53,8 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **4.5s**: Voice startet (`dubistdaswasser_kind.m4a` für DE, `dubistdaswasser.m4a` für EN)
 - **Tempel-Gong** auch am Ende (gleicher Sound wie bei Start)
 - **35s+**: Rebirth-Partikel spawnen oben, fallen mit Gravitation (0.003), prallen an Kugelwand ab — ewiger Kreislauf
-- **45s+**: "Zurück ins Menü" + "♡ Unterstützen ♡" Button
-- Klick → zurück zum Overlay-Menü (`selectedDurationIdx` wird zurückgesetzt)
+- **45s+**: "Zurück ins Menü" (weißer Outline-Button über Kugel) + "♡ Wertschätzen ♡" (rosa Button unter Kugel → PayPal-Spende)
+- Klick auf Zurück → zurück zum Overlay-Menü (`selectedDurationIdx` wird zurückgesetzt)
 
 ## Sound-Design
 
@@ -65,10 +65,14 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Metallisch**: 4 inharmonische Teiltöne (Basis 280 Hz, Ratios 1/2.32/3.86/5.13) mit AM
 
 ### Wählbare Meditations-Sounds
-- **Drone**: 72 Hz Grundton + 108 Hz Quinte (Sinus)
-- **Klangschale**: Singing-Bowl-Partials (220 Hz, Ratios 1/2.71/5.41/8.56/12.24) mit Schwebung
+`MEDITATION_SOUNDS = ['Stille', 'Drone', 'Klangschale', 'Tanpura', '528 Hz', '432 Hz', 'Binaural']`
+`MED_VISIBLE = [0, 2, 3, 4, 5, 6]` — Drone (idx=1) ausgeblendet
+- **Stille** (Default): Kein Meditations-Sound
+- **Drone**: 72 Hz Grundton + 108 Hz Quinte (Sinus) — ausgeblendet
+- **Klangschale**: Tibetische Schale (176 Hz, 5 Partials mit Schwebungspaaren, periodischer Anschlag)
 - **Tanpura**: Sa-Pa-Sa-Drone (60 Hz, Triangle+Sinus) mit Jivari-Buzz (Sawtooth durch Lowpass)
-- **Tanpura2** (Default): Gleicher Sa-Pa-Sa-Drone wie Tanpura, aber **ohne Buzz/Rauschen** — klarerer, ruhigerer Klang
+- **528 Hz**: Solfeggio "Love Frequency" (Grundton + Schwebungspartner + Oktave + Quinte)
+- **432 Hz**: Naturstimmung (gleiche Struktur wie 528 Hz, tieferer Grundton)
 - **Binaural**: 200 Hz links / 204 Hz rechts → 4 Hz Theta-Beat (StereoPanner)
 
 ### Interaction-Sounds
@@ -104,9 +108,9 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 
 ## Technische Umsetzung
 - **Name**: M-Sphere (ehemals "Kugel")
-- **Datei**: `kugel.html` (Single-File-Webapp, `<script type="module">`)
+- **Datei**: `index.html` (Single-File-Webapp, `<script type="module">`)
 - **Repo**: https://github.com/s0f4surf3r/m-sphere (public, GitHub Pages)
-- **Live**: https://s0f4surf3r.github.io/m-sphere/kugel.html
+- **Live**: https://msphere.jochenhornung.de/ (Netlify)
 - **Rendering**: 2D Canvas + Three.js Offscreen-Rendering für 3D-Modell
 - **Input**: Maus (nur bei gedrückter Taste), Touch, Device-Gyroscope
 - **States**: `idle` (Menü) → `ready` → `shaking` → `meditating` → `done`
@@ -120,9 +124,11 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Farb-Palette**: bg=#0a1628, primary=#1a3a5c, secondary=#3a6080, teal=#2abfbf, accent=#e86a7a, light=#f0ece6, hint=#f4a842, gold=#ffd700
 - **Text-Opacities**: Labels 0.95, nicht-ausgewählte Buttons 0.9, Credits 0.9, jochenhornung.de 0.75(teal), Button-Borders 0.5
 - **Kein Default**: `selectedDurationIdx = -1`, erst klicken aktiviert START
-- **Reihenfolge**: Titel → Untertitel → Credits → MEDITATIONSZEIT → GEDANKEN-SOUND → MEDITATIONS-SOUND → GEDANKENMODUS → ATMEN → TIMER ANZEIGEN → Klicke hier um zu starten
-- **Hit-Detection**: `menuButtons`-Objekt mit timer/shake/meditation/thoughtMode/breathing/timerToggle/start/link
-- **Sterne**: 40 pseudozufällige Punkte mit Puls-Animation
+- **Reihenfolge**: Titel → Untertitel → Credits → Zeitdrehrad → ATEMRHYTHMUS → MEDITATIONS-SOUND → GEDANKENMODUS → GEDANKENFLUSS → DEIN GESICHT → Start-Button → Footer
+- **Einklapp-Menüs**: `menuExpanded` — Sektionen sind auf/zuklappbar, immer eine offen
+- **Hit-Detection**: `menuButtons`-Objekt mit timer/shake/meditation/thoughtMode/breathing/timerToggle/start/faceSwap/link/lotus/gkLink/langToggle
+- **Screen-Space UI** (scrollt nicht mit): Burger-Menü (oben rechts), Stoppuhr (oben mitte), Sprach-Toggle DE/EN (oben links), Footer-Icons (Lotus, GK, Link)
+- **Sterne**: 60 pseudozufällige Punkte mit Puls-Animation
 
 ### 3D-Modell-Integration
 - **Three.js v0.170.0** via importmap (CDN jsdelivr)
@@ -160,9 +166,10 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 ### Shake Detection
 - **Maus**: Nur bei `mouseDown=true` — Bewegung ohne Klick wird ignoriert
 - **Touch**: touchmove-Distanz
-- **Device Motion**: Accelerometer, Schwelle >12
+- **Device Motion**: Accelerometer, Schwelle >12, Gyro-Multiplikator ×14
 - `shakeAccum` → `shakeIntensity` (0–1), Decay 0.3/Frame, Counter-Rate 0.55 (Desktop) / 0.7 (Mobile)
 - **Mobile**: Schwelle 30 (statt 80), touchScale 3.0, Füllzeit ~2.4s
+- **Sound-Balance Mobile**: Shake-Sounds ×0.55, Meditations-Sounds ×0.65
 - **Meditationsstart**: shakeAccum + shakeIntensity werden auf 0 resetet
 
 ### Partikel (Gedanken)
@@ -194,16 +201,22 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **done**: Nicht sichtbar, "Du bist das Wasser" erscheint
 
 ### Atmen (Breathing)
-- **Drei Optionen**: Aus / Kohärent (5.5s ein / 5.5s aus) / Beruhigend (4s ein / 6s aus)
+- **Fünf Optionen**: `BREATHING_MODES = ['Aus', 'Kohärent', 'Beruhigend 4:6', '4-7-8', 'Box']`
+- **Kohärent**: 5.5s ein / 5.5s aus (symmetrisch)
+- **Beruhigend 4:6**: 4s ein / 6s aus (längeres Ausatmen)
+- **4-7-8**: 4s ein / 7s halten / 8s aus (Entspannungstechnik)
+- **Box**: 4s ein / 4s halten / 4s aus / 4s halten (Gleichmäßig)
 - **Asymmetrische Welle**: Piecewise Sine für glatte Übergänge bei unterschiedlichen Ein-/Ausatem-Dauern
-- **Auswahl**: Im Overlay-Menü als Settings-Row (Aus / Kohärent 5.5:5.5 / Beruhigend 4:6)
 - **Default**: Kohärent (`breathingMode = 1`)
 - **Kugel-Radius**: Oszilliert ±2.5% mit der Atem-Welle
 - **Nebel**: Nur Cyan (#2abfbf), direkt an Kugelrand (clipR=r+2), 3 Gradient-Schichten + 5 Strähnen
-- **State**: `BREATHING_MODES[]`, `BREATHING_TIMING[]`, `breathingMode` (0/1/2)
+- **Atem-Sound**: Gefiltertes Rauschen (Bandpass 350–750 Hz), schwillt mit Einatmen an (Vol 0.22)
+- **State**: `BREATHING_MODES[]`, `BREATHING_TIMING[]`, `breathingMode` (0–4)
 
 ### Timer-Anzeige
-- **Toggle**: Im Menü schaltbar (TIMER ANZEIGEN AN/AUS)
+- **Stoppuhr-Icon**: Oben Mitte (Screen-Space), toggle für Timer-Anzeige
+- **Desktop**: Hover-Tooltip unter Icon (gold wenn aktiv, weiß wenn inaktiv)
+- **Mobile**: Tap-Tooltip unter Icon, gleicher Stil, auto-hide nach 2s mit Fade-out
 - **Default**: Aus (`timerVisible = false`)
 - **Anzeige**: Uhrzeitanzeige unter der Kugel (optional)
 - **Counter-Ring**: Rot (255,70,90) bis 99%, bei 100% Gold (255,215,0) mit Glow + "Du darfst jetzt loslassen ..."
@@ -220,6 +233,7 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Glasreflex-Animation**: Wandert langsam über die Kugel
 - **Sterne**: 60 Punkte, dimmen beim Schütteln, heller im Done-State
 - **Kugel-Glas**: Fast transparent in der Mitte, Lichtbrechung am Rand, scharfe Glaskante
+- **Gedankenfluss**: `FLOW_LEVELS = ['0.5x', '1x', '2x', '3x', '4x', '5x']`, `FLOW_VISIBLE = [0, 1, 2, 3]` — 4x und 5x ausgeblendet. Skaliert Partikel-Spawn-Rate und Decay
 
 ## Entscheidungen
 - 2D Canvas + Three.js Hybrid — alle 2D-Effekte bleiben, nur Mönch ist 3D
@@ -231,7 +245,7 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - Mönch löst sich in Meditation linear auf (kein Einblend-Delay)
 - Rost-Overlay-Alpha multipliziert mit Model-Alpha (verschwindet gemeinsam)
 - "Du bist das Wasser" als Schluss-Erkenntnis mit Glow-Effekt
-- Sound-Presets wählbar (4 Shake + 5 Meditation), Defaults: Rauschen + Tanpura2
+- Sound-Presets wählbar (4 Shake + 7 Meditation), Defaults: Rauschen + Stille
 - Tempel-Gong bei Start UND Ende der Meditation (kein Counter-Full-Sound, kein Start-Chime, kein Rückfall-Sound)
 - Rückfall nur visuell (roter Flash), kein Sound — weniger störend
 - Atem-Nebel nur Cyan, kein Magenta — subtiler, meditativer
@@ -277,12 +291,30 @@ Folgende Keys werden gespeichert:
 - **Labels**: Aus / Mediathek / Kamera / Laden (einheitlich auf allen Geräten)
 - **Kamera-Bug-Fix**: Nach Chrome-Permission-Dialog wird `menuExpanded.face = true` gesetzt
 - **Menü-Verhalten**: Einklapp-Menüs bleiben nach Auswahl offen, schließen nur bei anderer Kategorie oder manuellem Zuklappen
-- **TODO**: Bezahlfunktion für Face Swap (Zoe-Modus soll kostenlos bleiben)
+- **PayPal-Bezahlung**: 0,50 € per Authorize/Capture-Flow (erst autorisieren, nach erfolgreichem Swap capturen, bei Fehler void)
+- **PayPal SDK**: Wird on-demand geladen, Client-ID in `PAYPAL_CLIENT_ID`
+- **API-Proxy**: `https://m-sphere-api.vercel.app/api/paypal` (create-order, authorize-order, capture-payment, void-payment)
+- **Zoe-Modus**: Face Swap kostenlos (PayPal-Overlay wird übersprungen)
+
+## Ablenkungsmodus (Lotus-Icon)
+- **Lotus-Icon**: Im Footer, Teal wenn inaktiv, Rosa/Rot wenn aktiv
+- **Aktivierung**: Tap/Click auf Lotus → `distractionModeIdx = 1`
+- **Fake-Benachrichtigungen** während Meditation: Chat, Likes, FOMO, Feed, Captcha
+- **Timing**: Variabel je Typ (Likes kürzer ≤5s, FOMO/Captcha länger ≥6-7s)
+- **Mobile Hint**: Fragezeichen kreist um Lotus, Tap zeigt Hint-Bubble unten
+- **Desktop Tooltip**: Hover über Lotus zeigt Tooltip ("Klicke hier zum Aktivieren/Deaktivieren")
+
+## Burger-Menü
+- **Position**: Oben rechts (Screen-Space, scrollt nicht)
+- **Inhalt**: Die Geschichte dahinter, Literaturempfehlungen, More Tools (→ jochenhornung.de/werkzeuge/), Impressum, Datenschutz
+- **Legal-Overlay**: Scrollbar, mit Zurück-Button
 
 ## Sicherungs-Tags
 - `v1.0-pre-payment` — Snapshot vor Payment-Feature (alle Fixes fertig)
 
 ## Offene Fragen / Nächste Schritte
-- **Payment-Feature** für Face Swap (Stripe?) — Zoe-Modus bleibt kostenlos
+- iOS AudioContext "interrupted" nach Ruhezustand — Sound stirbt, nur Refresh hilft (WebKit Bug #263627)
 - Partikel-Formen variieren (nicht nur Kreise — Icons, Symbole?)
 - Wasser-Visualisierung im Done-State verbessern
+- Settings-Menüs als Dreh-Räder (Plan existiert, noch nicht umgesetzt)
+- Zoe-Modus visuell kennzeichnen (z.B. Titel-Glow rosa statt teal)
