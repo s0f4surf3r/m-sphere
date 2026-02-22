@@ -2572,7 +2572,7 @@ function drawMenu() {
   // Titel-Hit-Area für Easter Egg (Triple-Tap / Long-Press)
   menuButtons.title = { x: cx - titleW / 2, y: curY, w: titleW, h: actualTitleH };
 
-  // --- Easter Egg: ♡ Name ♡ über dem Titel (als Hinweisschild mit Hintergrund) ---
+  // --- Easter Egg: ♡ Name ♡ unter dem Titel (als Hinweisschild mit Hintergrund) ---
   if (easterEggVoice) {
     const eeSize = subtitleSize * 1.3;
     const eeName = easterEggVoice === 'levi' ? 'Levi' : 'Zoe';
@@ -2592,7 +2592,7 @@ function drawMenu() {
     const cardW = Math.max(nameW2, liebeW) + cardPadX * 2;
     const cardH = eeSize + liebeSize + cardPadY * 2 + eeSize * 0.3;
     const cardX = cx - cardW / 2;
-    const cardY = curY - cardH - eeSize * 0.4;
+    const cardY = curY + actualTitleH + eeSize * 0.3;
 
     // Hintergrund-Pill mit Glow
     ctx.save();
