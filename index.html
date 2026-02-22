@@ -3329,7 +3329,7 @@ function drawMenu() {
 
     // Mobile: GK Hint-Bubble wenn offen
     if (gkHintOpen && isMobilePortrait) {
-      const ghFont = Math.max(12, unit * 0.02);
+      const ghFont = Math.max(14, unit * 0.032);
       const ghText = lang === 'de'
         ? 'Nochmal tippen um zum Gefühlskompass 5D zu wechseln'
         : 'Tap again to switch to Gefühlskompass 5D';
@@ -3592,7 +3592,7 @@ function drawMenu() {
 
       // Hint-Bubble wenn offen
       if (lotusHintOpen) {
-        const hFont = Math.max(12, unit * 0.02);
+        const hFont = Math.max(14, unit * 0.032);
         const hText = lotusActive
           ? (lang === 'de' ? 'Ablenkungen deaktivieren' : 'Disable distractions')
           : (lang === 'de' ? 'Ablenkungen aktivieren — echte digitale Versuchungen stören deine Meditation' : 'Enable distractions — real digital temptations disrupt your meditation');
@@ -4383,6 +4383,15 @@ canvas.addEventListener('click', (e) => {
   if (state === 'idle') {
     // Footer-Buttons direkt prüfen (Screen-Space)
     const _hitC = (b) => b && cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h;
+    // Hint offen? Tap woanders → Hint schließen, nichts weiter tun
+    if (lotusHintOpen || gkHintOpen) {
+      const onHintBtn = _hitC(menuButtons.lotusHint) || _hitC(menuButtons.lotus) || _hitC(menuButtons.gkLink);
+      if (!onHintBtn) {
+        lotusHintOpen = false;
+        gkHintOpen = false;
+        return;
+      }
+    }
     if (_hitC(menuButtons.lotusHint)) {
       lotusHintOpen = !lotusHintOpen;
       gkHintOpen = false;
@@ -4594,6 +4603,15 @@ canvas.addEventListener('touchend', (e) => {
     const _gk = menuButtons.gkLink;
     const _lnk = menuButtons.link;
     const _hitS = (b) => b && ftx >= b.x && ftx <= b.x + b.w && fty >= b.y && fty <= b.y + b.h;
+    // Hint offen? Tap woanders → Hint schließen, nichts weiter tun
+    if (lotusHintOpen || gkHintOpen) {
+      const onHintBtn = _hitS(menuButtons.lotusHint) || _hitS(_lotus) || _hitS(_gk);
+      if (!onHintBtn) {
+        lotusHintOpen = false;
+        gkHintOpen = false;
+        return;
+      }
+    }
     if (_hitS(menuButtons.lotusHint)) {
       lotusHintOpen = !lotusHintOpen;
       gkHintOpen = false;
