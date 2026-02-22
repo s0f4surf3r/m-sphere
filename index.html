@@ -4407,12 +4407,10 @@ canvas.addEventListener('click', (e) => {
         try { playTingsha(); } catch(err) {}
         return;
       }
-      lotusHintOpen = false;
       distractionModeIdx = 1;
       try { localStorage.setItem('msphere_distraction', 1); } catch(e) {}
-      toastMsg = lang === 'de' ? 'Ablenkungen aktiviert — kannst du widerstehen?'
-                               : 'Distractions enabled — can you resist?';
-      toastStart = Date.now();
+      lotusHintOpen = true;
+      setTimeout(() => { lotusHintOpen = false; }, 1500);
       try { playTingsha(); } catch(err) { console.warn('playTingsha error:', err); }
       return;
     }
@@ -4637,12 +4635,11 @@ canvas.addEventListener('touchend', (e) => {
         try { playTingsha(); } catch(err) {}
         return;
       }
-      lotusHintOpen = false;
       distractionModeIdx = 1;
       try { localStorage.setItem('msphere_distraction', 1); } catch(e) {}
-      toastMsg = lang === 'de' ? 'Ablenkungen aktiviert — kannst du widerstehen?'
-                               : 'Distractions enabled — can you resist?';
-      toastStart = Date.now();
+      // Hint bleibt kurz offen als Bestätigung, schließt sich nach 1.5s
+      lotusHintOpen = true;
+      setTimeout(() => { lotusHintOpen = false; }, 1500);
       try { playTingsha(); } catch(err) { console.warn('playTingsha touch error:', err); }
       return;
     }
