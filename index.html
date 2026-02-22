@@ -3248,19 +3248,17 @@ function drawMenu() {
       const tipH = tipFont * 2.2;
       const tipX = twX - tipW / 2;
       const tipY = twY + twHitSize / 2 + 6;
-      ctx.globalAlpha = 0.92;
       ctx.beginPath();
       ctx.roundRect(tipX, tipY, tipW, tipH, 8);
-      ctx.fillStyle = 'rgba(20, 22, 28, 0.94)';
+      ctx.fillStyle = 'rgb(16, 18, 24)';
       ctx.fill();
-      ctx.strokeStyle = timerVisible ? 'rgba(255, 215, 0, 0.4)' : 'rgba(240, 236, 230, 0.3)';
+      ctx.strokeStyle = timerVisible ? 'rgba(255, 215, 0, 0.6)' : 'rgba(240, 236, 230, 0.5)';
       ctx.lineWidth = 1;
       ctx.stroke();
-      ctx.fillStyle = timerVisible ? 'rgba(255, 215, 0, 0.9)' : 'rgba(240, 236, 230, 0.85)';
+      ctx.fillStyle = timerVisible ? 'rgba(255, 215, 0, 1.0)' : 'rgba(240, 236, 230, 1.0)';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(tipText, tipX + tipW / 2, tipY + tipH / 2);
-      ctx.globalAlpha = 1;
     }
   }
   ctx.textAlign = 'start';
@@ -3352,21 +3350,19 @@ function drawMenu() {
       const ghW = Math.min(ghMaxW + ghPad * 2, ghLines.reduce((max, l) => Math.max(max, ctx.measureText(l).width), 0) + ghPad * 2);
       const ghX = Math.max(8, Math.min(W - ghW - 8, iconLeftX));
       const ghY = iconY - ghH - 12;
-      ctx.globalAlpha = 0.94;
       ctx.beginPath();
       ctx.roundRect(ghX, ghY, ghW, ghH, 10);
-      ctx.fillStyle = 'rgba(20, 22, 28, 0.96)';
+      ctx.fillStyle = 'rgb(16, 18, 24)';
       ctx.fill();
-      ctx.strokeStyle = 'rgba(42, 191, 191, 0.5)';
+      ctx.strokeStyle = 'rgba(42, 191, 191, 0.7)';
       ctx.lineWidth = 1;
       ctx.stroke();
-      ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
+      ctx.fillStyle = 'rgba(42, 191, 191, 1.0)';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       for (let li = 0; li < ghLines.length; li++) {
         ctx.fillText(ghLines[li], ghX + ghPad, ghY + ghPad + li * ghLineH);
       }
-      ctx.globalAlpha = 1;
       ctx.textAlign = 'start';
       ctx.textBaseline = 'alphabetic';
     }
@@ -3392,21 +3388,19 @@ function drawMenu() {
       const tipW = Math.min(maxTipW + tipPad * 2, tipLines.reduce((max, l) => Math.max(max, ctx.measureText(l).width), 0) + tipPad * 2);
       const tipX = iconLeftX;
       const tipY = iconY - tipH - 10;
-      ctx.globalAlpha = 0.92;
       ctx.beginPath();
       ctx.roundRect(tipX, tipY, tipW, tipH, 8);
-      ctx.fillStyle = 'rgba(20, 22, 28, 0.94)';
+      ctx.fillStyle = 'rgb(16, 18, 24)';
       ctx.fill();
-      ctx.strokeStyle = 'rgba(42, 191, 191, 0.4)';
+      ctx.strokeStyle = 'rgba(42, 191, 191, 0.7)';
       ctx.lineWidth = 1;
       ctx.stroke();
-      ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
+      ctx.fillStyle = 'rgba(42, 191, 191, 1.0)';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       for (let li = 0; li < tipLines.length; li++) {
         ctx.fillText(tipLines[li], tipX + tipPad, tipY + tipPad + li * tipLineH);
       }
-      ctx.globalAlpha = 1;
       ctx.textAlign = 'start';
       ctx.textBaseline = 'alphabetic';
     }
@@ -3617,22 +3611,20 @@ function drawMenu() {
         const hX = Math.max(8, Math.min(W - hW - 8, lx - hW / 2));
         const hY = iconY - hH - 12;
 
-        ctx.globalAlpha = 0.94;
         ctx.beginPath();
         ctx.roundRect(hX, hY, hW, hH, 10);
-        ctx.fillStyle = 'rgba(20, 22, 28, 0.96)';
+        ctx.fillStyle = 'rgb(16, 18, 24)';
         ctx.fill();
-        ctx.strokeStyle = lotusActive ? 'rgba(232, 106, 122, 0.5)' : 'rgba(42, 191, 191, 0.5)';
+        ctx.strokeStyle = lotusActive ? 'rgba(232, 106, 122, 0.7)' : 'rgba(42, 191, 191, 0.7)';
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        ctx.fillStyle = lotusActive ? 'rgba(232, 106, 122, 0.9)' : 'rgba(42, 191, 191, 0.9)';
+        ctx.fillStyle = lotusActive ? 'rgba(232, 106, 122, 1.0)' : 'rgba(42, 191, 191, 1.0)';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
         for (let li = 0; li < hLines.length; li++) {
           ctx.fillText(hLines[li], hX + hPad, hY + hPad + li * hLineH);
         }
-        ctx.globalAlpha = 1;
       }
       ctx.textAlign = 'start';
       ctx.textBaseline = 'alphabetic';
@@ -6586,15 +6578,15 @@ function frame() {
       } else {
         ty = cH * 0.5 - th / 2;
       }
-      ctx.globalAlpha = toastAlpha * 0.95;
-      ctx.fillStyle = 'rgba(10, 22, 40, 0.9)';
+      ctx.globalAlpha = toastAlpha;
+      ctx.fillStyle = 'rgb(10, 18, 32)';
       ctx.beginPath();
       ctx.roundRect(tx, ty, tw, th, th * 0.15);
       ctx.fill();
-      ctx.strokeStyle = distractionModeIdx === 1 ? 'rgba(232, 106, 122, 0.5)' : 'rgba(42, 191, 191, 0.5)';
+      ctx.strokeStyle = distractionModeIdx === 1 ? 'rgba(232, 106, 122, 0.7)' : 'rgba(42, 191, 191, 0.7)';
       ctx.lineWidth = 1;
       ctx.stroke();
-      ctx.fillStyle = distractionModeIdx === 1 ? 'rgba(232, 106, 122, 0.9)' : 'rgba(42, 191, 191, 0.9)';
+      ctx.fillStyle = distractionModeIdx === 1 ? 'rgba(232, 106, 122, 1.0)' : 'rgba(42, 191, 191, 1.0)';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       const textStartY = ty + th / 2 - (toastLines.length - 1) * lineH / 2;
