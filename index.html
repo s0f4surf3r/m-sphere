@@ -4682,7 +4682,17 @@ canvas.addEventListener('touchend', (e) => {
         return;
       }
     }
-    returnToMenu();
+    if (backToMenuHitArea && e.changedTouches.length > 0) {
+      const t = e.changedTouches[0];
+      const [tx, ty] = canvasCoords(t.clientX, t.clientY);
+      const b = backToMenuHitArea;
+      if (tx >= b.x && tx <= b.x + b.w && ty >= b.y && ty <= b.y + b.h) {
+        returnToMenu();
+        return;
+      }
+    }
+    // Fallback: Tap irgendwo → zurück (wenn kein Button sichtbar, also < 45s)
+    if (!backToMenuHitArea) returnToMenu();
   }
 });
 
@@ -6819,21 +6829,35 @@ function frame() {
       ctx.textAlign = 'center';
 
       if (doneIsMob) {
-        // Mobile: einfacher Text unter der Kugel + Spenden-Button darunter
-        ctx.font = `300 ${hintFont}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+        // Mobile: "Zurück ins Menü" als Button über der Kugel
+        const backFont = hintFont * 0.9;
+        ctx.font = `400 ${backFont}px "Courier New", monospace`;
+        const backText = t('tapRestart');
+        const backTxtW = ctx.measureText(backText).width;
+        const backBtnW = backTxtW + backFont * 2;
+        const backBtnH = backFont * 2.2;
+        const backBtnX = cx - backBtnW / 2;
+        const backBtnY = cy - r - backBtnH - 14;
+        ctx.beginPath();
+        ctx.roundRect(backBtnX, backBtnY, backBtnW, backBtnH, backBtnH * 0.3);
+        ctx.fillStyle = `rgba(26, 58, 92, ${hintAlpha * 0.2})`;
+        ctx.fill();
+        ctx.strokeStyle = `rgba(200, 210, 220, ${hintAlpha * 0.5})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
         ctx.fillStyle = `rgba(240, 236, 230, ${hintAlpha})`;
-        ctx.fillText(t('tapRestart'), cx, cy + r + 35);
-        backToMenuHitArea = null;
-        // Spenden-Button
+        ctx.textBaseline = 'middle';
+        ctx.fillText(backText, cx, backBtnY + backBtnH / 2);
+        backToMenuHitArea = { x: backBtnX, y: backBtnY, w: backBtnW, h: backBtnH };
+        // Spenden-Button — so breit wie die Kugel
         const donAlpha = Math.min(0.9, (elapsed - 45) / 4 * 0.9);
         const donFont = hintFont * 0.8;
         ctx.font = `${donFont}px "Courier New", monospace`;
         const donText = t('donate');
-        const donTxtW = ctx.measureText(donText).width;
-        const donBtnW = Math.min(donTxtW + donFont * 2, r * 2);
-        const donBtnH = donFont * 2.2;
+        const donBtnW = r * 2;
+        const donBtnH = donFont * 2.4;
         const donBtnX = cx - donBtnW / 2;
-        const donBtnY = cy + r + 35 + hintFont * 1.8;
+        const donBtnY = cy + r + 20;
         ctx.beginPath();
         ctx.roundRect(donBtnX, donBtnY, donBtnW, donBtnH, donBtnH * 0.25);
         ctx.fillStyle = `rgba(232, 106, 122, ${donAlpha * 0.25})`;
