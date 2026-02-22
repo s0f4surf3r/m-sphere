@@ -2572,89 +2572,9 @@ function drawMenu() {
   // Titel-Hit-Area für Easter Egg (Triple-Tap / Long-Press)
   menuButtons.title = { x: cx - titleW / 2, y: curY, w: titleW, h: actualTitleH };
 
-  // --- Easter Egg: ♡ Name ♡ unter dem Titel (als Hinweisschild mit Hintergrund, auto-hide) ---
-  const eeBadgeElapsed = easterEggBadgeTime ? Date.now() - easterEggBadgeTime : 99999;
-  const eeBadgeAlpha = eeBadgeElapsed < 5000 ? 1 : eeBadgeElapsed < 6000 ? 1 - (eeBadgeElapsed - 5000) / 1000 : 0;
-  if (easterEggVoice && eeBadgeAlpha > 0) {
-    const eeSize = subtitleSize * 1.3;
-    const eeName = easterEggVoice === 'levi' ? 'Levi' : 'Zoe';
-    const eeColor = '255, 180, 200';
-    const now = performance.now() * 0.001;
-    const liebeSize = eeSize * 0.7;
-    const liebeText = easterEggVoice === 'zoe' ? 'In Liebe von deinem Liebling Jochen!' : 'In Liebe von deinem Papa!';
-
-    // Maße für das Schild berechnen
-    ctx.font = `400 ${eeSize}px "Courier New", monospace`;
-    const nameText = `\u2661 ${eeName} \u2661`;
-    const nameW2 = ctx.measureText(nameText).width;
-    ctx.font = `300 ${liebeSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
-    const liebeW = ctx.measureText(liebeText).width;
-    const cardPadX = eeSize * 1.2;
-    const cardPadY = eeSize * 0.6;
-    const cardW = Math.max(nameW2, liebeW) + cardPadX * 2;
-    const cardH = eeSize + liebeSize + cardPadY * 2 + eeSize * 0.3;
-    const cardX = cx - cardW / 2;
-    const cardY = curY + actualTitleH + eeSize * 0.3;
-
-    // Gesamter Badge-Block mit Fade-Alpha
-    ctx.save();
-    ctx.globalAlpha = eeBadgeAlpha;
-
-    // Hintergrund-Pill mit Glow
-    ctx.shadowColor = `rgba(${eeColor}, 0.3)`;
-    ctx.shadowBlur = 20;
-    ctx.beginPath();
-    ctx.roundRect(cardX, cardY, cardW, cardH, cardH * 0.25);
-    ctx.fillStyle = 'rgb(20, 15, 25)';
-    ctx.fill();
-    ctx.strokeStyle = `rgba(${eeColor}, 0.6)`;
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-
-    // ♡ Name ♡
-    const nameY = cardY + cardPadY + eeSize * 0.5;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = `700 ${eeSize}px "Courier New", monospace`;
-    ctx.shadowColor = `rgba(${eeColor}, 0.8)`;
-    ctx.shadowBlur = 8;
-    ctx.fillStyle = `rgba(255, 210, 230, 1.0)`;
-    ctx.fillText(nameText, cx, nameY);
-    ctx.shadowBlur = 0;
-
-    // Widmungstext darunter
-    const liebeY = nameY + eeSize * 0.5 + liebeSize * 0.5 + eeSize * 0.15;
-    ctx.font = `500 ${liebeSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
-    ctx.fillStyle = `rgba(255, 220, 235, 1.0)`;
-    ctx.fillText(liebeText, cx, liebeY);
-
-    // Funkeln um das Schild
-    for (let si = 0; si < 7; si++) {
-      const phase = si * 1.37 + now * 1.5;
-      const sx = cx + (Math.sin(phase * 0.7 + si) * 0.5) * (cardW * 0.5 + eeSize * 0.5);
-      const sy = cardY + cardH * 0.5 + Math.cos(phase * 0.9 + si * 2.1) * cardH * 0.6;
-      const sparkleAlpha = (Math.sin(phase) * 0.5 + 0.5) * 0.8;
-      const starR = eeSize * (0.1 + Math.sin(phase * 1.3) * 0.04);
-      ctx.fillStyle = `rgba(255, 220, 240, ${sparkleAlpha})`;
-      ctx.shadowColor = `rgba(255, 200, 220, ${sparkleAlpha * 0.6})`;
-      ctx.shadowBlur = 8;
-      ctx.beginPath();
-      const rot = now * 0.3 + si * 0.9;
-      for (let z = 0; z < 10; z++) {
-        const a = rot + z * Math.PI / 5;
-        const r2 = z % 2 === 0 ? starR : starR * 0.4;
-        const px = sx + Math.cos(a) * r2;
-        const py = sy + Math.sin(a) * r2;
-        z === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-      }
-      ctx.closePath();
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    }
-    ctx.restore(); // Badge-Alpha aufheben
-    ctx.textBaseline = 'top';
-  }
+  // Easter Egg Badge-Position merken (Rendering am Ende, über allem)
+  const eeTitleCurY = curY;
+  const eeActualTitleH = actualTitleH;
 
   curY += actualTitleH + (isMobilePortrait ? layoutGap * 0.3 : unit * 0.015 * vScale);
 
@@ -3139,6 +3059,78 @@ function drawMenu() {
 
   // Gesamte Inhaltshöhe berechnen (logische Koordinaten, ohne Scroll-Offset)
   menuContentHeight = curY + startH + sectionGap;
+
+  // --- Easter Egg: ♡ Name ♡ Badge (ÜBER allen scrollbaren Inhalten) ---
+  const eeBadgeElapsed = easterEggBadgeTime ? Date.now() - easterEggBadgeTime : 99999;
+  const eeBadgeAlpha = eeBadgeElapsed < 5000 ? 1 : eeBadgeElapsed < 6000 ? 1 - (eeBadgeElapsed - 5000) / 1000 : 0;
+  if (easterEggVoice && eeBadgeAlpha > 0) {
+    const eeSize = subtitleSize * 1.3;
+    const eeName = easterEggVoice === 'levi' ? 'Levi' : 'Zoe';
+    const eeColor = '255, 180, 200';
+    const now = performance.now() * 0.001;
+    const liebeSize = eeSize * 0.7;
+    const liebeText = easterEggVoice === 'zoe' ? 'In Liebe von deinem Liebling Jochen!' : 'In Liebe von deinem Papa!';
+    ctx.font = `400 ${eeSize}px "Courier New", monospace`;
+    const nameText = `\u2661 ${eeName} \u2661`;
+    const nameW2 = ctx.measureText(nameText).width;
+    ctx.font = `300 ${liebeSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+    const liebeW = ctx.measureText(liebeText).width;
+    const cardPadX = eeSize * 1.2;
+    const cardPadY = eeSize * 0.6;
+    const cardW = Math.max(nameW2, liebeW) + cardPadX * 2;
+    const cardH = eeSize + liebeSize + cardPadY * 2 + eeSize * 0.3;
+    const cardX = cx - cardW / 2;
+    const cardY = eeTitleCurY + eeActualTitleH + eeSize * 0.3;
+    ctx.save();
+    ctx.globalAlpha = eeBadgeAlpha;
+    ctx.shadowColor = `rgba(${eeColor}, 0.3)`;
+    ctx.shadowBlur = 20;
+    ctx.beginPath();
+    ctx.roundRect(cardX, cardY, cardW, cardH, cardH * 0.25);
+    ctx.fillStyle = 'rgb(20, 15, 25)';
+    ctx.fill();
+    ctx.strokeStyle = `rgba(${eeColor}, 0.6)`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    const nameY = cardY + cardPadY + eeSize * 0.5;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `700 ${eeSize}px "Courier New", monospace`;
+    ctx.shadowColor = `rgba(${eeColor}, 0.8)`;
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = 'rgba(255, 210, 230, 1.0)';
+    ctx.fillText(nameText, cx, nameY);
+    ctx.shadowBlur = 0;
+    const liebeY = nameY + eeSize * 0.5 + liebeSize * 0.5 + eeSize * 0.15;
+    ctx.font = `500 ${liebeSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+    ctx.fillStyle = 'rgba(255, 220, 235, 1.0)';
+    ctx.fillText(liebeText, cx, liebeY);
+    for (let si = 0; si < 7; si++) {
+      const phase = si * 1.37 + now * 1.5;
+      const sx2 = cx + (Math.sin(phase * 0.7 + si) * 0.5) * (cardW * 0.5 + eeSize * 0.5);
+      const sy2 = cardY + cardH * 0.5 + Math.cos(phase * 0.9 + si * 2.1) * cardH * 0.6;
+      const sparkleAlpha = (Math.sin(phase) * 0.5 + 0.5) * 0.8;
+      const starR = eeSize * (0.1 + Math.sin(phase * 1.3) * 0.04);
+      ctx.fillStyle = `rgba(255, 220, 240, ${sparkleAlpha})`;
+      ctx.shadowColor = `rgba(255, 200, 220, ${sparkleAlpha * 0.6})`;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      const rot = now * 0.3 + si * 0.9;
+      for (let z = 0; z < 10; z++) {
+        const a = rot + z * Math.PI / 5;
+        const r2 = z % 2 === 0 ? starR : starR * 0.4;
+        const px = sx2 + Math.cos(a) * r2;
+        const py = sy2 + Math.sin(a) * r2;
+        z === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    ctx.restore();
+  }
+
   ctx.restore(); // Scroll-Translate aufheben
 
   // Spacer-Höhe für natives Scrolling setzen
@@ -4667,6 +4659,15 @@ canvas.addEventListener('touchend', (e) => {
     if (_hitS(_lnk)) {
       window.open('https://jochenhornung.de', '_blank');
       return;
+    }
+    // Language Toggle (Screen-Space, vor menuTouchDist-Check)
+    for (const lb of menuButtons.langToggle || []) {
+      if (_hitS(lb)) {
+        lang = isMobilePortrait ? (lang === 'de' ? 'en' : 'de') : lb.lang;
+        localStorage.setItem('msphere_lang', lang);
+        voiceBuffer = null;
+        return;
+      }
     }
     // Reguläre Menü-Buttons: nur bei echtem Tap (kein Scroll)
     if (menuTouchDist < 10) {
