@@ -1216,7 +1216,7 @@ function onDeviceMotion(e) {
   if (!a) return;
   const mag = Math.sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
   const shake = Math.max(0, mag - 12); // Schwelle: normales Halten ≈ 9.8
-  addShakeDist(shake * 10); // ×10: Gyro ist primärer Mobile-Input
+  addShakeDist(shake * 14); // ×14: Gyro ist primärer Mobile-Input (etwas weniger Schütteln nötig)
 }
 
 canvas.addEventListener('mousemove', onMouseMove);
