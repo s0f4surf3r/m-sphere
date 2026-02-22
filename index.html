@@ -5428,39 +5428,21 @@ function updateSound() {
 
 // Sound starten bei erster Interaktion (Browser-Policy)
 let lastAudioCheck = 0;
-let _audioNeedsRebuild = false;
-let _lastResumeAttempt = 0;
 function ensureSound() {
   if (!soundInitialized) {
     initSound();
     return;
   }
   if (!audioCtx) { soundInitialized = false; initSound(); return; }
-  if (audioCtx.state === 'running') { _audioNeedsRebuild = false; return; }
-  // Zustand kaputt (suspended/interrupted) — wir sind hier in einem User-Gesture!
-  // Erster Versuch: resume() + Silent-Buffer
-  const now = Date.now();
-  if (!_audioNeedsRebuild && now - _lastResumeAttempt > 300) {
-    _lastResumeAttempt = now;
-    audioCtx.resume().catch(() => {});
-    try {
-      const buf = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
-      const src = audioCtx.createBufferSource();
-      src.buffer = buf; src.connect(audioCtx.destination); src.start(0);
-    } catch(e) {}
-    // Flag setzen: beim NÄCHSTEN User-Gesture prüfen ob es geklappt hat
-    _audioNeedsRebuild = true;
-    return;
-  }
-  // Zweiter User-Gesture: resume hat nicht geholfen → komplett neu aufbauen
-  if (_audioNeedsRebuild && audioCtx.state !== 'running') {
-    console.warn('AudioContext stuck in', audioCtx.state, '— rebuilding in user gesture');
-    try { audioCtx.close(); } catch(e) {}
-    soundInitialized = false;
-    audioCtx = null;
-    _audioNeedsRebuild = false;
-    initSound(); // neuer AudioContext + resume + silent buffer — alles im User-Gesture
-  }
+  // Alles OK
+  if (audioCtx.state === 'running') return;
+  // Suspended/Interrupted: resume() + silent buffer (wir sind im User-Gesture)
+  audioCtx.resume().catch(() => {});
+  try {
+    const buf = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf; src.connect(audioCtx.destination); src.start(0);
+  } catch(e) {}
 }
 // Auf alle Interaktionen reagieren (Browser erlaubt resume() nur in User-Gesture-Callbacks)
 canvas.addEventListener('mousedown', ensureSound, { once: false });
@@ -5476,12 +5458,9 @@ function checkAudioHealth() {
     audioCtx.resume().catch(() => {});
   }
 }
-// iOS: Recovery-Flag setzen wenn App aus dem Hintergrund/Ruhezustand kommt
+// iOS: Sofort resume versuchen wenn App wieder sichtbar wird
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && audioCtx && audioCtx.state !== 'running') {
-    // Nur Flag setzen — der eigentliche Rebuild passiert beim nächsten User-Gesture
-    _audioNeedsRebuild = true;
-    // Trotzdem versuchen (visibilitychange ist manchmal als Gesture akzeptiert)
     audioCtx.resume().catch(() => {});
   }
 });
