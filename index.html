@@ -407,8 +407,8 @@ const DURATION_OPTIONS = [
 let selectedDurationIdx = 4; // Voreinstellung: 20 min
 
 // Dreh-Rad (Mobile Time Picker)
-const DIAL_DURATIONS = [1, 2, 3, 4, 5, 6, 7, 8]; // Indizes in DURATION_OPTIONS (5,10,15,20,25,30,45,60)
-let dialPos = 3;       // aktuelle Position (Float, Index in DIAL_DURATIONS) — 20 min default
+const DIAL_DURATIONS = [0, 1, 2, 3, 4, 5, 6, 7, 8]; // Indizes in DURATION_OPTIONS (1,5,10,15,20,25,30,45,60)
+let dialPos = 4;       // aktuelle Position (Float, Index in DIAL_DURATIONS) — 20 min default
 let dialVel = 0;       // Geschwindigkeit (für Momentum)
 let dialTouchActive = false;
 let dialTouchStartX = 0;
@@ -2616,18 +2616,17 @@ function drawMenu() {
     const nameY = cardY + cardPadY + eeSize * 0.5;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = `400 ${eeSize}px "Courier New", monospace`;
-    const eeAlpha = easterEggFlash > 0 ? 1 : 0.9;
-    ctx.shadowColor = `rgba(${eeColor}, 0.6)`;
-    ctx.shadowBlur = 12;
-    ctx.fillStyle = `rgba(${eeColor}, ${eeAlpha})`;
+    ctx.font = `700 ${eeSize}px "Courier New", monospace`;
+    ctx.shadowColor = `rgba(${eeColor}, 0.8)`;
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = `rgba(255, 210, 230, 1.0)`;
     ctx.fillText(nameText, cx, nameY);
     ctx.shadowBlur = 0;
 
     // Widmungstext darunter
     const liebeY = nameY + eeSize * 0.5 + liebeSize * 0.5 + eeSize * 0.15;
-    ctx.font = `300 ${liebeSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
-    ctx.fillStyle = `rgba(${eeColor}, 0.8)`;
+    ctx.font = `500 ${liebeSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+    ctx.fillStyle = `rgba(255, 220, 235, 1.0)`;
     ctx.fillText(liebeText, cx, liebeY);
 
     // Funkeln um das Schild
