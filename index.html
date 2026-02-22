@@ -3205,8 +3205,14 @@ function drawMenu() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(langLabels[li], lx + langBtnW / 2, langY + langH / 2);
-    const hitPad = isMobilePortrait ? 6 : 0;
-    menuButtons.langToggle.push({ x: lx - hitPad, y: langY - hitPad, w: langBtnW + hitPad * 2, h: langH + hitPad * 2, lang: li === 0 ? 'de' : 'en' });
+    if (!isMobilePortrait) {
+      menuButtons.langToggle.push({ x: lx, y: langY, w: langBtnW, h: langH, lang: li === 0 ? 'de' : 'en' });
+    }
+  }
+  // Mobile: Eine große Hit-Area über beide Buttons (Toggle)
+  if (isMobilePortrait) {
+    const hitPad = 8;
+    menuButtons.langToggle.push({ x: langPad - hitPad, y: langY - hitPad, w: langBtnW * 2 + langGap + hitPad * 2, h: langH + hitPad * 2, lang: 'toggle' });
   }
 
   // --- Stoppuhr-Icon oben Mitte (Timer-Toggle) ---
@@ -4168,10 +4174,10 @@ function handleMenuClick(x, y) {
   // Footer-Buttons (Lotus, GK, Link) werden direkt in touchend/click behandelt,
   // nicht hier — verhindert Double-Firing-Probleme auf Touch-Geräten.
 
-  // Language Toggle (Screen-Space)
+  // Language Toggle (Screen-Space) — Mobile: Tap auf irgendeinen Button toggelt
   for (const btn of menuButtons.langToggle || []) {
     if (hitScreenBtn(btn)) {
-      lang = btn.lang;
+      lang = isMobilePortrait ? (lang === 'de' ? 'en' : 'de') : btn.lang;
       localStorage.setItem('msphere_lang', lang);
       voiceBuffer = null;
       return true;
