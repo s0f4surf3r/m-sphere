@@ -2977,27 +2977,25 @@ function drawMenu() {
 
   // Status-Anzeige unter den Buttons (Foto- und Webcam-Modus) — nur wenn aufgeklappt
   if (faceModeIdx >= 1 && menuExpanded.face) {
-    const statusY = curY + rowFont * 1.2;
+    const statusY = curY + rowFont * 0.4;
     ctx.textAlign = 'center';
     ctx.font = `400 ${rowFont * 0.85}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
 
     if (faceSwapStatus === 'uploading' || faceSwapStatus === 'processing') {
-      // Animierte Punkte
       const dots = '.'.repeat(Math.floor(Date.now() / 500) % 4);
       const label = faceSwapStatus === 'uploading' ? t('sendeBild') : t('faceSwapLaeuft');
       ctx.fillStyle = 'rgba(244, 168, 66, 0.9)';
       ctx.fillText(label + dots, cx, statusY);
-      curY = statusY + rowFont * 0.8;
+      curY = statusY + rowFont * 0.4;
     } else if (faceSwapStatus === 'done' && faceSwapImg) {
-      // Kompakte Vorschau + Häkchen
       ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.9)';
       ctx.fillText(t('gesichtAktiv'), cx, statusY);
-      curY = statusY + rowFont * 0.8;
+      curY = statusY + rowFont * 0.4;
     } else if (faceSwapStatus === 'error') {
       ctx.fillStyle = isMobilePortrait ? 'rgba(255, 130, 145, 1.0)' : 'rgba(232, 106, 122, 0.9)';
       const errMsg = faceSwapError || t('faceSwapFehler');
       ctx.fillText(errMsg.length > 40 ? errMsg.substring(0, 37) + '...' : errMsg, cx, statusY);
-      curY = statusY + rowFont * 0.8;
+      curY = statusY + rowFont * 0.4;
     }
 
     ctx.textAlign = 'start';
