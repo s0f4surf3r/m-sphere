@@ -1960,7 +1960,7 @@ function drawDistractions() {
       const min = Math.floor(remaining / 60);
       const sec = remaining % 60;
       const timeStr = `${min}:${sec < 10 ? '0' : ''}${sec}`;
-      ctx.font = `700 ${fFont * 1.1}px "Courier New", monospace`;
+      ctx.font = `700 ${fFont * 1.1}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
       ctx.textAlign = 'right';
       ctx.fillText(timeStr, bx + bannerW - 14, slideY + bannerH / 2);
 
@@ -2124,7 +2124,7 @@ function drawDistractions() {
         ctx.save();
         ctx.translate(charX, charY);
         ctx.rotate(rot);
-        ctx.font = `${Math.random() > 0.5 ? '700' : '400'} ${cFont * (0.8 + Math.random() * 0.4)}px "Courier New", monospace`;
+        ctx.font = `${Math.random() > 0.5 ? '700' : '400'} ${cFont * (0.8 + Math.random() * 0.4)}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
         ctx.fillStyle = `rgba(${40 + Math.random() * 60}, ${40 + Math.random() * 60}, ${80 + Math.random() * 80}, 0.85)`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -2608,7 +2608,7 @@ function drawMenu() {
     const isCollapsed = collapseKey && !menuExpanded[collapseKey];
     const selectedLabel = selectedIdx >= 0 && selectedIdx < options.length ? options[selectedIdx] : '';
 
-    ctx.font = `${labelFont}px "Courier New", monospace`;
+    ctx.font = `${labelFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
 
@@ -2703,7 +2703,7 @@ function drawMenu() {
     // Buttons zeichnen (klappbare Kategorien haben höhere Label-Box)
     const rowY = collapseKey ? y + lineH + btnGap * 0.5 : y + labelFont + btnGap * 1.2;
     const rBtnH = btnH * 0.9;
-    ctx.font = `${rowFont * 0.85}px "Courier New", monospace`;
+    ctx.font = `${rowFont * 0.85}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
 
     let totalW = 0;
     const widths = options.map(l => {
@@ -2882,7 +2882,7 @@ function drawMenu() {
 
     // Items zeichnen
     const numFont = dialH * 0.4;
-    const minFont = dialH * 0.18;
+    const minFont = dialH * 0.24;
     ctx.textBaseline = 'middle';
 
     for (let i = 0; i < DIAL_DURATIONS.length; i++) {
@@ -2979,7 +2979,7 @@ function drawMenu() {
   if (faceModeIdx >= 1 && menuExpanded.face) {
     const statusY = curY + rowFont * 1.2;
     ctx.textAlign = 'center';
-    ctx.font = `400 ${rowFont * 0.85}px "Courier New", monospace`;
+    ctx.font = `400 ${rowFont * 0.85}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
 
     if (faceSwapStatus === 'uploading' || faceSwapStatus === 'processing') {
       // Animierte Punkte
@@ -3076,7 +3076,7 @@ function drawMenu() {
     const liebeText = eeIsOff
       ? (lang === 'de' ? `${eeName}-Modus deaktiviert` : `${eeName} mode off`)
       : (eeShowName === 'zoe' ? 'In Liebe von deinem Liebling Jochen!' : 'In Liebe von deinem Papa!');
-    ctx.font = `400 ${eeSize}px "Courier New", monospace`;
+    ctx.font = `400 ${eeSize}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
     const nameText = eeIsOff ? `${eeName}` : `\u2661 ${eeName} \u2661`;
     const nameW2 = ctx.measureText(nameText).width;
     ctx.font = `300 ${liebeSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
@@ -3102,7 +3102,7 @@ function drawMenu() {
     const nameY = cardY + cardPadY + eeSize * 0.5;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = `700 ${eeSize}px "Courier New", monospace`;
+    ctx.font = `700 ${eeSize}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
     ctx.shadowColor = `rgba(${eeColor}, 0.8)`;
     ctx.shadowBlur = 8;
     ctx.fillStyle = 'rgba(255, 210, 230, 1.0)';
@@ -3174,7 +3174,7 @@ function drawMenu() {
 
   // --- Language Toggle (EN / DE) — oben links, gegenüber Burger ---
   const langFont = burgerSize * (isMobilePortrait ? 0.55 : 0.38);
-  ctx.font = `${langFont}px "Courier New", monospace`;
+  ctx.font = `${langFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
   const langH = burgerSize * (isMobilePortrait ? 0.7 : 0.5);
   const langBtnW = langFont * 2.4;
   const langGap = langFont * 0.3;
@@ -3200,7 +3200,7 @@ function drawMenu() {
     ctx.lineWidth = 1;
     ctx.stroke();
     const fontSize = langFont * scale;
-    ctx.font = `${hov ? '700 ' : ''}${fontSize}px "Courier New", monospace`;
+    ctx.font = `${hov ? '700 ' : ''}${fontSize}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
     ctx.fillStyle = sel ? '#2abfbf' : hov ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.9)';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -3252,7 +3252,7 @@ function drawMenu() {
       const tipText = timerVisible
         ? (lang === 'de' ? 'Timer-Anzeige eingeblendet' : 'Timer display on')
         : (lang === 'de' ? 'Timer-Anzeige ausgeblendet' : 'Timer display off');
-      ctx.font = `400 ${tipFont}px "Courier New", monospace`;
+      ctx.font = `400 ${tipFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
       const tipW = ctx.measureText(tipText).width + tipFont * 1.6;
       const tipH = tipFont * 2.2;
       const tipX = twX - tipW / 2;
@@ -3302,7 +3302,7 @@ function drawMenu() {
     const iconSize = burgerSize;
     const iconY = H - burgerPad - iconSize;
     const credY = iconY + iconSize / 2; // vertikal zentriert mit Icons
-    ctx.font = `${credFont}px "Courier New", monospace`;
+    ctx.font = `${credFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
     const credBase = isMobilePortrait ? 0.8 : 0.7;
     if (hoverLink) {
       ctx.shadowColor = 'rgba(42, 191, 191, 0.6)';
@@ -3346,7 +3346,7 @@ function drawMenu() {
       const ghText = lang === 'de'
         ? 'Nochmal tippen um zum Gefühlskompass 5D zu wechseln'
         : 'Tap again to switch to Gefühlskompass 5D';
-      ctx.font = `400 ${ghFont}px "Courier New", monospace`;
+      ctx.font = `400 ${ghFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
       const ghMaxW = W * 0.7;
       const ghWords = ghText.split(' ');
       const ghLines = [];
@@ -3384,7 +3384,7 @@ function drawMenu() {
     if (hoverGk && !isMobilePortrait) {
       const tipFont = Math.max(13, unit * 0.018);
       const tipText = lang === 'de' ? 'Wenn du hier klickst, wechselst du zum Gefühlskompass 5D' : 'Click here to switch to Gefühlskompass 5D';
-      ctx.font = `400 ${tipFont}px "Courier New", monospace`;
+      ctx.font = `400 ${tipFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
       const maxTipW = Math.min(280, W * 0.35);
       const words = tipText.split(' ');
       const tipLines = [];
@@ -3464,7 +3464,7 @@ function drawMenu() {
       const tipText = lotusActive
         ? (lang === 'de' ? 'Klicke hier zum Deaktivieren' : 'Click here to disable')
         : (lang === 'de' ? 'Klicke hier zum Aktivieren — echte digitale Versuchungen stören deine Meditation' : 'Click here to enable — real digital temptations will disrupt your meditation');
-      ctx.font = `400 ${tipFont}px "Courier New", monospace`;
+      ctx.font = `400 ${tipFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
       const maxTipW = Math.min(280, W * 0.35);
       const words = tipText.split(' ');
       const tipLines = [];
@@ -3605,7 +3605,7 @@ function drawMenu() {
         const hText = lotusActive
           ? (lang === 'de' ? 'Nochmal tippen zum Deaktivieren' : 'Tap again to disable')
           : (lang === 'de' ? 'Nochmal tippen zum Aktivieren — echte digitale Versuchungen stören deine Meditation' : 'Tap again to enable — real digital temptations will disrupt your meditation');
-        ctx.font = `400 ${hFont}px "Courier New", monospace`;
+        ctx.font = `400 ${hFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
         const maxHW = W * 0.7;
         const hWords = hText.split(' ');
         const hLines = [];
@@ -3687,7 +3687,7 @@ function drawMenu() {
     ctx.stroke();
 
     // Buttons: Speichern + Weiter (zentriert als Paar)
-    ctx.font = `${oFont}px "Courier New", monospace`;
+    ctx.font = `${oFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
     const ovBtnY = pCy + pR + oFont * 2;
     const ovBH = btnH;
     const gap = oFont * 1.5;
@@ -3778,7 +3778,7 @@ function drawLegalOverlay() {
     ctx.shadowBlur = 10;
   }
   ctx.fillStyle = hoverLegalClose && !isMob ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.8)';
-  ctx.font = `${closeBtnSize * 0.7}px "Courier New", monospace`;
+  ctx.font = `${closeBtnSize * 0.7}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('✕', closeX + closeBtnSize / 2, closeY + closeBtnSize / 2);
@@ -3879,7 +3879,7 @@ function drawLegalOverlay() {
   const backBtnH = backFontSize * 2;
   const backX = padding;
   const backY = closeY + (closeBtnSize - backBtnH) / 2;
-  ctx.font = `${backFontSize}px "Courier New", monospace`;
+  ctx.font = `${backFontSize}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
   const backLabel = t('zurueck');
   const backTextW = ctx.measureText(backLabel).width;
   legalBackBtn = { x: backX, y: backY, w: backTextW + backFontSize * 0.3, h: backBtnH };
@@ -3911,7 +3911,7 @@ function drawLegalOverlay() {
     : (lang === 'en' ? ABOUT_TEXT_EN : ABOUT_TEXT_DE);
   const rawLines = text.split('\n');
   const isAbout = legalOverlay === 'about' || isLiteratur;
-  const fontFamily = isAbout ? 'Georgia, "Times New Roman", serif' : '"Courier New", monospace';
+  const fontFamily = isAbout ? 'Georgia, "Times New Roman", serif' : '"SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace';
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
@@ -4290,6 +4290,7 @@ function handleMenuClick(x, y) {
   if (s && !s.disabled && x >= s.x && x <= s.x + s.w && sy >= s.y && sy <= s.y + s.h) {
     disableMenuScroll();
     state = 'ready';
+    resize(); // DPR zurück auf 1 für Performance
     // Audio-Session auf "playback" → Shake-Sound ignoriert iPhone-Stumm-Schalter
     if (navigator.audioSession) {
       try { navigator.audioSession.type = 'playback'; } catch(e) {}
@@ -4305,6 +4306,7 @@ function handleMenuClick(x, y) {
 function returnToMenu() {
   if (state === 'idle') return;
   state = 'idle';
+  resize(); // DPR hoch für scharfes Menü
   window._idleStart = Date.now(); // Pfeil-Animation neu starten
   // Audio-Session zurück auf "ambient" → Menü-Sounds respektieren Stumm-Schalter
   if (navigator.audioSession) {
@@ -5065,7 +5067,7 @@ function playDialTick() {
   bp.frequency.value = 1200;
   bp.Q.value = 3;
   const gain = audioCtx.createGain();
-  gain.gain.value = 0.1;
+  gain.gain.value = 0.2;
   src.connect(bp);
   bp.connect(gain);
   gain.connect(audioCtx.destination);
@@ -5513,7 +5515,7 @@ function resize() {
   const vv = window.visualViewport;
   cW = vv ? vv.width : window.innerWidth;
   cH = vv ? vv.height : window.innerHeight;
-  dpr = 1; // DPR-Skalierung deaktiviert (Performance)
+  dpr = state === 'idle' ? Math.min(window.devicePixelRatio, 2) : 1;
   canvas.width = Math.round(cW * dpr);
   canvas.height = Math.round(cH * dpr);
   canvas.style.width = cW + 'px';
@@ -6582,7 +6584,7 @@ function frame() {
       else if (toastElapsed > 4000) toastAlpha = 1 - (toastElapsed - 4000) / 1000;
       const toastMobile = cW < 600 && cH > cW;
       const toastFont = Math.max(15, Math.min(cW, cH) * (toastMobile ? 0.042 : 0.022));
-      ctx.font = `400 ${toastFont}px "Courier New", monospace`;
+      ctx.font = `400 ${toastFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
       // Word-wrap für lange Texte auf Mobile
       const maxTW = cW * 0.85;
       const toastLines = [];
@@ -6817,7 +6819,7 @@ function frame() {
       if (doneIsMob) {
         // Mobile: "Zurück ins Menü" als Button über der Kugel
         const backFont = hintFont * 0.9;
-        ctx.font = `400 ${backFont}px "Courier New", monospace`;
+        ctx.font = `400 ${backFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
         const backText = t('tapRestart');
         const backTxtW = ctx.measureText(backText).width;
         const backBtnW = backTxtW + backFont * 2;
@@ -6838,7 +6840,7 @@ function frame() {
         // Spenden-Button — so breit wie die Kugel, proportional groß
         const donAlpha = Math.min(0.9, (elapsed - 45) / 4 * 0.9);
         const donFont = hintFont * 1.15;
-        ctx.font = `600 ${donFont}px "Courier New", monospace`;
+        ctx.font = `600 ${donFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
         const donText = t('donate');
         const donBtnW = r * 2;
         const donBtnH = donFont * 2.8;
@@ -6859,7 +6861,7 @@ function frame() {
         // Desktop: "Zurück ins Menü" als Button ÜBER der Kugel, Spenden näher unter der Kugel
         // --- Zurück-Button oben ---
         const backFont = hintFont * 1.1;
-        ctx.font = `400 ${backFont}px "Courier New", monospace`;
+        ctx.font = `400 ${backFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
         const backText = t('clickRestart');
         const backTxtW = ctx.measureText(backText).width;
         const backBtnW = backTxtW + backFont * 2;
@@ -6880,7 +6882,7 @@ function frame() {
         // --- Spenden-Button unten (näher an Kugel) ---
         const donAlpha = Math.min(0.9, (elapsed - 45) / 4 * 0.9);
         const donFont = hintFont;
-        ctx.font = `${donFont}px "Courier New", monospace`;
+        ctx.font = `${donFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
         const donText = t('donate');
         const donTxtW = ctx.measureText(donText).width;
         const donBtnW = donTxtW + donFont * 2;

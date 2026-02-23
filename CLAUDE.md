@@ -262,7 +262,8 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Schweben2-alt (idx=1) + Schweben3-alt (idx=2) sind EINGEFROREN** — nicht verändern ohne ausdrückliche User-Anweisung
 - **Schweben2 (idx=0) ist AUSGEBLENDET** — nur versteckt, nicht gelöscht
 - Mönch-Silhouetten-Abstoßung: Pixelgenaue 48×48 Kollisionsmaske, Safari-Fallback via Haupt-Canvas
-- DPR-Skalierung: cW/cH globale CSS-Dimensionen, dpr=1 (deaktiviert für Performance)
+- DPR-Skalierung: idle-State nutzt `devicePixelRatio` (max 2) für scharfes Menü, alle anderen States dpr=1 für Performance. Umschaltung via `resize()` bei State-Wechsel
+- **Font-Kaskade**: `"SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace` — schärfste verfügbare Monospace je Plattform (Mac: SF Mono, Win 11: Cascadia, Win 10: Consolas)
 - Meditation: Alles linear (Verblassen sqrt-Kurve, Reibung, Brownsche Bewegung, Sog)
 - Counter-Rate: Desktop 0.55, Mobile 0.35
 
