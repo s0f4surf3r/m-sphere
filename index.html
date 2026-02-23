@@ -3065,15 +3065,19 @@ function drawMenu() {
   // --- Easter Egg: ♡ Name ♡ Badge (ÜBER allen scrollbaren Inhalten) ---
   const eeBadgeElapsed = easterEggBadgeTime ? Date.now() - easterEggBadgeTime : 99999;
   const eeBadgeAlpha = eeBadgeElapsed < 5000 ? 1 : eeBadgeElapsed < 6000 ? 1 - (eeBadgeElapsed - 5000) / 1000 : 0;
-  if (easterEggVoice && eeBadgeAlpha > 0) {
+  const eeShowName = easterEggVoice || easterEggDeactivated;
+  if (eeShowName && eeBadgeAlpha > 0) {
+    const eeIsOff = !easterEggVoice && !!easterEggDeactivated;
     const eeSize = subtitleSize * 1.3;
-    const eeName = easterEggVoice === 'levi' ? 'Levi' : 'Zoe';
-    const eeColor = '255, 180, 200';
+    const eeName = eeShowName === 'levi' ? 'Levi' : 'Zoe';
+    const eeColor = eeIsOff ? '180, 200, 220' : '255, 180, 200';
     const now = performance.now() * 0.001;
     const liebeSize = eeSize * 0.7;
-    const liebeText = easterEggVoice === 'zoe' ? 'In Liebe von deinem Liebling Jochen!' : 'In Liebe von deinem Papa!';
+    const liebeText = eeIsOff
+      ? (lang === 'de' ? `${eeName}-Modus deaktiviert` : `${eeName} mode off`)
+      : (eeShowName === 'zoe' ? 'In Liebe von deinem Liebling Jochen!' : 'In Liebe von deinem Papa!');
     ctx.font = `400 ${eeSize}px "Courier New", monospace`;
-    const nameText = `\u2661 ${eeName} \u2661`;
+    const nameText = eeIsOff ? `${eeName}` : `\u2661 ${eeName} \u2661`;
     const nameW2 = ctx.measureText(nameText).width;
     ctx.font = `300 ${liebeSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
     const liebeW = ctx.measureText(liebeText).width;
@@ -3131,6 +3135,8 @@ function drawMenu() {
       ctx.shadowBlur = 0;
     }
     ctx.restore();
+  } else if (easterEggDeactivated && eeBadgeAlpha <= 0) {
+    easterEggDeactivated = null;
   }
 
   ctx.restore(); // Scroll-Translate aufheben
@@ -4142,7 +4148,9 @@ function handleMenuClick(x, y) {
     titleTapTimer = setTimeout(() => { titleTapCount = 0; }, 800);
     if (titleTapCount === 3) {
       titleTapCount = 0;
-      easterEggVoice = easterEggVoice === 'zoe' ? null : 'zoe';
+      const wasZoe = easterEggVoice === 'zoe';
+      easterEggVoice = wasZoe ? null : 'zoe';
+      easterEggDeactivated = wasZoe ? 'zoe' : null;
       voiceBuffer = null;
       easterEggFlash = 1; easterEggBadgeTime = Date.now();
       ensureSound();
@@ -4345,7 +4353,9 @@ window.addEventListener('keydown', (e) => {
     if (tail4 === 'LEVI') matched = 'levi';
     else if (tail3 === 'ZOE') matched = 'zoe';
     if (matched) {
-      easterEggVoice = easterEggVoice === matched ? null : matched;
+      const wasActive = easterEggVoice === matched;
+      easterEggVoice = wasActive ? null : matched;
+      easterEggDeactivated = wasActive ? matched : null;
       voiceBuffer = null;
       easterEggBuf = '';
       easterEggFlash = 1; easterEggBadgeTime = Date.now();
@@ -4593,7 +4603,9 @@ canvas.addEventListener('touchend', (e) => {
       const dx = tex - titleTouchStartX;
       const sy2 = titleTouchStartY + (window.scrollY || 0);
       if (dx < -40 && sy2 >= ttl.y && sy2 <= ttl.y + ttl.h) {
-        easterEggVoice = easterEggVoice === 'levi' ? null : 'levi';
+        const wasLevi = easterEggVoice === 'levi';
+        easterEggVoice = wasLevi ? null : 'levi';
+        easterEggDeactivated = wasLevi ? 'levi' : null;
         voiceBuffer = null;
         easterEggFlash = 1; easterEggBadgeTime = Date.now();
         try { ensureSound(); } catch(err) {}
@@ -4706,6 +4718,7 @@ let easterEggVoice = null; // Easter Egg: null | 'levi' | 'zoe'
 let easterEggBuf = ''; // Tastenpuffer für Codes
 let easterEggFlash = 0; // Visuelle Bestätigung
 let easterEggBadgeTime = 0; // Zeitstempel für Badge-Anzeige (auto-hide nach 5s)
+let easterEggDeactivated = null; // Name des gerade deaktivierten Easter Eggs (für Badge-Text)
 let titleTapCount = 0; // Tap-Counter für Easter Eggs
 let titleTapTimer = 0; // Reset-Timer
 let titleTouchStartX = 0; // Swipe-Tracking für Levi Easter Egg
