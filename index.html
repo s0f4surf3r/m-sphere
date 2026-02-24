@@ -869,6 +869,46 @@ function captureMonkMask() {
   monkMaskAge = 0;
 }
 
+// Face-Swap-Variante: Maske vom Bild lesen (Brightness statt WebGL Alpha)
+let _maskTempCanvas = null;
+function captureMonkMaskFromImage(img) {
+  const sz = MONK_MASK_SIZE;
+  if (!monkMask) monkMask = new Uint8Array(sz * sz);
+  if (!_maskTempCanvas) {
+    _maskTempCanvas = document.createElement('canvas');
+    _maskTempCanvas.width = sz;
+    _maskTempCanvas.height = sz;
+  }
+  const tctx = _maskTempCanvas.getContext('2d');
+  tctx.clearRect(0, 0, sz, sz);
+  tctx.drawImage(img, 0, 0, sz, sz);
+  const data = tctx.getImageData(0, 0, sz, sz).data;
+
+  let solid = 0;
+  for (let my = 0; my < sz; my++) {
+    for (let mx = 0; mx < sz; mx++) {
+      const idx = (my * sz + mx) * 4;
+      const brightness = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+      monkMask[my * sz + mx] = brightness > 25 ? 1 : 0;
+      solid += monkMask[my * sz + mx];
+    }
+  }
+  // Horizontale Lücken füllen (gleich wie bei WebGL-Variante)
+  for (let my = 0; my < sz; my++) {
+    let left = -1, right = -1;
+    for (let mx = 0; mx < sz; mx++) {
+      if (monkMask[my * sz + mx]) { if (left < 0) left = mx; right = mx; }
+    }
+    if (left >= 0 && right > left + 1) {
+      for (let mx = left; mx <= right; mx++) {
+        if (!monkMask[my * sz + mx]) { monkMask[my * sz + mx] = 1; solid++; }
+      }
+    }
+  }
+  monkMaskSolid = solid;
+  monkMaskAge = 0;
+}
+
 function addShakeDist(dist) {
   shakeAccum += dist;
 }
@@ -6335,11 +6375,10 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
     // Face-Swap-Bild (gleiche Kamera wie Gameplay, nur höhere Auflösung)
     imgSource = faceSwapImg;
     imgSize = threeCanvas.width / (Math.min(window.devicePixelRatio, 2));
-    // Kollisionsmaske: Modell unsichtbar rendern + Maske sofort lesen
-    if (modelLoaded && model3D && (!monkMask || monkMaskAge >= 29) && (thoughtModeIdx === 1 || thoughtModeIdx === 2 || thoughtModeIdx === 3 || thoughtModeIdx === 6)) {
-      model3D.rotation.y = 0;
-      renderer.render(scene, camera);
-      captureMonkMask();
+    // Kollisionsmaske: Direkt vom Face-Swap-Bild lesen (Brightness statt WebGL Alpha)
+    // → Silhouette stimmt mit dem tatsächlich angezeigten Bild überein
+    if ((!monkMask || monkMaskAge >= 29) && (thoughtModeIdx === 1 || thoughtModeIdx === 2 || thoughtModeIdx === 3 || thoughtModeIdx === 6)) {
+      captureMonkMaskFromImage(faceSwapImg);
     }
   } else {
     // Lighting an Rost-Wert anpassen (warm → kalt/dunkel)
