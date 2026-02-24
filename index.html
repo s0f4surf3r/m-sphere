@@ -807,6 +807,15 @@ function loadModel(idx) {
         }
       });
     }
+    // Grau: Farbe abdunkeln für mehr Schattentiefe
+    if (MODEL_LIST[idx].key === 'grey') {
+      model3D.traverse((child) => {
+        if (child.isMesh && child.material) {
+          const mat = child.material;
+          if (mat.color) mat.color.multiplyScalar(0.7);
+        }
+      });
+    }
     scene.add(model3D);
     modelLoaded = true;
   }, (progress) => {
