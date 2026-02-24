@@ -796,6 +796,17 @@ function loadModel(idx) {
     model3D.scale.setScalar(scale);
     model3D.position.sub(center.multiplyScalar(scale));
     model3D.position.y -= size.y * scale * 0.05;
+    // Zen-Modell aufhellen (Materialien sind zu dunkel gebacken)
+    if (MODEL_LIST[idx].key === 'zen2') {
+      model3D.traverse((child) => {
+        if (child.isMesh && child.material) {
+          const mat = child.material;
+          if (mat.color) mat.color.multiplyScalar(1.6);
+          mat.emissive = new THREE.Color(0x222218);
+          mat.emissiveIntensity = 0.4;
+        }
+      });
+    }
     scene.add(model3D);
     modelLoaded = true;
   }, (progress) => {
