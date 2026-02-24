@@ -250,6 +250,7 @@ const TR = {
     foto: 'Foto',
     webcam: 'Webcam',
     laden: 'Laden',
+    ladenHint: 'Bitte nur ein zuvor gespeichertes Face-Swap-Bild verwenden',
     mediathek: 'Mediathek',
     kamera: 'Kamera',
   },
@@ -320,6 +321,7 @@ const TR = {
     foto: 'Photo',
     webcam: 'Webcam',
     laden: 'Load',
+    ladenHint: 'Please only use a previously saved face-swap image',
     mediathek: 'Library',
     kamera: 'Camera',
   }
@@ -764,15 +766,28 @@ let model3D = null;
 let modelLoaded = false;
 let modelLoadProgress = 0;
 
+const MODEL_LIST = [
+  { key: 'grey', file: 'meshy_grey_compressed.glb', label: 'Grau' },
+  { key: 'bronze', file: 'meshy_bronze_compressed.glb', label: 'Bronze' },
+  { key: 'zen2', file: 'meshy_zen2_compressed.glb', label: 'Zen' },
+  { key: 'monk', file: 'monk_compressed.glb', label: 'Mönch' },
+];
+let currentModelIdx = parseInt(localStorage.getItem('msphere_model') || '2');
+if (currentModelIdx < 0 || currentModelIdx >= MODEL_LIST.length) currentModelIdx = 2;
+
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/libs/draco/');
 const loader = new GLTFLoader();
 loader.setDRACOLoader(dracoLoader);
-loader.load(
-  'monk_compressed.glb',
-  (gltf) => {
+
+function loadModel(idx) {
+  if (model3D) { scene.remove(model3D); model3D = null; }
+  modelLoaded = false;
+  modelLoadProgress = 0;
+  currentModelIdx = idx;
+  localStorage.setItem('msphere_model', idx);
+  loader.load(MODEL_LIST[idx].file, (gltf) => {
     model3D = gltf.scene;
-    // Modell zentrieren und skalieren
     const box = new THREE.Box3().setFromObject(model3D);
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
@@ -780,19 +795,16 @@ loader.load(
     const scale = 1.6 / maxDim;
     model3D.scale.setScalar(scale);
     model3D.position.sub(center.multiplyScalar(scale));
-    model3D.position.y -= size.y * scale * 0.05; // Kopf in Kugelmitte
+    model3D.position.y -= size.y * scale * 0.05;
     scene.add(model3D);
     modelLoaded = true;
-  },
-  (progress) => {
-    if (progress.total > 0) {
-      modelLoadProgress = progress.loaded / progress.total;
-    }
-  },
-  (error) => {
-    console.warn('3D-Modell konnte nicht geladen werden, nutze Fallback:', error);
-  }
-);
+  }, (progress) => {
+    if (progress.total > 0) modelLoadProgress = progress.loaded / progress.total;
+  }, (error) => {
+    console.warn('Model load error:', error);
+  });
+}
+loadModel(currentModelIdx);
 
 // --- Shake Detection ---
 let lastMouseX = 0, lastMouseY = 0;
@@ -814,31 +826,43 @@ let monkDrawX = 0, monkDrawY = 0, monkDrawSize = 0;
 let monkMaskSolid = 0; // Debug: Anzahl solider Pixel in der Maske
 
 function updateMonkMask() {
+  // Maske wird jetzt in captureMonkMask() direkt nach renderer.render() befüllt
+  // (Safari gibt gl.readPixels nur direkt nach render korrekte Daten)
+  monkMaskAge = 0;
+}
+
+// Direkt nach renderer.render() aufrufen — liest Alpha-Kanal vom WebGL-Canvas
+function captureMonkMask() {
   const sz = MONK_MASK_SIZE;
   if (!monkMask) monkMask = new Uint8Array(sz * sz);
-  if (monkDrawSize < 4) { monkMaskAge = 0; return; }
+  const gl = renderer.getContext();
+  const glW = threeCanvas.width;
+  const glH = threeCanvas.height;
+  if (glW < 2 || glH < 2) return;
 
-  // Vom Haupt-2D-Canvas lesen (funktioniert überall — auch Safari)
-  // Der Mönch ist bereits auf den Canvas gemalt, Hintergrund ist dunkel
-  const x0 = Math.max(0, Math.floor(monkDrawX));
-  const y0 = Math.max(0, Math.floor(monkDrawY));
-  const mw = Math.min(Math.ceil(monkDrawSize), Math.floor(cW) - x0);
-  const mh = Math.min(Math.ceil(monkDrawSize), Math.floor(cH) - y0);
-  if (mw < 2 || mh < 2) { monkMaskAge = 0; return; }
-
-  const imgData = ctx.getImageData(x0, y0, mw, mh);
-  const data = imgData.data;
+  const pixels = new Uint8Array(glW * glH * 4);
+  gl.readPixels(0, 0, glW, glH, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
 
   let solid = 0;
   for (let my = 0; my < sz; my++) {
     for (let mx = 0; mx < sz; mx++) {
-      const srcX = Math.floor(mx / sz * mw);
-      const srcY = Math.floor(my / sz * mh);
-      const idx = (srcY * mw + srcX) * 4;
-      const brightness = data[idx] + data[idx+1] + data[idx+2];
-      // Mönch-Pixel sind deutlich heller als Glow/Kaustiken/Sterne
-      monkMask[my * sz + mx] = brightness > 180 ? 1 : 0;
+      const srcX = Math.floor(mx / sz * glW);
+      const srcY = glH - 1 - Math.floor(my / sz * glH);
+      const idx = (srcY * glW + srcX) * 4;
+      monkMask[my * sz + mx] = pixels[idx + 3] > 20 ? 1 : 0;
       solid += monkMask[my * sz + mx];
+    }
+  }
+  // Horizontale Lücken füllen (Konvexe Hülle pro Zeile → keine Einbuchtungen an Lotussockel/Hüfte)
+  for (let my = 0; my < sz; my++) {
+    let left = -1, right = -1;
+    for (let mx = 0; mx < sz; mx++) {
+      if (monkMask[my * sz + mx]) { if (left < 0) left = mx; right = mx; }
+    }
+    if (left >= 0 && right > left + 1) {
+      for (let mx = left; mx <= right; mx++) {
+        if (!monkMask[my * sz + mx]) { monkMask[my * sz + mx] = 1; solid++; }
+      }
     }
   }
   monkMaskSolid = solid;
@@ -857,6 +881,7 @@ let hoverLangIdx = -1; // -1=kein Hover, 0=DE, 1=EN
 let hoverBurger = false;
 let hoverStopwatch = false;
 let stopwatchHintTime = 0; // Mobile: Tooltip nach Tap (auto-hide nach 2s)
+let hoverModelIdx = -1; // Dev: Model-Switcher Hover
 let hoverLegalClose = false;
 let hoverLegalBack = false;
 let lotusHintOpen = false; // Mobile: Fragezeichen-Hint offen
@@ -955,6 +980,17 @@ function onMouseMove(e) {
         }
       }
       canvas.style.cursor = (hoverLegalClose || hoverLegalBack || overBurgerItem) ? 'pointer' : 'default';
+    }
+    // Model-Switcher Hover (Play-State)
+    hoverModelIdx = -1;
+    if (state !== 'idle' && state !== 'done' && menuButtons.modelSwitch) {
+      for (const btn of menuButtons.modelSwitch) {
+        if (mx >= btn.x && mx <= btn.x + btn.w && my >= btn.y && my <= btn.y + btn.h) {
+          hoverModelIdx = btn.idx;
+          canvas.style.cursor = 'pointer';
+          break;
+        }
+      }
     }
     return;
   }
@@ -4260,6 +4296,8 @@ function handleMenuClick(x, y) {
         }
       } else if (faceModeIdx === 3) {
         stopWebcam();
+        toastMsg = t('ladenHint');
+        toastStart = Date.now();
         document.getElementById('faceLoadInput').click();
       }
       centerCarouselOnButton('face', btn);
@@ -4382,6 +4420,15 @@ canvas.addEventListener('click', (e) => {
       return;
     }
   }
+  // Dev: Model-Switcher Klick
+  if (state !== 'idle' && state !== 'done' && menuButtons.modelSwitch) {
+    for (const btn of menuButtons.modelSwitch) {
+      if (cx >= btn.x && cx <= btn.x + btn.w && cy >= btn.y && cy <= btn.y + btn.h) {
+        if (btn.idx !== currentModelIdx) loadModel(btn.idx);
+        return;
+      }
+    }
+  }
   if (state === 'idle') {
     // Language Toggle (Screen-Space, höchste Priorität)
     const _hitC = (b) => b && cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h;
@@ -4499,6 +4546,15 @@ canvas.addEventListener('touchend', (e) => {
     if (tx >= b.x && tx <= b.x + b.w && ty >= b.y && ty <= b.y + b.h) {
       returnToMenu();
       return;
+    }
+    // Dev: Model-Switcher Touch
+    if (menuButtons.modelSwitch) {
+      for (const btn of menuButtons.modelSwitch) {
+        if (tx >= btn.x && tx <= btn.x + btn.w && ty >= btn.y && ty <= btn.y + btn.h) {
+          if (btn.idx !== currentModelIdx) loadModel(btn.idx);
+          return;
+        }
+      }
     }
   }
   if (state === 'idle' && e.changedTouches.length > 0) {
@@ -4749,6 +4805,8 @@ let soundInitialized = false;
 
 // Noise (Rauschen-Modus + Meditations-Fade)
 let noiseNode = null, noiseGain = null, filterNode = null;
+// Spatial Reverb für Atem-Sound (Meeresrauschen-Raumklang)
+let breathConvolver = null, breathWetGain = null;
 
 // Synapsen (Shake): Pool aus Mikro-Ping-Oszillatoren
 let synapsenOscs = [], synapsenGains = [];
@@ -4785,6 +4843,7 @@ let binauralOscs = [], binauralGains = [], binauralPans = [];
 
 function initSound() {
   if (soundInitialized) return;
+  console.log('initSound() called');
   // Silent Audio Trick: Aktiviert iOS "playback" Audio-Session (spielt auch mit Ringer auf stumm)
   // Kein "playback"-Modus hier — Menü-Sounds (Tingsha) sollen Stumm-Schalter respektieren.
   // Wird erst bei Meditationsstart auf "playback" gesetzt (siehe state='meditating').
@@ -4825,6 +4884,24 @@ function initSound() {
   noiseNode.connect(filterNode);
   filterNode.connect(noiseGain);
   noiseGain.connect(audioCtx.destination);
+  // Spatial Reverb: Stereo-Impulsantwort → Raumklang wie Meer vor dir
+  try {
+    const irLen = audioCtx.sampleRate * 2.0; // 2s Hallfahne
+    const irBuf = audioCtx.createBuffer(2, irLen, audioCtx.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = irBuf.getChannelData(ch);
+      for (let i = 0; i < irLen; i++) {
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 2.8);
+      }
+    }
+    breathConvolver = audioCtx.createConvolver();
+    breathConvolver.buffer = irBuf;
+    breathWetGain = audioCtx.createGain();
+    breathWetGain.gain.value = 0.3;
+    noiseGain.connect(breathConvolver);
+    breathConvolver.connect(breathWetGain);
+    breathWetGain.connect(audioCtx.destination);
+  } catch(e) { console.warn('Reverb init failed:', e); }
   noiseNode.start();
 
   // --- Synapsen: 12 pooled Mikro-Ping-Oszillatoren ---
@@ -5025,6 +5102,7 @@ function initSound() {
   });
 
   soundInitialized = true;
+  console.log('initSound() done, audioCtx.state =', audioCtx.state, ', sampleRate =', audioCtx.sampleRate);
 }
 
 // --- Interaction-Sounds ---
@@ -5232,6 +5310,8 @@ function updateShakeSound(t) {
   if (mode !== 'Stimmen') muteGroup(stimmenGains, t, 0.1);
   if (mode !== 'Metallisch') muteGroup(metallGains, t, 0.1);
 
+  // Reverb beim Schütteln dezent (nicht matschig)
+  if (breathWetGain) breathWetGain.gain.setTargetAtTime(0.1, t, 0.3);
   if (mode === 'Rauschen') {
     // setTargetAtTime statt linearRamp: exponentielles Glätten verhindert Zipper-Noise bei hohen FPS
     noiseGain.gain.setTargetAtTime(shakeIntensity * 0.3 * _mg, t, 0.06);
@@ -5289,6 +5369,8 @@ function updateMeditationSound(t, progress) {
 
   // --- Atem-Sound (unabhängig vom Meditations-Sound) ---
   // Nasen-Atem-Geräusch: gefiltertes Rauschen das mit dem Atem anschwillt
+  // Reverb hochfahren: Meeresrauschen-Raumklang bei Meditation
+  if (breathWetGain) breathWetGain.gain.setTargetAtTime(0.35 * envelope, t, 0.5);
   if (bt && meditationStartTime > 0) {
     const breathTime2 = (Date.now() - meditationStartTime) / 1000;
     const bw = calcBreathWave(bt, breathTime2);
@@ -5383,9 +5465,9 @@ function updateMeditationSound(t, progress) {
 }
 
 function updateSound() {
-  if (!soundInitialized) return;
+  if (!soundInitialized) { if (!updateSound._w) { console.warn('Sound: not initialized'); updateSound._w = true; } return; }
   // Recovery: 'suspended' (Chrome) oder 'interrupted' (iOS/Safari)
-  if (audioCtx.state !== 'running') { audioCtx.resume().catch(() => {}); return; }
+  if (audioCtx.state !== 'running') { console.warn('Sound: audioCtx state =', audioCtx.state); audioCtx.resume().catch(() => {}); return; }
   const t = audioCtx.currentTime;
 
   if (state === 'shaking') {
@@ -6111,8 +6193,9 @@ function saveFaceSwapImage() {
   c.height = faceSwapImg.height;
   c.getContext('2d').drawImage(faceSwapImg, 0, 0);
   const filename = 'msphere-monk-' + Date.now() + '.png';
-  // iOS/iPad: Share Sheet öffnen → "In Dateien sichern" mit Speicherort-Wahl
-  if (navigator.canShare && navigator.share) {
+  // Nur auf Touch-Geräten (iOS/iPad) Share Sheet nutzen — Desktop bekommt normalen Download
+  const isTouchDevice = 'ontouchstart' in window && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if (isTouchDevice && navigator.canShare && navigator.share) {
     c.toBlob((blob) => {
       if (!blob) { _faceDownloadFallback(c, filename); return; }
       const file = new File([blob], filename, { type: 'image/png' });
@@ -6252,6 +6335,12 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
     // Face-Swap-Bild (gleiche Kamera wie Gameplay, nur höhere Auflösung)
     imgSource = faceSwapImg;
     imgSize = threeCanvas.width / (Math.min(window.devicePixelRatio, 2));
+    // Kollisionsmaske: Modell unsichtbar rendern + Maske sofort lesen
+    if (modelLoaded && model3D && (!monkMask || monkMaskAge >= 29) && (thoughtModeIdx === 1 || thoughtModeIdx === 2 || thoughtModeIdx === 3 || thoughtModeIdx === 6)) {
+      model3D.rotation.y = 0;
+      renderer.render(scene, camera);
+      captureMonkMask();
+    }
   } else {
     // Lighting an Rost-Wert anpassen (warm → kalt/dunkel)
     const warmth = 1 - rustAmount;
@@ -6271,6 +6360,10 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
     const threeSkip = isMob3D ? 3 : (isSafari ? 2 : 1);
     if (threeSkip <= 1 || !drawModel3D._fc || ++drawModel3D._fc >= threeSkip) {
       renderer.render(scene, camera);
+      // Kollisionsmaske SOFORT nach render lesen (Safari gibt gl.readPixels nur jetzt korrekte Daten)
+      if ((!monkMask || monkMaskAge >= 29) && (thoughtModeIdx === 1 || thoughtModeIdx === 2 || thoughtModeIdx === 3 || thoughtModeIdx === 6)) {
+        captureMonkMask();
+      }
       drawModel3D._fc = 0;
     }
     imgSource = threeCanvas;
@@ -6509,11 +6602,8 @@ function frame() {
   }
   // done: kein Mönch (war am Ende der Meditation bereits aufgelöst)
 
-  // Mönch-Kollisionsmaske aktualisieren (NACH dem Zeichnen, VOR den Partikeln)
+  // Mönch-Kollisionsmaske: Age hochzählen (Capture passiert in drawModel3D direkt nach render)
   monkMaskAge++;
-  if ((thoughtModeIdx === 1 || thoughtModeIdx === 2 || thoughtModeIdx === 3 || thoughtModeIdx === 6) && (!monkMask || monkMaskAge >= 30)) {
-    updateMonkMask();
-  }
 
   // Partikel ÜBER dem Mönch zeichnen (verdecken ihn bei vollem Counter)
   ctx.save();
@@ -7110,6 +7200,62 @@ function frame() {
       ctx.fillText(t('handyAblegen'), hcx, hcy);
       ctx.fillText(t('handyAblegen2'), hcx, hcy + hFont * 1.4);
       ctx.shadowBlur = 0;
+      ctx.textAlign = 'start';
+    }
+  }
+
+  // --- Dev: Model-Switcher (4 Punkte oben Mitte) ---
+  if (state !== 'idle' && state !== 'done') {
+    const msR = 4; // Punkt-Radius
+    const msGap = 14; // Abstand zwischen Punkten
+    const msTotalW = (MODEL_LIST.length - 1) * msGap;
+    const msCx = cW / 2;
+    const msCy = 18; // oben, unter Safe Area
+    menuButtons.modelSwitch = [];
+    for (let mi = 0; mi < MODEL_LIST.length; mi++) {
+      const px = msCx - msTotalW / 2 + mi * msGap;
+      const py = msCy;
+      const isActive = mi === currentModelIdx;
+      const isHover = hoverModelIdx === mi;
+      if (isHover && !isActive) {
+        ctx.shadowColor = 'rgba(255, 215, 0, 0.6)';
+        ctx.shadowBlur = 8;
+      }
+      ctx.beginPath();
+      ctx.arc(px, py, msR, 0, Math.PI * 2);
+      if (isActive) {
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.9)';
+        ctx.fill();
+      } else {
+        ctx.strokeStyle = isHover ? 'rgba(255, 215, 0, 0.7)' : 'rgba(240, 236, 230, 0.35)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+      // Hit-Area (größer als Punkt für Touch)
+      const hitR = 12;
+      menuButtons.modelSwitch.push({ x: px - hitR, y: py - hitR, w: hitR * 2, h: hitR * 2, idx: mi });
+    }
+    // Tooltip bei Hover (Desktop)
+    if (hoverModelIdx >= 0) {
+      const tipFont = 11;
+      const tipText = MODEL_LIST[hoverModelIdx].label;
+      ctx.font = `400 ${tipFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
+      const tipW = ctx.measureText(tipText).width + 12;
+      const tipH = tipFont * 2;
+      const tipX = msCx - msTotalW / 2 + hoverModelIdx * msGap - tipW / 2;
+      const tipY = msCy + msR + 6;
+      ctx.beginPath();
+      ctx.roundRect(tipX, tipY, tipW, tipH, 4);
+      ctx.fillStyle = 'rgba(16, 18, 24, 0.9)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255, 215, 0, 1.0)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(tipText, tipX + tipW / 2, tipY + tipH / 2);
       ctx.textAlign = 'start';
     }
   }

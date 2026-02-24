@@ -210,7 +210,7 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Default**: Kohärent (`breathingMode = 1`)
 - **Kugel-Radius**: Oszilliert ±2.5% mit der Atem-Welle
 - **Nebel**: Nur Cyan (#2abfbf), direkt an Kugelrand (clipR=r+2), 3 Gradient-Schichten + 5 Strähnen
-- **Atem-Sound**: Gefiltertes Rauschen (Bandpass 350–750 Hz), schwillt mit Einatmen an (Vol 0.22)
+- **Atem-Sound**: Gefiltertes Rauschen (Bandpass 350–750 Hz), schwillt mit Einatmen an (Vol 0.22). **Spatial Reverb**: ConvolverNode mit algorithmisch generierter Stereo-Impulsantwort (2s Hallfahne, Decay 2.8). Meditation 35% Wet, Schütteln 10% Wet. Erzeugt räumlichen Meeresrauschen-Charakter, besonders immersiv mit AirPods Pro.
 - **State**: `BREATHING_MODES[]`, `BREATHING_TIMING[]`, `breathingMode` (0–4)
 
 ### Timer-Anzeige
@@ -279,6 +279,7 @@ Folgende Keys werden gespeichert:
 - `msphere_faceswap` — Face-Swap-Bild (data URL)
 - `msphere_facemode` — Face-Modus (idx)
 - `msphere_faceswap_last` — Letzte Faceswap-Nutzung (Timestamp, für Rate-Limiting)
+- `msphere_model` — Gewähltes 3D-Modell (0-3, Default: 2=Zen)
 - **NICHT gespeichert**: Meditationszeit (wird jedes Mal neu gewählt)
 
 ## Easter Eggs
@@ -312,6 +313,23 @@ Folgende Keys werden gespeichert:
 
 ## Sicherungs-Tags
 - `v1.0-pre-payment` — Snapshot vor Payment-Feature (alle Fixes fertig)
+- `v2.0-model-switcher` — Model-Switcher, Spatial Audio, neue Modelle, Alpha-Kollisionsmaske
+
+## 3D-Modelle & Model-Switcher
+- **Quelle Original**: Sketchfab (Romain Brunas) — `monk_compressed.glb`
+- **Quelle Meshy**: meshy.ai (Pro-Account), Text-to-3D + Textur-Generierung, CC BY 4.0
+- **Komprimierung**: `npx @gltf-transform/cli draco input.glb output.glb`
+- **MODEL_LIST** (4 Modelle, per Dev-Switcher wählbar):
+  | Idx | Key | Datei | Label | Größe |
+  |-----|-----|-------|-------|-------|
+  | 0 | grey | `meshy_grey_compressed.glb` | Grau | 1,7 MB |
+  | 1 | bronze | `meshy_bronze_compressed.glb` | Bronze | 6 MB |
+  | 2 | zen2 | `meshy_zen2_compressed.glb` | Zen | 7,6 MB |
+  | 3 | monk | `monk_compressed.glb` | Mönch | 2,1 MB |
+- **Default**: Zen (idx 2), gespeichert in `msphere_model`
+- **Dev-Switcher UI**: 4 kleine Punkte oben Mitte im Play-State, aktiver Punkt gold gefüllt, Hover-Tooltip mit Label. Nur für Entwickler, nicht für Endnutzer sichtbar.
+- **Kollisionsmaske**: 48×48 Uint8Array, liest **Alpha-Kanal** direkt vom WebGL-Canvas (`gl.readPixels`). Alpha > 10 = Modell-Pixel. Funktioniert modellunabhängig (kein Brightness-Schwellwert mehr).
+- **Face Swap**: `renderMonkForFaceSwap()` rendert das aktuelle Modell — funktioniert mit jedem Modell automatisch.
 
 ## Offene Fragen / Nächste Schritte
 - iOS AudioContext "interrupted" nach Ruhezustand — Sound stirbt, nur Refresh hilft (WebKit Bug #263627)
@@ -319,3 +337,5 @@ Folgende Keys werden gespeichert:
 - Wasser-Visualisierung im Done-State verbessern
 - Settings-Menüs als Dreh-Räder (Plan existiert, noch nicht umgesetzt)
 - Zoe-Modus visuell kennzeichnen (z.B. Titel-Glow rosa statt teal)
+- Model-Switcher: Aktuell Dev-only (4 Punkte oben), für Endnutzer ggf. in Settings integrieren
+- Laden-Button (Face Swap): Toast-Hinweis "Bitte nur ein zuvor gespeichertes Face-Swap-Bild verwenden"
