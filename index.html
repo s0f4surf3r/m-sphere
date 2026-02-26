@@ -18,7 +18,7 @@
 <link rel="alternate" hreflang="de" href="https://jsphere.jochenhornung.de/">
 <link rel="alternate" hreflang="en" href="https://jsphere.jochenhornung.de/">
 <link rel="alternate" hreflang="x-default" href="https://jsphere.jochenhornung.de/">
-<meta name="theme-color" content="#0a1628">
+<meta name="theme-color" content="#0a0a1e">
 <meta name="keywords" content="meditation, interactive, mindfulness, snow globe, schneekugel, achtsamkeit, browser, webapp, J-Sphere">
 <meta name="author" content="Jochen Hornung">
 <meta name="robots" content="index, follow">
@@ -74,7 +74,7 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
   background: #000;
   align-items: center; justify-content: center; flex-direction: column;
   font-family: -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif;
-  color: rgba(42, 191, 191, 0.8);
+  color: rgba(37, 162, 162, 0.8);
   text-align: center; padding: 2rem;
 }
 #landscapeBlock span { font-size: 3rem; margin-bottom: 1rem; }
@@ -100,55 +100,55 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 <input type="file" id="faceLoadInput" accept="image/png,image/jpeg,image/webp,image/heic" style="display:none">
 <div id="paypalOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,22,40,0.92);
   align-items:center;justify-content:center;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">
-  <div style="background:#1a2a3c;border-radius:16px;padding:28px 24px;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
-    <div id="paypalTitle" style="color:#f0ece6;font-size:18px;font-weight:700;margin-bottom:8px"></div>
+  <div style="background:#1e3232;border-radius:16px;padding:28px 24px;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+    <div id="paypalTitle" style="color:#fae6e6;font-size:18px;font-weight:700;margin-bottom:8px"></div>
     <div id="paypalSubtitle" style="color:#8aa;font-size:14px;margin-bottom:12px"></div>
-    <div id="paypalHinweis" style="color:rgba(240,236,230,0.55);font-size:12px;line-height:1.5;margin-bottom:16px;text-align:left;white-space:pre-line"></div>
+    <div id="paypalHinweis" style="color:rgba(250,230,230,0.55);font-size:12px;line-height:1.5;margin-bottom:16px;text-align:left;white-space:pre-line"></div>
     <div id="paypal-button-container" style="min-height:50px"></div>
-    <button id="paypalCancel" onclick="hidePayPalOverlay()" style="margin-top:14px;background:none;border:1px solid rgba(240,236,230,0.3);
-      color:#f0ece6;padding:8px 24px;border-radius:8px;font-size:14px;cursor:pointer"></button>
+    <button id="paypalCancel" onclick="hidePayPalOverlay()" style="margin-top:14px;background:none;border:1px solid rgba(250,230,230,0.3);
+      color:#fae6e6;padding:8px 24px;border-radius:8px;font-size:14px;cursor:pointer"></button>
   </div>
 </div>
 <div id="cameraOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,22,40,0.92);
   align-items:center;justify-content:center;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">
-  <div style="background:#1a2a3c;border-radius:16px;padding:28px 24px;max-width:360px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
-    <div id="cameraTipp" style="color:rgba(240,236,230,0.6);font-size:13px;margin-bottom:16px"></div>
-    <div style="width:200px;height:200px;margin:0 auto 18px;border-radius:50%;overflow:hidden;border:2px solid rgba(42,191,191,0.5);position:relative">
+  <div style="background:#1e3232;border-radius:16px;padding:28px 24px;max-width:360px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+    <div id="cameraTipp" style="color:rgba(250,230,230,0.6);font-size:13px;margin-bottom:16px"></div>
+    <div style="width:200px;height:200px;margin:0 auto 18px;border-radius:50%;overflow:hidden;border:2px solid rgba(37,162,162,0.5);position:relative">
       <video id="cameraPreviewVideo" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1)"></video>
     </div>
-    <button id="cameraSnapBtn" style="display:block;width:100%;padding:10px 0;margin-bottom:10px;background:rgba(42,191,191,0.15);
-      border:1px solid rgba(42,191,191,0.5);color:rgba(42,191,191,0.95);border-radius:8px;font-size:15px;cursor:pointer;
+    <button id="cameraSnapBtn" style="display:block;width:100%;padding:10px 0;margin-bottom:10px;background:rgba(37,162,162,0.15);
+      border:1px solid rgba(37,162,162,0.5);color:rgba(37,162,162,0.95);border-radius:8px;font-size:15px;cursor:pointer;
       font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
     <button id="cameraCancelBtn" style="display:block;width:100%;padding:8px 0;background:none;
-      border:1px solid rgba(240,236,230,0.3);color:#f0ece6;border-radius:8px;font-size:14px;cursor:pointer;
+      border:1px solid rgba(250,230,230,0.3);color:#fae6e6;border-radius:8px;font-size:14px;cursor:pointer;
       font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
   </div>
 </div>
 <div id="customTimeOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,22,40,0.92);
   align-items:center;justify-content:center;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">
-  <div style="background:#1a2a3c;border-radius:16px;padding:32px 28px;max-width:300px;width:85%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
-    <div style="color:rgba(240,236,230,0.7);font-size:14px;margin-bottom:20px;font-family:'Courier New',monospace">MEDITATIONSZEIT</div>
+  <div style="background:#1e3232;border-radius:16px;padding:32px 28px;max-width:300px;width:85%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+    <div style="color:rgba(250,230,230,0.7);font-size:14px;margin-bottom:20px;font-family:'Courier New',monospace">MEDITATIONSZEIT</div>
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:24px">
       <input id="customTimeInput" type="number" min="1" max="180" value="8" step="1"
-        style="width:80px;padding:10px;font-size:28px;font-weight:300;text-align:center;background:rgba(42,191,191,0.08);
-        border:1px solid rgba(42,191,191,0.4);border-radius:10px;color:#f0ece6;outline:none;
+        style="width:80px;padding:10px;font-size:28px;font-weight:300;text-align:center;background:rgba(37,162,162,0.08);
+        border:1px solid rgba(37,162,162,0.4);border-radius:10px;color:#fae6e6;outline:none;
         font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif;-moz-appearance:textfield">
-      <span style="color:rgba(240,236,230,0.5);font-size:16px;font-family:'Courier New',monospace">min</span>
+      <span style="color:rgba(250,230,230,0.5);font-size:16px;font-family:'Courier New',monospace">min</span>
     </div>
-    <button id="customTimeOk" style="display:block;width:100%;padding:10px 0;margin-bottom:10px;background:rgba(42,191,191,0.15);
-      border:1px solid rgba(42,191,191,0.5);color:rgba(42,191,191,0.95);border-radius:8px;font-size:15px;cursor:pointer;
+    <button id="customTimeOk" style="display:block;width:100%;padding:10px 0;margin-bottom:10px;background:rgba(37,162,162,0.15);
+      border:1px solid rgba(37,162,162,0.5);color:rgba(37,162,162,0.95);border-radius:8px;font-size:15px;cursor:pointer;
       font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">OK</button>
     <button id="customTimeCancel" style="display:block;width:100%;padding:8px 0;background:none;
-      border:1px solid rgba(240,236,230,0.2);color:rgba(240,236,230,0.6);border-radius:8px;font-size:14px;cursor:pointer;
+      border:1px solid rgba(250,230,230,0.2);color:rgba(250,230,230,0.6);border-radius:8px;font-size:14px;cursor:pointer;
       font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">Abbrechen</button>
   </div>
 </div>
-<noscript><div style="position:fixed;inset:0;background:#000;color:#f0ece6;display:flex;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:2rem"><p>J-Sphere benötigt JavaScript.<br>Bitte aktiviere JavaScript in deinen Browser-Einstellungen.</p></div></noscript>
+<noscript><div style="position:fixed;inset:0;background:#000;color:#fae6e6;display:flex;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:2rem"><p>J-Sphere benötigt JavaScript.<br>Bitte aktiviere JavaScript in deinen Browser-Einstellungen.</p></div></noscript>
 <script>
 // Fallback für Browser ohne ES-Module oder importmap Support
 if (!('noModule' in HTMLScriptElement.prototype) || !HTMLScriptElement.supports || !HTMLScriptElement.supports('importmap')) {
   document.addEventListener('DOMContentLoaded', function() {
-    document.body.innerHTML = '<div style="position:fixed;inset:0;background:#000;color:#f0ece6;display:flex;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:2rem;flex-direction:column"><h2 style="color:#2abfbf;margin-bottom:1rem">J-Sphere</h2><p>Dein Browser ist leider zu alt für J-Sphere.<br>Bitte verwende einen aktuellen Browser (Chrome, Safari, Firefox, Edge).</p></div>';
+    document.body.innerHTML = '<div style="position:fixed;inset:0;background:#000;color:#fae6e6;display:flex;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:2rem;flex-direction:column"><h2 style="color:#25a2a2;margin-bottom:1rem">J-Sphere</h2><p>Dein Browser ist leider zu alt für J-Sphere.<br>Bitte verwende einen aktuellen Browser (Chrome, Safari, Firefox, Edge).</p></div>';
   });
 }
 </script>
@@ -197,6 +197,10 @@ const TR = {
     clickStart: 'Meditation starten',
     tapStart: 'Meditation starten',
     chooseDuration: 'Wähle deine Meditationszeit',
+    chooseModel: 'Wähle deine Figur',
+    modelMale: 'Männlich',
+    modelFemale: 'Weiblich',
+    modelRotate: 'Figur dreht',
     hintMobile1: 'Wische schnell über die Kugel',
     hintMobile2: 'oder schüttle dein Handy.',
     hintMobile3: '(Handy-Schütteln: Browserzugriff nötig)',
@@ -269,6 +273,10 @@ const TR = {
     clickStart: 'Start meditation',
     tapStart: 'Start meditation',
     chooseDuration: 'Choose your meditation time',
+    chooseModel: 'Choose your figure',
+    modelMale: 'Male',
+    modelFemale: 'Female',
+    modelRotate: 'Rotate figure',
     hintMobile1: 'Swipe quickly over the sphere',
     hintMobile2: 'or shake your phone.',
     hintMobile3: '(Shake: browser permission required)',
@@ -341,7 +349,7 @@ function canvasCoords(clientX, clientY) {
 }
 
 // --- State ---
-let state = 'idle'; // idle | ready | shaking | meditating | done
+let state = 'idle'; // idle | choosing | ready | shaking | meditating | done
 let thoughtCounter = 0; // 0–100
 let counterFullPlayed = false; // 100%-Sound nur einmal
 let shakeIntensity = 0; // aktuelle Schüttel-Stärke (0–1)
@@ -767,18 +775,20 @@ let modelLoaded = false;
 let modelLoadProgress = 0;
 
 const MODEL_LIST = [
-  { key: 'grey', file: 'meshy_grey_compressed.glb', label: 'Grau' },
-  { key: 'bronze', file: 'meshy_bronze_compressed.glb', label: 'Bronze' },
-  { key: 'zen2', file: 'meshy_zen2_compressed.glb', label: 'Zen' },
-  { key: 'monk', file: 'monk_compressed.glb', label: 'Mönch' },
+  { key: 'male', file: 'model_male_compressed.glb', label: 'Männlich' },
+  { key: 'female', file: 'model_female_compressed.glb', label: 'Weiblich' },
 ];
 const EASTER_MODELS = {
   zoe: { key: 'zoe', file: 'meshy_zoe_compressed.glb', label: 'Zoe' },
   jochen: { key: 'jochen', file: 'meshy_jochen_compressed.glb', label: 'Jochen' },
 };
-let currentModelIdx = parseInt(localStorage.getItem('msphere_model') || '2');
-if (currentModelIdx < 0 || currentModelIdx >= MODEL_LIST.length) currentModelIdx = 2;
+let currentModelIdx = parseInt(localStorage.getItem('msphere_model') || '0');
+if (currentModelIdx < 0 || currentModelIdx >= MODEL_LIST.length) currentModelIdx = 0;
 let easterModelActive = null; // null | 'zoe' | 'jochen'
+let modelRotate = localStorage.getItem('msphere_rotate') === 'true'; // 360°-Drehung
+
+// Modell-Thumbnails für Choosing-Screen (werden via Haupt-Renderer generiert)
+const modelThumbnails = {}; // key → Image
 
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/libs/draco/');
@@ -804,39 +814,15 @@ function loadModel(idx, override) {
     model3D.scale.setScalar(scale);
     model3D.position.sub(center.multiplyScalar(scale));
     model3D.position.y -= size.y * scale * 0.05;
-    // Dunkle Modelle aufhellen (Materialien sind zu dunkel gebacken)
-    if (entry.key === 'zen2' || entry.key === 'bronze') {
-      model3D.traverse((child) => {
-        if (child.isMesh && child.material) {
-          const mat = child.material;
-          if (mat.color) mat.color.multiplyScalar(1.6);
-          mat.emissive = new THREE.Color(0x222218);
-          mat.emissiveIntensity = 0.4;
-        }
-      });
-    }
-    // Grau: Farbe abdunkeln für mehr Schattentiefe
-    if (entry.key === 'grey') {
-      model3D.traverse((child) => {
-        if (child.isMesh && child.material) {
-          const mat = child.material;
-          if (mat.color) mat.color.multiplyScalar(0.7);
-        }
-      });
-    }
-    // Easter-Modelle: goldener Farbshift + minimaler Emissive-Hauch
-    if (entry.key === 'zoe' || entry.key === 'jochen') {
-      model3D.traverse((child) => {
-        if (child.isMesh && child.material) {
-          const mat = child.material;
-          // Farbe Richtung Gold/Warm shiften (multipliziert mit Licht → Schatten bleiben)
-          if (mat.color) mat.color.multiply(new THREE.Color(1.3, 1.1, 0.7));
-          // Nur minimaler Emissive-Hauch für den "Glow-Eindruck"
-          mat.emissive = new THREE.Color(0x503810);
-          mat.emissiveIntensity = 0.08;
-        }
-      });
-    }
+    // Goldener Farbshift für alle Modelle (Schatten bleiben erhalten)
+    model3D.traverse((child) => {
+      if (child.isMesh && child.material) {
+        const mat = child.material;
+        if (mat.color) mat.color.multiply(new THREE.Color(1.3, 1.1, 0.7));
+        mat.emissive = new THREE.Color(0x503810);
+        mat.emissiveIntensity = 0.08;
+      }
+    });
     scene.add(model3D);
     modelLoaded = true;
   }, (progress) => {
@@ -846,6 +832,54 @@ function loadModel(idx, override) {
   });
 }
 loadModel(currentModelIdx);
+
+// Thumbnails für Choosing-Screen generieren (nutzt Haupt-Renderer, sequentiell)
+let _thumbQueue = [...MODEL_LIST];
+let _thumbBusy = false;
+function _genNextThumb() {
+  if (_thumbBusy || _thumbQueue.length === 0) return;
+  _thumbBusy = true;
+  const entry = _thumbQueue.shift();
+  if (modelThumbnails[entry.key]) { _thumbBusy = false; _genNextThumb(); return; }
+  const _tl = new GLTFLoader();
+  _tl.setDRACOLoader(dracoLoader);
+  _tl.load(entry.file, (gltf) => {
+    const m = gltf.scene;
+    const box = new THREE.Box3().setFromObject(m);
+    const c = box.getCenter(new THREE.Vector3());
+    const sz = box.getSize(new THREE.Vector3());
+    const s = 1.6 / Math.max(sz.x, sz.y, sz.z);
+    m.scale.setScalar(s);
+    m.position.sub(c.multiplyScalar(s));
+    m.position.y -= sz.y * s * 0.05;
+    m.rotation.y = 0;
+    m.traverse((ch) => {
+      if (ch.isMesh && ch.material) {
+        if (ch.material.color) ch.material.color.multiply(new THREE.Color(1.3, 1.1, 0.7));
+        ch.material.emissive = new THREE.Color(0x503810);
+        ch.material.emissiveIntensity = 0.08;
+      }
+    });
+    // Haupt-Modell verstecken, Thumbnail-Modell rein
+    if (model3D) model3D.visible = false;
+    scene.add(m);
+    const origSz = renderer.getSize(new THREE.Vector2());
+    const origPR = renderer.getPixelRatio();
+    renderer.setSize(256, 256);
+    renderer.setPixelRatio(1);
+    renderer.render(scene, camera);
+    const img = new Image();
+    img.src = threeCanvas.toDataURL('image/png');
+    modelThumbnails[entry.key] = img;
+    scene.remove(m);
+    renderer.setSize(origSz.x, origSz.y);
+    renderer.setPixelRatio(origPR);
+    if (model3D) model3D.visible = true;
+    _thumbBusy = false;
+    _genNextThumb();
+  }, null, () => { _thumbBusy = false; _genNextThumb(); });
+}
+setTimeout(_genNextThumb, 1500); // Starten nachdem Haupt-Modell geladen ist
 
 // --- Shake Detection ---
 let lastMouseX = 0, lastMouseY = 0;
@@ -962,7 +996,7 @@ let hoverLangIdx = -1; // -1=kein Hover, 0=DE, 1=EN
 let hoverBurger = false;
 let hoverStopwatch = false;
 let stopwatchHintTime = 0; // Mobile: Tooltip nach Tap (auto-hide nach 2s)
-let hoverModelIdx = -1; // Dev: Model-Switcher Hover
+let hoverModelIdx = -1; // unused, kept for reference
 let hoverLegalClose = false;
 let hoverLegalBack = false;
 let lotusHintOpen = false; // Mobile: Fragezeichen-Hint offen
@@ -1062,16 +1096,20 @@ function onMouseMove(e) {
       }
       canvas.style.cursor = (hoverLegalClose || hoverLegalBack || overBurgerItem) ? 'pointer' : 'default';
     }
-    // Model-Switcher Hover (Play-State)
-    hoverModelIdx = -1;
-    if (state !== 'idle' && state !== 'done' && menuButtons.modelSwitch) {
-      for (const btn of menuButtons.modelSwitch) {
-        if (mx >= btn.x && mx <= btn.x + btn.w && my >= btn.y && my <= btn.y + btn.h) {
-          hoverModelIdx = btn.idx;
-          canvas.style.cursor = 'pointer';
-          break;
+    // Choosing-State: Hover auf Karten + Toggles
+    if (state === 'choosing') {
+      let overChoosing = false;
+      if (menuButtons.choosingToggles) {
+        for (const tog of menuButtons.choosingToggles) {
+          if (mx >= tog.x && mx <= tog.x + tog.w && my >= tog.y && my <= tog.y + tog.h) { overChoosing = true; break; }
         }
       }
+      if (!overChoosing && menuButtons.chooseModel) {
+        for (const btn of menuButtons.chooseModel) {
+          if (mx >= btn.x && mx <= btn.x + btn.w && my >= btn.y && my <= btn.y + btn.h) { overChoosing = true; break; }
+        }
+      }
+      if (overChoosing) canvas.style.cursor = 'pointer';
     }
     return;
   }
@@ -1099,8 +1137,8 @@ canvas.addEventListener('mousedown', (e) => {
       return;
     }
   }
-  // Im idle-State: Maus-Schütteln blockiert
-  if (state === 'idle') return;
+  // Im idle/choosing-State: Maus-Schütteln blockiert
+  if (state === 'idle' || state === 'choosing') return;
   mouseDown = true;
   lastMouseX = mx;
   lastMouseY = my;
@@ -1220,7 +1258,8 @@ function onTouchMove(e) {
     legalTouchSamples = legalTouchSamples.filter(s => _now - s.t < 100);
     return;
   }
-  if (state === 'idle') {
+  if (state === 'idle' || state === 'choosing') {
+    if (state === 'choosing') return; // Kein Drag/Scroll im choosing-State
     const t = e.touches[0];
     const [tx, ty] = canvasCoords(t.clientX, t.clientY);
     // Dreh-Rad: Touch-Move
@@ -2566,13 +2605,13 @@ function drawMenu() {
 
   // Mobile: Kontrast boosten (kleine Screens, helles Umgebungslicht)
   const menuBg = 'rgba(0, 0, 0, 1)';
-  const btnUnselFill = isMobilePortrait ? 'rgba(35, 72, 115, 0.7)' : 'rgba(26, 58, 92, 0.4)';
-  const btnUnselStroke = isMobilePortrait ? 'rgba(140, 185, 215, 1.0)' : 'rgba(88, 130, 160, 0.5)';
-  const btnSelFill = isMobilePortrait ? 'rgba(42, 191, 191, 0.18)' : 'rgba(42, 191, 191, 0.15)';
-  const btnSelStroke = isMobilePortrait ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.6)';
-  const btnTextDim = isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.9)';
-  const donBtnFill = isMobilePortrait ? 'rgba(232, 106, 122, 0.3)' : 'rgba(232, 106, 122, 0.12)';
-  const donBtnStroke = isMobilePortrait ? 'rgba(232, 106, 122, 1.0)' : 'rgba(232, 106, 122, 0.5)';
+  const btnUnselFill = isMobilePortrait ? 'rgba(30, 50, 50, 0.7)' : 'rgba(30, 50, 50, 0.4)';
+  const btnUnselStroke = isMobilePortrait ? 'rgba(90, 140, 140, 1.0)' : 'rgba(30, 90, 90, 0.5)';
+  const btnSelFill = isMobilePortrait ? 'rgba(37, 162, 162, 0.18)' : 'rgba(37, 162, 162, 0.15)';
+  const btnSelStroke = isMobilePortrait ? 'rgba(37, 162, 162, 1.0)' : 'rgba(37, 162, 162, 0.6)';
+  const btnTextDim = isMobilePortrait ? 'rgba(250, 230, 230, 1.0)' : 'rgba(250, 230, 230, 0.9)';
+  const donBtnFill = isMobilePortrait ? 'rgba(237, 112, 112, 0.3)' : 'rgba(237, 112, 112, 0.12)';
+  const donBtnStroke = isMobilePortrait ? 'rgba(237, 112, 112, 1.0)' : 'rgba(237, 112, 112, 0.5)';
 
   // Dunkler Overlay-Hintergrund — gesamten scrollbaren Bereich abdecken
   ctx.fillStyle = menuBg;
@@ -2586,7 +2625,7 @@ function drawMenu() {
     const sy = ((starSeed * (i + 1) * 13.7) % H);
     const pulse = Math.sin(Date.now() * 0.001 + i) * 0.3 + 0.7;
     const starAlpha = isMobilePortrait ? 0.2 : 0.1;
-    ctx.fillStyle = `rgba(200, 220, 255, ${starAlpha * pulse})`;
+    ctx.fillStyle = `rgba(180, 220, 220, ${starAlpha * pulse})`;
     ctx.fillRect(sx + 0, sy + scrollY0, 1.5, 1.5);
   }
 
@@ -2665,22 +2704,22 @@ function drawMenu() {
 
   // Glow Layer 1: breiter Teal-Schein (gedämpft auf Mobile)
   const _glowMob = isMobilePortrait ? 0.5 : 1.0;
-  ctx.shadowColor = `rgba(42, 191, 191, ${0.4 * _glowMob})`;
+  ctx.shadowColor = `rgba(37, 162, 162, ${0.4 * _glowMob})`;
   ctx.shadowBlur = 60 * _glowMob;
-  ctx.fillStyle = `rgba(42, 191, 191, ${0.2 * _glowMob})`;
+  ctx.fillStyle = `rgba(37, 162, 162, ${0.2 * _glowMob})`;
   ctx.fillText(titleText, cx, curY);
 
   // Glow Layer 2: mittlerer Teal-Schein
-  ctx.shadowColor = `rgba(42, 191, 191, ${0.6 * _glowMob})`;
+  ctx.shadowColor = `rgba(37, 162, 162, ${0.6 * _glowMob})`;
   ctx.shadowBlur = 25 * _glowMob;
-  ctx.fillStyle = `rgba(42, 191, 191, ${0.3 * _glowMob})`;
+  ctx.fillStyle = `rgba(37, 162, 162, ${0.3 * _glowMob})`;
   ctx.fillText(titleText, cx, curY);
 
   // Layer 3: Haupttext (auf Mobile dezenter)
   ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 2;
-  ctx.fillStyle = isMobilePortrait ? 'rgba(240, 236, 230, 0.75)' : '#f0ece6';
+  ctx.fillStyle = isMobilePortrait ? 'rgba(250, 230, 230, 0.75)' : '#fae6e6';
   ctx.fillText(titleText, cx, curY);
   ctx.shadowOffsetY = 0;
   ctx.shadowBlur = 0;
@@ -2701,7 +2740,7 @@ function drawMenu() {
   curY += actualTitleH + (isMobilePortrait ? layoutGap * 0.3 : unit * 0.015 * vScale);
 
   // Untertitel — auf Mobile gleich breit wie Titel
-  ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.55)';
+  ctx.fillStyle = isMobilePortrait ? 'rgba(37, 162, 162, 1.0)' : 'rgba(37, 162, 162, 0.55)';
   let stSize = subtitleSize;
   const stSpacing = isMobilePortrait ? '3px' : '8px';
   if (isMobilePortrait) {
@@ -2712,7 +2751,7 @@ function drawMenu() {
     if (measuredW > 0) stSize = stSize * (titleW / measuredW);
   }
   ctx.font = `400 ${stSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
-  ctx.shadowColor = 'rgba(42, 191, 191, 0.4)';
+  ctx.shadowColor = 'rgba(37, 162, 162, 0.4)';
   ctx.shadowBlur = 12;
   ctx.letterSpacing = stSpacing;
   ctx.fillText(t('subtitle'), cx, curY);
@@ -2737,7 +2776,7 @@ function drawMenu() {
       const lineH = labelFont * 2;
       const arrowSize = labelFont * 1.2;
       const isHovered = hoverSection === collapseKey;
-      ctx.fillStyle = labelColor || (isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.95)');
+      ctx.fillStyle = labelColor || (isMobilePortrait ? 'rgba(250, 230, 230, 1.0)' : 'rgba(250, 230, 230, 0.95)');
       ctx.textBaseline = 'middle';
       // Label + Pfeil nebeneinander, zentriert
       const labelW = ctx.measureText(label).width;
@@ -2752,12 +2791,12 @@ function drawMenu() {
         ctx.beginPath();
         ctx.moveTo(startX, underY);
         ctx.lineTo(startX + labelW, underY);
-        ctx.strokeStyle = 'rgba(42, 191, 191, 0.6)';
+        ctx.strokeStyle = 'rgba(37, 162, 162, 0.6)';
         ctx.lineWidth = 1;
         ctx.stroke();
       }
       // Dreieck ▶ (rechtszeigend)
-      ctx.fillStyle = isHovered ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.7)';
+      ctx.fillStyle = isHovered ? 'rgba(37, 162, 162, 1.0)' : 'rgba(37, 162, 162, 0.7)';
       const ax = startX + labelW + gap;
       const ay = y + lineH / 2;
       ctx.beginPath();
@@ -2780,7 +2819,7 @@ function drawMenu() {
     if (collapseKey) {
       const arrowSize = labelFont * 1.2;
       const isHovered = hoverSection === collapseKey;
-      ctx.fillStyle = labelColor || (isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.95)');
+      ctx.fillStyle = labelColor || (isMobilePortrait ? 'rgba(250, 230, 230, 1.0)' : 'rgba(250, 230, 230, 0.95)');
       ctx.textBaseline = 'middle';
       // Label + Dreieck nebeneinander, zentriert
       const labelW = ctx.measureText(label).width;
@@ -2795,12 +2834,12 @@ function drawMenu() {
         ctx.beginPath();
         ctx.moveTo(startX, underY);
         ctx.lineTo(startX + labelW, underY);
-        ctx.strokeStyle = 'rgba(42, 191, 191, 0.6)';
+        ctx.strokeStyle = 'rgba(37, 162, 162, 0.6)';
         ctx.lineWidth = 1;
         ctx.stroke();
       }
       // Dreieck ▼ (runterzeigend)
-      ctx.fillStyle = isHovered ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.9)';
+      ctx.fillStyle = isHovered ? 'rgba(37, 162, 162, 1.0)' : 'rgba(37, 162, 162, 0.9)';
       const ax = startX + labelW + gap + arrowSize * 0.3;
       const ay = y + lineH / 2;
       ctx.beginPath();
@@ -2816,7 +2855,7 @@ function drawMenu() {
       menuToggleAreas[collapseKey] = { x: startX - hitPad, y: y, w: totalW + hitPad * 2, h: lineH };
     } else {
       // Nicht-klappbar (z.B. MEDITATIONSZEIT): nur Label
-      ctx.fillStyle = labelColor || (isMobilePortrait ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.95)');
+      ctx.fillStyle = labelColor || (isMobilePortrait ? 'rgba(250, 230, 230, 1.0)' : 'rgba(250, 230, 230, 0.95)');
       ctx.fillText(label, cx, y);
     }
 
@@ -2878,7 +2917,7 @@ function drawMenu() {
           ctx.lineWidth = 1.5;
         }
         ctx.stroke();
-        ctx.fillStyle = sel ? '#2abfbf' : btnTextDim;
+        ctx.fillStyle = sel ? '#25a2a2' : btnTextDim;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(options[i], rx + w / 2, rowY + rBtnH / 2);
@@ -2890,16 +2929,16 @@ function drawMenu() {
       if (scrollOff > 1) {
         // Linker Fade
         const grdL = ctx.createLinearGradient(clipX, 0, clipX + fadeW, 0);
-        grdL.addColorStop(0, 'rgba(10, 22, 40, 0.85)');
-        grdL.addColorStop(1, 'rgba(10, 22, 40, 0)');
+        grdL.addColorStop(0, 'rgba(10, 10, 30, 0.85)');
+        grdL.addColorStop(1, 'rgba(10, 10, 30, 0)');
         ctx.fillStyle = grdL;
         ctx.fillRect(clipX, rowY - 2, fadeW, rBtnH + 4);
       }
       if (scrollOff < maxOffset - 1) {
         // Rechter Fade
         const grdR = ctx.createLinearGradient(clipX + clipW - fadeW, 0, clipX + clipW, 0);
-        grdR.addColorStop(0, 'rgba(10, 22, 40, 0)');
-        grdR.addColorStop(1, 'rgba(10, 22, 40, 0.85)');
+        grdR.addColorStop(0, 'rgba(10, 10, 30, 0)');
+        grdR.addColorStop(1, 'rgba(10, 10, 30, 0.85)');
         ctx.fillStyle = grdR;
         ctx.fillRect(clipX + clipW - fadeW, rowY - 2, fadeW, rBtnH + 4);
       }
@@ -2941,7 +2980,7 @@ function drawMenu() {
           ctx.lineWidth = isMobilePortrait ? 1.5 : 1;
         }
         ctx.stroke();
-        ctx.fillStyle = sel ? '#2abfbf' : btnTextDim;
+        ctx.fillStyle = sel ? '#25a2a2' : btnTextDim;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(options[i], rx + w / 2, curRowY + rBtnH / 2);
@@ -2989,7 +3028,7 @@ function drawMenu() {
     ctx.save();
     ctx.beginPath();
     ctx.roundRect(dialX, curY, dialW, dialH, dialH * 0.35);
-    ctx.fillStyle = 'rgba(26, 58, 92, 0.25)';
+    ctx.fillStyle = 'rgba(30, 50, 50, 0.25)';
     ctx.fill();
     ctx.strokeStyle = 'rgba(220, 185, 60, 0.3)';
     ctx.lineWidth = 1;
@@ -3024,7 +3063,7 @@ function drawMenu() {
       ctx.font = `${isSel ? '700' : '400'} ${fSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
 
       if (isSel) {
-        ctx.shadowColor = 'rgba(255, 215, 0, 0.6)';
+        ctx.shadowColor = 'rgba(237, 212, 87, 0.6)';
         ctx.shadowBlur = 15;
         ctx.fillStyle = `rgba(255, 225, 80, ${0.95 * fade})`;
       } else {
@@ -3048,7 +3087,7 @@ function drawMenu() {
     ctx.lineTo(dialCx + triSize, curY - 1);
     ctx.lineTo(dialCx, curY + triSize * 0.8);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(255, 215, 0, 0.7)';
+    ctx.fillStyle = 'rgba(237, 212, 87, 0.7)';
     ctx.fill();
 
     curY += dialH + (isMobilePortrait ? layoutGap * 0.8 : sectionGap);
@@ -3091,7 +3130,7 @@ function drawMenu() {
   const faceLabel = faceHasSwap && !menuExpanded.face ? t('deinGesicht') + ' ✓' : t('deinGesicht');
   const faceMobileLabels = [t('aus'), t('mediathek'), t('kamera'), t('laden')];
   const faceMobileIdx = faceModeIdx;
-  const faceRow = drawSettingsRow(faceLabel, faceMobileLabels, faceMobileIdx, curY, faceHasSwap && !menuExpanded.face ? '#2abfbf' : null, 'face');
+  const faceRow = drawSettingsRow(faceLabel, faceMobileLabels, faceMobileIdx, curY, faceHasSwap && !menuExpanded.face ? '#25a2a2' : null, 'face');
   menuButtons.faceSwap = faceRow.btns;
   curY = faceRow.bottomY;
 
@@ -3104,15 +3143,15 @@ function drawMenu() {
     if (faceSwapStatus === 'uploading' || faceSwapStatus === 'processing') {
       const dots = '.'.repeat(Math.floor(Date.now() / 500) % 4);
       const label = faceSwapStatus === 'uploading' ? t('sendeBild') : t('faceSwapLaeuft');
-      ctx.fillStyle = 'rgba(244, 168, 66, 0.9)';
+      ctx.fillStyle = 'rgba(237, 212, 87, 0.9)';
       ctx.fillText(label + dots, cx, statusY);
       curY = statusY + rowFont * 0.4;
     } else if (faceSwapStatus === 'done' && faceSwapImg) {
-      ctx.fillStyle = isMobilePortrait ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.9)';
+      ctx.fillStyle = isMobilePortrait ? 'rgba(37, 162, 162, 1.0)' : 'rgba(37, 162, 162, 0.9)';
       ctx.fillText(t('gesichtAktiv'), cx, statusY);
       curY = statusY + rowFont * 0.4;
     } else if (faceSwapStatus === 'error') {
-      ctx.fillStyle = isMobilePortrait ? 'rgba(255, 130, 145, 1.0)' : 'rgba(232, 106, 122, 0.9)';
+      ctx.fillStyle = isMobilePortrait ? 'rgba(255, 130, 130, 1.0)' : 'rgba(237, 112, 112, 0.9)';
       const errMsg = faceSwapError || t('faceSwapFehler');
       ctx.fillText(errMsg.length > 40 ? errMsg.substring(0, 37) + '...' : errMsg, cx, statusY);
       curY = statusY + rowFont * 0.4;
@@ -3146,27 +3185,27 @@ function drawMenu() {
   if (canStart) {
     // Pill-Hintergrund
     if (hoverStart) {
-      ctx.shadowColor = 'rgba(232, 106, 122, 0.7)';
+      ctx.shadowColor = 'rgba(237, 112, 112, 0.7)';
       ctx.shadowBlur = 25;
     } else {
-      ctx.shadowColor = 'rgba(232, 106, 122, 0.4)';
+      ctx.shadowColor = 'rgba(237, 112, 112, 0.4)';
       ctx.shadowBlur = 12;
     }
     ctx.beginPath();
     ctx.roundRect(startX, curY, startW, startH, startH / 2);
-    ctx.fillStyle = hoverStart ? 'rgba(232, 106, 122, 0.2)' : 'rgba(232, 106, 122, 0.08)';
+    ctx.fillStyle = hoverStart ? 'rgba(237, 112, 112, 0.2)' : 'rgba(237, 112, 112, 0.08)';
     ctx.fill();
-    ctx.strokeStyle = `rgba(232, 106, 122, ${hoverStart ? 0.9 : pulse * 0.6})`;
+    ctx.strokeStyle = `rgba(237, 112, 112, ${hoverStart ? 0.9 : pulse * 0.6})`;
     ctx.lineWidth = hoverStart ? 2 : 1.5;
     ctx.stroke();
     ctx.shadowBlur = 0;
 
     // Text
-    ctx.fillStyle = `rgba(232, 106, 122, ${hoverStart ? 1.0 : pulse})`;
+    ctx.fillStyle = `rgba(237, 112, 112, ${hoverStart ? 1.0 : pulse})`;
   } else {
     // Kein Button, nur wabernder Text
     const waber = Math.sin(Date.now() * 0.001) * 0.3 + 0.7;
-    ctx.shadowColor = `rgba(244, 168, 66, ${waber * 0.4})`;
+    ctx.shadowColor = `rgba(237, 212, 87, ${waber * 0.4})`;
     ctx.shadowBlur = 15;
     ctx.fillStyle = `rgba(255, 140, 155, ${waber})`;
   }
@@ -3271,10 +3310,10 @@ function drawMenu() {
   burgerBtnArea = { x: burgerX, y: burgerY, w: burgerSize, h: burgerSize };
 
   if (hoverBurger && !isMobilePortrait) {
-    ctx.shadowColor = 'rgba(42, 191, 191, 0.7)';
+    ctx.shadowColor = 'rgba(37, 162, 162, 0.7)';
     ctx.shadowBlur = 12;
   }
-  ctx.strokeStyle = hoverBurger && !isMobilePortrait ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.9)';
+  ctx.strokeStyle = hoverBurger && !isMobilePortrait ? 'rgba(37, 162, 162, 1.0)' : 'rgba(37, 162, 162, 0.9)';
   ctx.lineWidth = hoverBurger && !isMobilePortrait ? 2 : (isMobilePortrait ? 2.5 : 1.5);
   ctx.lineCap = 'round';
   const burgerScale = hoverBurger && !isMobilePortrait ? 1.15 : 1;
@@ -3312,14 +3351,14 @@ function drawMenu() {
     const by = langY + (langH - bh) / 2;
     ctx.beginPath();
     ctx.roundRect(bx, by, bw, bh, bh * 0.3);
-    ctx.fillStyle = sel ? 'rgba(42, 191, 191, 0.15)' : hov ? 'rgba(42, 191, 191, 0.1)' : 'rgba(26, 58, 92, 0.2)';
+    ctx.fillStyle = sel ? 'rgba(37, 162, 162, 0.15)' : hov ? 'rgba(37, 162, 162, 0.1)' : 'rgba(30, 50, 50, 0.2)';
     ctx.fill();
-    ctx.strokeStyle = sel ? 'rgba(42, 191, 191, 0.6)' : hov ? 'rgba(42, 191, 191, 0.5)' : 'rgba(200, 210, 220, 0.5)';
+    ctx.strokeStyle = sel ? 'rgba(37, 162, 162, 0.6)' : hov ? 'rgba(37, 162, 162, 0.5)' : 'rgba(200, 210, 220, 0.5)';
     ctx.lineWidth = 1;
     ctx.stroke();
     const fontSize = langFont * scale;
     ctx.font = `${hov ? '700 ' : ''}${fontSize}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
-    ctx.fillStyle = sel ? '#2abfbf' : hov ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.9)';
+    ctx.fillStyle = sel ? '#25a2a2' : hov ? 'rgba(250, 230, 230, 1.0)' : 'rgba(250, 230, 230, 0.9)';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(langLabels[li], lx + langBtnW / 2, langY + langH / 2);
@@ -3341,10 +3380,10 @@ function drawMenu() {
     const twR = twSize * 0.35;
     const twHov = hoverStopwatch && !isMobilePortrait;
     const twCol = timerVisible
-      ? (twHov ? 'rgba(255, 225, 50, 1.0)' : 'rgba(255, 215, 0, 0.9)')
-      : (twHov ? 'rgba(240, 236, 230, 0.7)' : 'rgba(240, 236, 230, 0.25)');
+      ? (twHov ? 'rgba(245, 222, 100, 1.0)' : 'rgba(237, 212, 87, 0.9)')
+      : (twHov ? 'rgba(250, 230, 230, 0.7)' : 'rgba(250, 230, 230, 0.25)');
     if (timerVisible || twHov) {
-      ctx.shadowColor = timerVisible ? 'rgba(255, 215, 0, 0.5)' : 'rgba(240, 236, 230, 0.4)';
+      ctx.shadowColor = timerVisible ? 'rgba(237, 212, 87, 0.5)' : 'rgba(250, 230, 230, 0.4)';
       ctx.shadowBlur = twHov ? 14 : 10;
     }
     ctx.strokeStyle = twCol;
@@ -3382,10 +3421,10 @@ function drawMenu() {
       ctx.roundRect(tipX, tipY, tipW, tipH, 8);
       ctx.fillStyle = 'rgb(16, 18, 24)';
       ctx.fill();
-      ctx.strokeStyle = timerVisible ? 'rgba(255, 215, 0, 0.6)' : 'rgba(240, 236, 230, 0.5)';
+      ctx.strokeStyle = timerVisible ? 'rgba(237, 212, 87, 0.6)' : 'rgba(250, 230, 230, 0.5)';
       ctx.lineWidth = 1;
       ctx.stroke();
-      ctx.fillStyle = timerVisible ? 'rgba(255, 215, 0, 1.0)' : 'rgba(240, 236, 230, 1.0)';
+      ctx.fillStyle = timerVisible ? 'rgba(237, 212, 87, 1.0)' : 'rgba(250, 230, 230, 1.0)';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(tipText, tipX + tipW / 2, tipY + tipH / 2);
@@ -3401,7 +3440,7 @@ function drawMenu() {
     const chevPulse = Math.sin(Date.now() * 0.003) * 0.3 + 0.7;
     const chevY = H - (isMobilePortrait ? 28 : 18);
     const chevSize = isMobilePortrait ? 10 : 7;
-    ctx.strokeStyle = `rgba(240, 236, 230, ${chevPulse * 0.4})`;
+    ctx.strokeStyle = `rgba(250, 230, 230, ${chevPulse * 0.4})`;
     ctx.lineWidth = isMobilePortrait ? 2.5 : 1.5;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -3423,11 +3462,11 @@ function drawMenu() {
     ctx.font = `${credFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
     const credBase = isMobilePortrait ? 0.8 : 0.7;
     if (hoverLink) {
-      ctx.shadowColor = 'rgba(42, 191, 191, 0.6)';
+      ctx.shadowColor = 'rgba(37, 162, 162, 0.6)';
       ctx.shadowBlur = 12;
-      ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
+      ctx.fillStyle = 'rgba(37, 162, 162, 0.9)';
     } else {
-      ctx.fillStyle = `rgba(240, 236, 230, ${credBase})`;
+      ctx.fillStyle = `rgba(250, 230, 230, ${credBase})`;
     }
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -3448,7 +3487,7 @@ function drawMenu() {
       const gkX = iconLeftX + (iconSize - gkS) / 2;
       const gkY = iconY + (iconSize - gkS) / 2;
       if (hoverGk) {
-        ctx.shadowColor = 'rgba(42, 191, 191, 0.7)';
+        ctx.shadowColor = 'rgba(37, 162, 162, 0.7)';
         ctx.shadowBlur = 18;
       }
       ctx.globalAlpha = hoverGk ? 0.9 : iconAlpha;
@@ -3485,10 +3524,10 @@ function drawMenu() {
       ctx.roundRect(ghX, ghY, ghW, ghH, 10);
       ctx.fillStyle = 'rgb(16, 18, 24)';
       ctx.fill();
-      ctx.strokeStyle = 'rgba(42, 191, 191, 0.7)';
+      ctx.strokeStyle = 'rgba(37, 162, 162, 0.7)';
       ctx.lineWidth = 1;
       ctx.stroke();
-      ctx.fillStyle = 'rgba(42, 191, 191, 1.0)';
+      ctx.fillStyle = 'rgba(37, 162, 162, 1.0)';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       for (let li = 0; li < ghLines.length; li++) {
@@ -3523,10 +3562,10 @@ function drawMenu() {
       ctx.roundRect(tipX, tipY, tipW, tipH, 8);
       ctx.fillStyle = 'rgb(16, 18, 24)';
       ctx.fill();
-      ctx.strokeStyle = 'rgba(42, 191, 191, 0.7)';
+      ctx.strokeStyle = 'rgba(37, 162, 162, 0.7)';
       ctx.lineWidth = 1;
       ctx.stroke();
-      ctx.fillStyle = 'rgba(42, 191, 191, 1.0)';
+      ctx.fillStyle = 'rgba(37, 162, 162, 1.0)';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       for (let li = 0; li < tipLines.length; li++) {
@@ -3552,7 +3591,7 @@ function drawMenu() {
 
     // Glow bei Hover
     if (hoverLotus) {
-      ctx.shadowColor = lotusActive ? 'rgba(232, 106, 122, 0.6)' : 'rgba(42, 191, 191, 0.6)';
+      ctx.shadowColor = lotusActive ? 'rgba(237, 112, 112, 0.6)' : 'rgba(37, 162, 162, 0.6)';
       ctx.shadowBlur = 18;
     }
 
@@ -3564,13 +3603,13 @@ function drawMenu() {
       const py = ly + Math.sin(a) * lr * 0.4;
       ctx.beginPath();
       ctx.ellipse(px, py, lr * 0.35, lr * 0.7, a + Math.PI / 2, 0, Math.PI * 2);
-      ctx.fillStyle = lotusActive ? 'rgba(232, 106, 122, 0.7)' : 'rgba(42, 191, 191, 0.6)';
+      ctx.fillStyle = lotusActive ? 'rgba(237, 112, 112, 0.7)' : 'rgba(37, 162, 162, 0.6)';
       ctx.fill();
     }
     // Mitte
     ctx.beginPath();
     ctx.arc(lx, ly, lr * 0.25, 0, Math.PI * 2);
-    ctx.fillStyle = lotusActive ? 'rgba(232, 106, 122, 0.9)' : 'rgba(42, 191, 191, 0.8)';
+    ctx.fillStyle = lotusActive ? 'rgba(237, 112, 112, 0.9)' : 'rgba(37, 162, 162, 0.8)';
     ctx.fill();
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
@@ -3606,11 +3645,11 @@ function drawMenu() {
       ctx.roundRect(tipX, tipY, tipW, tipH, 8);
       ctx.fillStyle = 'rgba(20, 22, 28, 0.94)';
       ctx.fill();
-      ctx.strokeStyle = lotusActive ? 'rgba(232, 106, 122, 0.4)' : 'rgba(42, 191, 191, 0.4)';
+      ctx.strokeStyle = lotusActive ? 'rgba(237, 112, 112, 0.4)' : 'rgba(37, 162, 162, 0.4)';
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      ctx.fillStyle = lotusActive ? 'rgba(232, 106, 122, 0.9)' : 'rgba(42, 191, 191, 0.9)';
+      ctx.fillStyle = lotusActive ? 'rgba(237, 112, 112, 0.9)' : 'rgba(37, 162, 162, 0.9)';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       for (let li = 0; li < tipLines.length; li++) {
@@ -3631,7 +3670,7 @@ function drawMenu() {
       const cr = lotusActive ? 232 : 42;
       const cg = lotusActive ? 106 : 191;
       const cb = lotusActive ? 122 : 191;
-      const hexCol = lotusActive ? '#e86a7a' : '#2abfbf';
+      const hexCol = lotusActive ? '#ed7070' : '#25a2a2';
 
       // Phase 1: Aura sofort da, wird über 5s voller
       const auraStrength = Math.min(1, 0.4 + idleTime / 8);
@@ -3705,13 +3744,13 @@ function drawMenu() {
       ctx.globalAlpha = qAlpha;
       ctx.beginPath();
       ctx.arc(qCx, qCy, qSize / 2, 0, Math.PI * 2);
-      ctx.fillStyle = lotusHintOpen ? 'rgba(42, 191, 191, 0.3)' : 'rgba(42, 191, 191, 0.12)';
+      ctx.fillStyle = lotusHintOpen ? 'rgba(37, 162, 162, 0.3)' : 'rgba(37, 162, 162, 0.12)';
       ctx.fill();
-      ctx.strokeStyle = 'rgba(42, 191, 191, 0.5)';
+      ctx.strokeStyle = 'rgba(37, 162, 162, 0.5)';
       ctx.lineWidth = 1;
       ctx.stroke();
       ctx.font = `600 ${qSize * 0.7}px -apple-system, "SF Pro Display", sans-serif`;
-      ctx.fillStyle = 'rgba(42, 191, 191, 0.9)';
+      ctx.fillStyle = 'rgba(37, 162, 162, 0.9)';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('?', qCx, qCy + 1);
@@ -3746,11 +3785,11 @@ function drawMenu() {
         ctx.roundRect(hX, hY, hW, hH, 10);
         ctx.fillStyle = 'rgb(16, 18, 24)';
         ctx.fill();
-        ctx.strokeStyle = lotusActive ? 'rgba(232, 106, 122, 0.7)' : 'rgba(42, 191, 191, 0.7)';
+        ctx.strokeStyle = lotusActive ? 'rgba(237, 112, 112, 0.7)' : 'rgba(37, 162, 162, 0.7)';
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        ctx.fillStyle = lotusActive ? 'rgba(232, 106, 122, 1.0)' : 'rgba(42, 191, 191, 1.0)';
+        ctx.fillStyle = lotusActive ? 'rgba(237, 112, 112, 1.0)' : 'rgba(37, 162, 162, 1.0)';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
         for (let li = 0; li < hLines.length; li++) {
@@ -3782,7 +3821,7 @@ function drawMenu() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `700 ${oFont * 1.3}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
-    ctx.fillStyle = '#2abfbf';
+    ctx.fillStyle = '#25a2a2';
     ctx.fillText(t('faceSwapFertig'), oCx, oCy - unit * 0.18 * uiScale);
 
     // Kreisvorschau
@@ -3798,7 +3837,7 @@ function drawMenu() {
     ctx.drawImage(faceSwapImg, oCx - dW / 2, pCy - dH / 2, dW, dH);
     ctx.restore();
     // Kreis-Rand
-    ctx.strokeStyle = 'rgba(42, 191, 191, 0.5)';
+    ctx.strokeStyle = 'rgba(37, 162, 162, 0.5)';
     ctx.lineWidth = isMobilePortrait ? 3 : 2;
     ctx.beginPath();
     ctx.arc(oCx, pCy, pR, 0, Math.PI * 2);
@@ -3822,7 +3861,7 @@ function drawMenu() {
     ctx.strokeStyle = btnSelStroke;
     ctx.lineWidth = isMobilePortrait ? 2 : 1.5;
     ctx.stroke();
-    ctx.fillStyle = '#2abfbf';
+    ctx.fillStyle = '#25a2a2';
     ctx.fillText(sLabel, sX + sW / 2, ovBtnY + ovBH / 2);
     menuButtons.faceSave = { x: sX, y: ovBtnY, w: sW, h: ovBH };
     menuButtons.faceDismiss = null;
@@ -3892,10 +3931,10 @@ function drawLegalOverlay() {
   legalCloseBtn = { x: closeX, y: closeY, w: closeBtnSize, h: closeBtnSize };
 
   if (hoverLegalClose && !isMob) {
-    ctx.shadowColor = 'rgba(42, 191, 191, 0.7)';
+    ctx.shadowColor = 'rgba(37, 162, 162, 0.7)';
     ctx.shadowBlur = 10;
   }
-  ctx.fillStyle = hoverLegalClose && !isMob ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.8)';
+  ctx.fillStyle = hoverLegalClose && !isMob ? 'rgba(37, 162, 162, 1.0)' : 'rgba(37, 162, 162, 0.8)';
   ctx.font = `${closeBtnSize * 0.7}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -3932,9 +3971,9 @@ function drawLegalOverlay() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.letterSpacing = `${titleFontSize * 0.15}px`;
-    ctx.shadowColor = 'rgba(42, 191, 191, 0.3)';
+    ctx.shadowColor = 'rgba(37, 162, 162, 0.3)';
     ctx.shadowBlur = 12;
-    ctx.fillStyle = 'rgba(240, 236, 230, 0.7)';
+    ctx.fillStyle = 'rgba(250, 230, 230, 0.7)';
     ctx.fillText('J-SPHERE', W / 2, startY + titleFontSize * 0.9);
     ctx.shadowBlur = 0;
     ctx.letterSpacing = '0px';
@@ -3943,7 +3982,7 @@ function drawLegalOverlay() {
     const lineW = isMob ? W * 0.3 : Math.min(120, W * 0.12);
     ctx.moveTo(W / 2 - lineW / 2, startY + titleFontSize * 0.9 + titleFontSize * 0.8);
     ctx.lineTo(W / 2 + lineW / 2, startY + titleFontSize * 0.9 + titleFontSize * 0.8);
-    ctx.strokeStyle = 'rgba(240, 236, 230, 0.12)';
+    ctx.strokeStyle = 'rgba(250, 230, 230, 0.12)';
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.restore();
@@ -3963,7 +4002,7 @@ function drawLegalOverlay() {
       // Zentrierter Text, kein Karten-Hintergrund
       ctx.textAlign = 'center';
       ctx.font = `${isHover ? '600' : '400'} ${itemFont * (isHover ? 1.05 : 1)}px ${sansFont}`;
-      ctx.fillStyle = isHover ? 'rgba(240, 236, 230, 1.0)' : 'rgba(240, 236, 230, 0.55)';
+      ctx.fillStyle = isHover ? 'rgba(250, 230, 230, 1.0)' : 'rgba(250, 230, 230, 0.55)';
       ctx.fillText(items[i].label, W / 2, iy + itemH / 2);
 
       // Dezente Unterstreichung bei Hover
@@ -3972,7 +4011,7 @@ function drawLegalOverlay() {
         ctx.beginPath();
         ctx.moveTo(W / 2 - labelW / 2, iy + itemH / 2 + itemFont * 0.7);
         ctx.lineTo(W / 2 + labelW / 2, iy + itemH / 2 + itemFont * 0.7);
-        ctx.strokeStyle = 'rgba(240, 236, 230, 0.3)';
+        ctx.strokeStyle = 'rgba(250, 230, 230, 0.3)';
         ctx.lineWidth = 1;
         ctx.stroke();
       }
@@ -3980,7 +4019,7 @@ function drawLegalOverlay() {
 
     // Versionsnummer unten
     ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(240, 236, 230, 0.12)';
+    ctx.fillStyle = 'rgba(250, 230, 230, 0.12)';
     ctx.font = `400 ${itemFont * 0.65}px ${sansFont}`;
     ctx.fillText('v1.5', W / 2, startY + totalH + itemFont * 1.8);
 
@@ -4003,10 +4042,10 @@ function drawLegalOverlay() {
   legalBackBtn = { x: backX, y: backY, w: backTextW + backFontSize * 0.3, h: backBtnH };
 
   if (hoverLegalBack && !isMob) {
-    ctx.shadowColor = 'rgba(42, 191, 191, 0.7)';
+    ctx.shadowColor = 'rgba(37, 162, 162, 0.7)';
     ctx.shadowBlur = 10;
   }
-  ctx.fillStyle = hoverLegalBack && !isMob ? 'rgba(42, 191, 191, 1.0)' : 'rgba(42, 191, 191, 0.8)';
+  ctx.fillStyle = hoverLegalBack && !isMob ? 'rgba(37, 162, 162, 1.0)' : 'rgba(37, 162, 162, 0.8)';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillText(backLabel, backX, backY + backBtnH / 2);
@@ -4071,12 +4110,12 @@ function drawLegalOverlay() {
   for (const line of wrappedLines) {
     if (y + lineHeight > contentTop && y < contentTop + contentHeight) {
       if (line.style === 'heading') {
-        ctx.fillStyle = isAbout ? '#f0ece6' : 'rgba(42, 191, 191, 0.9)';
+        ctx.fillStyle = isAbout ? '#fae6e6' : 'rgba(37, 162, 162, 0.9)';
         ctx.font = `bold ${fontSize * (isAbout ? 1.2 : 1)}px ${fontFamily}`;
         ctx.fillText(line.text, padding, y);
         ctx.font = `${fontSize}px ${fontFamily}`;
       } else if (line.style === 'normal') {
-        ctx.fillStyle = 'rgba(240, 236, 230, 0.85)';
+        ctx.fillStyle = 'rgba(250, 230, 230, 0.85)';
         ctx.fillText(line.text, padding, y);
       }
     }
@@ -4101,14 +4140,14 @@ function drawLegalOverlay() {
           ctx.drawImage(book.coverImg, imgX, imgY, coverW, coverH);
           ctx.restore();
           // Subtiler Rahmen
-          ctx.strokeStyle = 'rgba(240, 236, 230, 0.15)';
+          ctx.strokeStyle = 'rgba(250, 230, 230, 0.15)';
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.roundRect(padding, cardTop, coverW, coverH, cr);
           ctx.stroke();
         } else {
           // Platzhalter
-          ctx.fillStyle = 'rgba(240, 236, 230, 0.08)';
+          ctx.fillStyle = 'rgba(250, 230, 230, 0.08)';
           ctx.beginPath();
           ctx.roundRect(padding, cardTop, coverW, coverH, fontSize * 0.3);
           ctx.fill();
@@ -4117,13 +4156,13 @@ function drawLegalOverlay() {
         // Autor
         const authorFont = fontSize * 0.85;
         ctx.font = `400 ${authorFont}px ${fontFamily}`;
-        ctx.fillStyle = 'rgba(42, 191, 191, 0.8)';
+        ctx.fillStyle = 'rgba(37, 162, 162, 0.8)';
         ctx.fillText(book.author, cardTextX, cardTop + fontSize * 0.2);
 
         // Titel (bold, ggf. word-wrapped)
         const titleFont = fontSize * 1.1;
         ctx.font = `bold ${titleFont}px ${fontFamily}`;
-        ctx.fillStyle = '#f0ece6';
+        ctx.fillStyle = '#fae6e6';
         const bookTitle = lang === 'en' ? book.titleEN : book.title;
         const titleWrapped = wrapLegalText(ctx, `„${bookTitle}"`, cardTextW);
         let titleY = cardTop + authorFont + fontSize * 0.6;
@@ -4135,7 +4174,7 @@ function drawLegalOverlay() {
         // Amazon-Link
         const linkFont = fontSize * 0.8;
         ctx.font = `400 ${linkFont}px ${fontFamily}`;
-        ctx.fillStyle = 'rgba(42, 191, 191, 0.7)';
+        ctx.fillStyle = 'rgba(37, 162, 162, 0.7)';
         const linkLabel = lang === 'de' ? '→ Bei Amazon ansehen' : '→ View on Amazon';
         const linkY = Math.min(titleY + fontSize * 0.3, cardTop + coverH - linkFont);
         ctx.fillText(linkLabel, cardTextX, linkY);
@@ -4156,7 +4195,7 @@ function drawLegalOverlay() {
     const scrollPct = Math.max(0, Math.min(1, maxScroll > 0 ? legalScrollY / maxScroll : 0));
     const barH = Math.max(20, contentHeight * (contentHeight / totalTextHeight));
     const barY = contentTop + scrollPct * (contentHeight - barH);
-    ctx.fillStyle = 'rgba(42, 191, 191, 0.3)';
+    ctx.fillStyle = 'rgba(37, 162, 162, 0.3)';
     ctx.beginPath();
     ctx.roundRect(W - padding * 0.4, barY, 3, barH, 1.5);
     ctx.fill();
@@ -4409,7 +4448,12 @@ function handleMenuClick(x, y) {
   const s = menuButtons.start;
   if (s && !s.disabled && x >= s.x && x <= s.x + s.w && sy >= s.y && sy <= s.y + s.h) {
     disableMenuScroll();
-    state = 'ready';
+    // Easter-Modell aktiv → direkt starten (Modell ist schon geladen)
+    if (easterModelActive) {
+      state = 'ready';
+    } else {
+      state = 'choosing'; // Geschlechtsauswahl anzeigen
+    }
     resize(); // DPR zurück auf 1 für Performance
     // Audio-Session auf "playback" → Shake-Sound ignoriert iPhone-Stumm-Schalter
     if (navigator.audioSession) {
@@ -4496,13 +4540,30 @@ canvas.addEventListener('click', (e) => {
       return;
     }
   }
-  // Dev: Model-Switcher Klick
-  if (state !== 'idle' && state !== 'done' && menuButtons.modelSwitch) {
-    for (const btn of menuButtons.modelSwitch) {
-      if (cx >= btn.x && cx <= btn.x + btn.w && cy >= btn.y && cy <= btn.y + btn.h) {
-        easterModelActive = null;
-        loadModel(btn.idx);
-        return;
+  // Choosing-State: Karten + Toggles
+  if (state === 'choosing') {
+    // Toggles
+    if (menuButtons.choosingToggles) {
+      for (const tog of menuButtons.choosingToggles) {
+        if (cx >= tog.x && cx <= tog.x + tog.w && cy >= tog.y && cy <= tog.y + tog.h) {
+          if (tog.key === 'rotate') { modelRotate = !modelRotate; localStorage.setItem('msphere_rotate', modelRotate); }
+          else if (tog.key === 'timer') { timerVisible = !timerVisible; localStorage.setItem('msphere_timer', timerVisible); }
+          else if (tog.key === 'distraction') { distractionModeIdx = distractionModeIdx === 1 ? 0 : 1; try { localStorage.setItem('msphere_distraction', distractionModeIdx); } catch(e) {} }
+          try { playTingsha(); } catch(err) {}
+          return;
+        }
+      }
+    }
+    // Modell-Karten
+    if (menuButtons.chooseModel) {
+      for (const btn of menuButtons.chooseModel) {
+        if (cx >= btn.x && cx <= btn.x + btn.w && cy >= btn.y && cy <= btn.y + btn.h) {
+          loadModel(btn.idx);
+          state = 'ready';
+          resize();
+          try { playTingsha(); } catch(err) {}
+          return;
+        }
       }
     }
   }
@@ -4624,13 +4685,28 @@ canvas.addEventListener('touchend', (e) => {
       returnToMenu();
       return;
     }
-    // Dev: Model-Switcher Touch
-    if (menuButtons.modelSwitch) {
-      for (const btn of menuButtons.modelSwitch) {
-        if (tx >= btn.x && tx <= btn.x + btn.w && ty >= btn.y && ty <= btn.y + btn.h) {
-          easterModelActive = null;
-          loadModel(btn.idx);
-          return;
+    // Choosing-State: Karten + Toggles (Touch)
+    if (state === 'choosing') {
+      if (menuButtons.choosingToggles) {
+        for (const tog of menuButtons.choosingToggles) {
+          if (tx >= tog.x && tx <= tog.x + tog.w && ty >= tog.y && ty <= tog.y + tog.h) {
+            if (tog.key === 'rotate') { modelRotate = !modelRotate; localStorage.setItem('msphere_rotate', modelRotate); }
+            else if (tog.key === 'timer') { timerVisible = !timerVisible; localStorage.setItem('msphere_timer', timerVisible); }
+            else if (tog.key === 'distraction') { distractionModeIdx = distractionModeIdx === 1 ? 0 : 1; try { localStorage.setItem('msphere_distraction', distractionModeIdx); } catch(e) {} }
+            try { playTingsha(); } catch(err) {}
+            return;
+          }
+        }
+      }
+      if (menuButtons.chooseModel) {
+        for (const btn of menuButtons.chooseModel) {
+          if (tx >= btn.x && tx <= btn.x + btn.w && ty >= btn.y && ty <= btn.y + btn.h) {
+            loadModel(btn.idx);
+            state = 'ready';
+            resize();
+            try { playTingsha(); } catch(err) {}
+            return;
+          }
         }
       }
     }
@@ -5691,7 +5767,7 @@ function resize() {
   const vv = window.visualViewport;
   cW = vv ? vv.width : window.innerWidth;
   cH = vv ? vv.height : window.innerHeight;
-  dpr = state === 'idle' ? Math.min(window.devicePixelRatio, 2) : 1;
+  dpr = (state === 'idle' || state === 'choosing') ? Math.min(window.devicePixelRatio, 2) : 1;
   canvas.width = Math.round(cW * dpr);
   canvas.height = Math.round(cH * dpr);
   canvas.style.width = cW + 'px';
@@ -5807,7 +5883,7 @@ function drawStatue(cx, cy, r) {
   ctx.save();
 
   // Gold-Farben
-  const goldLight = '#ffd700';
+  const goldLight = '#edd457';
   const goldMid = '#daa520';
   const goldDark = '#b8860b';
   const goldShine = '#fff4c2';
@@ -5867,9 +5943,9 @@ function drawStatue(cx, cy, r) {
 
   // --- Goldener Schein / Aura ---
   const auraGrad = ctx.createRadialGradient(cx, baseY - s * 0.1, s * 0.1, cx, baseY - s * 0.1, s * 0.7);
-  auraGrad.addColorStop(0, 'rgba(255, 215, 0, 0.08)');
-  auraGrad.addColorStop(0.5, 'rgba(255, 215, 0, 0.03)');
-  auraGrad.addColorStop(1, 'rgba(255, 215, 0, 0.0)');
+  auraGrad.addColorStop(0, 'rgba(237, 212, 87, 0.08)');
+  auraGrad.addColorStop(0.5, 'rgba(237, 212, 87, 0.03)');
+  auraGrad.addColorStop(1, 'rgba(237, 212, 87, 0.0)');
   ctx.beginPath();
   ctx.arc(cx, baseY - s * 0.1, s * 0.7, 0, Math.PI * 2);
   ctx.fillStyle = auraGrad;
@@ -6408,7 +6484,7 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
     if (modelLoadProgress > 0 && modelLoadProgress < 1) {
       ctx.save();
       ctx.globalAlpha = 0.3;
-      ctx.strokeStyle = '#2abfbf';
+      ctx.strokeStyle = '#25a2a2';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(cx, cy, r * 0.12, -Math.PI / 2, -Math.PI / 2 + modelLoadProgress * Math.PI * 2);
@@ -6444,8 +6520,8 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
 
     // Modell rotieren
     if (model3D) {
-      if (easterModelActive) {
-        // Zoe-Modus: langsame stetige 360°-Drehung (~63s pro Umdrehung)
+      if (easterModelActive || modelRotate) {
+        // Stetige 360°-Drehung (~63s pro Umdrehung)
         model3D.rotation.y = Date.now() * 0.0001;
       } else {
         // Normal: subtiles Atmen
@@ -6676,9 +6752,9 @@ function frame() {
       const s = r * 0.28;
       const baseY = cy + r * 0.15;
       const breathGrad = ctx.createRadialGradient(cx, baseY - s * 0.1, s * 0.05, cx, baseY - s * 0.1, s * (0.5 + breath * 0.25));
-      breathGrad.addColorStop(0, `rgba(255, 215, 0, ${0.04 + breath * 0.04})`);
-      breathGrad.addColorStop(0.6, `rgba(255, 215, 0, ${0.01 + breath * 0.02})`);
-      breathGrad.addColorStop(1, 'rgba(255, 215, 0, 0)');
+      breathGrad.addColorStop(0, `rgba(237, 212, 87, ${0.04 + breath * 0.04})`);
+      breathGrad.addColorStop(0.6, `rgba(237, 212, 87, ${0.01 + breath * 0.02})`);
+      breathGrad.addColorStop(1, 'rgba(237, 212, 87, 0)');
       ctx.beginPath();
       ctx.arc(cx, baseY - s * 0.1, s * (0.5 + breath * 0.25), 0, Math.PI * 2);
       ctx.fillStyle = breathGrad;
@@ -6749,7 +6825,7 @@ function frame() {
       // Kreisbogen-Pfeil
       ctx.beginPath();
       ctx.arc(0, 0, prR, 0, Math.PI * 1.6);
-      ctx.strokeStyle = ptrTriggered ? 'rgba(42, 191, 191, 1.0)' : 'rgba(240, 236, 230, 0.7)';
+      ctx.strokeStyle = ptrTriggered ? 'rgba(37, 162, 162, 1.0)' : 'rgba(250, 230, 230, 0.7)';
       ctx.lineWidth = 2.5;
       ctx.lineCap = 'round';
       ctx.stroke();
@@ -6810,10 +6886,10 @@ function frame() {
       ctx.beginPath();
       ctx.roundRect(tx, ty, tw, th, th * 0.15);
       ctx.fill();
-      ctx.strokeStyle = distractionModeIdx === 1 ? 'rgba(232, 106, 122, 0.7)' : 'rgba(42, 191, 191, 0.7)';
+      ctx.strokeStyle = distractionModeIdx === 1 ? 'rgba(237, 112, 112, 0.7)' : 'rgba(37, 162, 162, 0.7)';
       ctx.lineWidth = 1;
       ctx.stroke();
-      ctx.fillStyle = distractionModeIdx === 1 ? 'rgba(232, 106, 122, 1.0)' : 'rgba(42, 191, 191, 1.0)';
+      ctx.fillStyle = distractionModeIdx === 1 ? 'rgba(237, 112, 112, 1.0)' : 'rgba(37, 162, 162, 1.0)';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       const textStartY = ty + th / 2 - (toastLines.length - 1) * lineH / 2;
@@ -6832,9 +6908,9 @@ function frame() {
     const hintFontSize = hUnit * (isMobReady ? 0.048 : 0.02);
     ctx.font = `${hintFontSize}px monospace`;
     ctx.textAlign = 'center';
-    ctx.shadowColor = `rgba(244, 168, 66, ${pulse * 0.3})`;
+    ctx.shadowColor = `rgba(237, 212, 87, ${pulse * 0.3})`;
     ctx.shadowBlur = 12;
-    ctx.fillStyle = `rgba(244, 168, 66, ${pulse})`;
+    ctx.fillStyle = `rgba(237, 212, 87, ${pulse})`;
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     if (isTouchDevice) {
       ctx.fillText(t('hintMobile1'), cx, cy - r - hintFontSize * 3.8);
@@ -6842,7 +6918,7 @@ function frame() {
         ctx.fillText(t('hintMobile2'), cx, cy - r - hintFontSize * 2.4);
       } else {
         ctx.font = `${hintFontSize * 0.7}px monospace`;
-        ctx.fillStyle = `rgba(244, 168, 66, ${pulse * 0.6})`;
+        ctx.fillStyle = `rgba(237, 212, 87, ${pulse * 0.6})`;
         ctx.fillText(t('hintMobile3'), cx, cy - r - hintFontSize * 1.9);
       }
     } else {
@@ -6875,7 +6951,7 @@ function frame() {
     const minutes = Math.floor(meditationTimeLeft / 60);
     const seconds = Math.floor(meditationTimeLeft % 60);
     const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    ctx.fillStyle = 'rgba(240, 236, 230, 0.8)';
+    ctx.fillStyle = 'rgba(250, 230, 230, 0.8)';
     const timerMob = cW < 600 && cH > cW;
     const timerFontSize = Math.min(cW, cH) * (timerMob ? 0.06 : 0.035);
     ctx.font = `200 ${timerFontSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
@@ -7017,12 +7093,12 @@ function frame() {
         const backBtnY = cy - r - backBtnH - 14;
         ctx.beginPath();
         ctx.roundRect(backBtnX, backBtnY, backBtnW, backBtnH, backBtnH * 0.3);
-        ctx.fillStyle = `rgba(26, 58, 92, ${hintAlpha * 0.2})`;
+        ctx.fillStyle = `rgba(30, 50, 50, ${hintAlpha * 0.2})`;
         ctx.fill();
         ctx.strokeStyle = `rgba(200, 210, 220, ${hintAlpha * 0.5})`;
         ctx.lineWidth = 1;
         ctx.stroke();
-        ctx.fillStyle = `rgba(240, 236, 230, ${hintAlpha})`;
+        ctx.fillStyle = `rgba(250, 230, 230, ${hintAlpha})`;
         ctx.textBaseline = 'middle';
         ctx.fillText(backText, cx, backBtnY + backBtnH / 2);
         backToMenuHitArea = { x: backBtnX, y: backBtnY, w: backBtnW, h: backBtnH };
@@ -7037,7 +7113,7 @@ function frame() {
         const donBtnY = cy + r + 20;
         ctx.beginPath();
         ctx.roundRect(donBtnX, donBtnY, donBtnW, donBtnH, donBtnH * 0.25);
-        ctx.fillStyle = `rgba(232, 106, 122, ${donAlpha * 0.3})`;
+        ctx.fillStyle = `rgba(237, 112, 112, ${donAlpha * 0.3})`;
         ctx.fill();
         ctx.strokeStyle = `rgba(255, 130, 150, ${donAlpha * 0.9})`;
         ctx.lineWidth = 2;
@@ -7059,12 +7135,12 @@ function frame() {
         const backBtnY = cy - r - backBtnH - 18;
         ctx.beginPath();
         ctx.roundRect(backBtnX, backBtnY, backBtnW, backBtnH, backBtnH * 0.3);
-        ctx.fillStyle = `rgba(26, 58, 92, ${hintAlpha * 0.2})`;
+        ctx.fillStyle = `rgba(30, 50, 50, ${hintAlpha * 0.2})`;
         ctx.fill();
         ctx.strokeStyle = `rgba(200, 210, 220, ${hintAlpha * 0.5})`;
         ctx.lineWidth = 1;
         ctx.stroke();
-        ctx.fillStyle = `rgba(240, 236, 230, ${hintAlpha})`;
+        ctx.fillStyle = `rgba(250, 230, 230, ${hintAlpha})`;
         ctx.textBaseline = 'middle';
         ctx.fillText(backText, cx, backBtnY + backBtnH / 2);
         backToMenuHitArea = { x: backBtnX, y: backBtnY, w: backBtnW, h: backBtnH };
@@ -7080,12 +7156,12 @@ function frame() {
         const donBtnY = cy + r + 35;
         ctx.beginPath();
         ctx.roundRect(donBtnX, donBtnY, donBtnW, donBtnH, donBtnH * 0.25);
-        ctx.fillStyle = `rgba(232, 106, 122, ${donAlpha * 0.25})`;
+        ctx.fillStyle = `rgba(237, 112, 112, ${donAlpha * 0.25})`;
         ctx.fill();
-        ctx.strokeStyle = `rgba(232, 106, 122, ${donAlpha * 0.8})`;
+        ctx.strokeStyle = `rgba(237, 112, 112, ${donAlpha * 0.8})`;
         ctx.lineWidth = 2;
         ctx.stroke();
-        ctx.fillStyle = `rgba(232, 106, 122, ${donAlpha})`;
+        ctx.fillStyle = `rgba(237, 112, 112, ${donAlpha})`;
         ctx.textBaseline = 'middle';
         ctx.fillText(donText, cx, donBtnY + donBtnH / 2);
         donateHitArea = { x: donBtnX, y: donBtnY, w: donBtnW, h: donBtnH };
@@ -7129,7 +7205,7 @@ function frame() {
   }
 
   // Atem-Nebel NUR außerhalb der Kugel (Meditation)
-  // Atem-Nebel NUR außerhalb der Kugel — nur Cyan (#2abfbf)
+  // Atem-Nebel NUR außerhalb der Kugel — nur Cyan (#25a2a2)
   const breathFadeOut = state === 'done'
     ? (breathDoneFinished ? 0 : Math.max(0, (breathWave + 1) / 2)) // Beim letzten Ausatmen mit Welle ausfaden
     : 1;
@@ -7157,9 +7233,9 @@ function frame() {
       const outerR = nebelOuter + layerOffset * 0.5;
       const grad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
       const a = nebelAlpha * (1 - layer * 0.3);
-      grad.addColorStop(0, `rgba(42, 191, 191, ${a})`);
-      grad.addColorStop(0.4, `rgba(42, 191, 191, ${a * 0.5})`);
-      grad.addColorStop(1, 'rgba(42, 191, 191, 0)');
+      grad.addColorStop(0, `rgba(37, 162, 162, ${a})`);
+      grad.addColorStop(0.4, `rgba(37, 162, 162, ${a * 0.5})`);
+      grad.addColorStop(1, 'rgba(37, 162, 162, 0)');
       ctx.beginPath();
       ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
       ctx.fillStyle = grad;
@@ -7173,9 +7249,9 @@ function frame() {
       const streakY = cy + Math.sin(angle) * r * 0.1;
       const sOuter = nebelOuter + r * 0.05 * (0.5 + 0.5 * Math.sin(angle * 3 + breathTime));
       const sGrad = ctx.createRadialGradient(streakX, streakY, nebelBase, streakX, streakY, sOuter);
-      sGrad.addColorStop(0, `rgba(42, 191, 191, ${nebelAlpha * 0.4})`);
-      sGrad.addColorStop(0.6, `rgba(42, 191, 191, ${nebelAlpha * 0.15})`);
-      sGrad.addColorStop(1, 'rgba(42, 191, 191, 0)');
+      sGrad.addColorStop(0, `rgba(37, 162, 162, ${nebelAlpha * 0.4})`);
+      sGrad.addColorStop(0.6, `rgba(37, 162, 162, ${nebelAlpha * 0.15})`);
+      sGrad.addColorStop(1, 'rgba(37, 162, 162, 0)');
       ctx.beginPath();
       ctx.arc(streakX, streakY, sOuter, 0, Math.PI * 2);
       ctx.fillStyle = sGrad;
@@ -7196,7 +7272,7 @@ function frame() {
       const goldPulse = Math.sin(Date.now() * 0.006) * 0.15 + 0.85;
       ctx.beginPath();
       ctx.arc(cx, cy, rFixed - 3, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(255, 215, 0, ${0.9 * goldPulse})`;
+      ctx.strokeStyle = `rgba(237, 212, 87, ${0.9 * goldPulse})`;
       ctx.lineWidth = 5;
       ctx.stroke();
       ctx.beginPath();
@@ -7262,7 +7338,7 @@ function frame() {
     ctx.strokeText(txt, lcx, lcy);
     ctx.strokeText(txt, lcx, lcy);
     // Goldener Glow
-    ctx.shadowColor = `rgba(255, 215, 0, ${0.8 * goldPulse})`;
+    ctx.shadowColor = `rgba(237, 212, 87, ${0.8 * goldPulse})`;
     ctx.shadowBlur = 40;
     ctx.fillStyle = `rgba(255, 235, 180, ${0.95 * goldPulse})`;
     ctx.fillText(txt, lcx, lcy);
@@ -7292,9 +7368,9 @@ function frame() {
       ctx.strokeText(t('handyAblegen'), hcx, hcy);
       ctx.strokeText(t('handyAblegen2'), hcx, hcy + hFont * 1.4);
       // Heller Text
-      ctx.shadowColor = `rgba(240, 236, 230, ${0.5 * fadeAlpha})`;
+      ctx.shadowColor = `rgba(250, 230, 230, ${0.5 * fadeAlpha})`;
       ctx.shadowBlur = 20;
-      ctx.fillStyle = `rgba(240, 236, 230, ${0.95 * fadeAlpha})`;
+      ctx.fillStyle = `rgba(250, 230, 230, ${0.95 * fadeAlpha})`;
       ctx.fillText(t('handyAblegen'), hcx, hcy);
       ctx.fillText(t('handyAblegen2'), hcx, hcy + hFont * 1.4);
       ctx.shadowBlur = 0;
@@ -7302,60 +7378,236 @@ function frame() {
     }
   }
 
-  // --- Dev: Model-Switcher (4 Punkte oben Mitte) ---
-  if (state !== 'idle' && state !== 'done') {
-    const msR = 4; // Punkt-Radius
-    const msGap = 14; // Abstand zwischen Punkten
-    const msTotalW = (MODEL_LIST.length - 1) * msGap;
-    const msCx = cW / 2;
-    const msCy = 18; // oben, unter Safe Area
-    menuButtons.modelSwitch = [];
-    for (let mi = 0; mi < MODEL_LIST.length; mi++) {
-      const px = msCx - msTotalW / 2 + mi * msGap;
-      const py = msCy;
-      const isActive = mi === currentModelIdx;
-      const isHover = hoverModelIdx === mi;
-      if (isHover && !isActive) {
-        ctx.shadowColor = 'rgba(255, 215, 0, 0.6)';
-        ctx.shadowBlur = 8;
+  // --- Choosing-State: Figurauswahl + Optionen ---
+  if (state === 'choosing') {
+    const isMob = cW < 600 && cH > cW;
+    const u = Math.min(cW, cH);
+    const _sf = (a, b) => u * (isMob ? a : b);
+
+    // Schwarzer Hintergrund (wie Hauptmenü)
+    ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+    ctx.fillRect(0, 0, cW, cH);
+
+    // Subtile Sterne (wie Hauptmenü)
+    for (let i = 0; i < 40; i++) {
+      const sx = ((42 * (i + 1) * 7.3) % cW);
+      const sy = ((42 * (i + 1) * 13.7) % cH);
+      const pulse = Math.sin(Date.now() * 0.001 + i) * 0.3 + 0.7;
+      ctx.fillStyle = `rgba(180, 220, 220, ${(isMob ? 0.2 : 0.1) * pulse})`;
+      ctx.fillRect(sx, sy, 1.5, 1.5);
+    }
+
+    // --- Titel mit Teal-Glow (wie J-SPHERE Titel) ---
+    const tFS = _sf(0.05, 0.026);
+    ctx.font = `700 ${tFS}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const chTitle = t('chooseModel');
+    const titleY = cH * (isMob ? 0.13 : 0.16);
+    // Glow
+    ctx.shadowColor = 'rgba(37, 162, 162, 0.35)';
+    ctx.shadowBlur = 30;
+    ctx.fillStyle = 'rgba(37, 162, 162, 0.2)';
+    ctx.fillText(chTitle, cW / 2, titleY);
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = 'rgba(37, 162, 162, 0.3)';
+    ctx.fillText(chTitle, cW / 2, titleY);
+    // Haupttext
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fae6e6';
+    ctx.fillText(chTitle, cW / 2, titleY);
+
+    // --- Modell-Karten (kompakter) ---
+    const cardW = _sf(0.36, 0.18);
+    const cardH = cardW * 1.2;
+    const cardGap = _sf(0.04, 0.02);
+    const cardY = titleY + tFS * 1.1;
+    const cardR = _sf(0.025, 0.012);
+    const thumbSize = cardW * 0.95;
+    const labelFS = _sf(0.036, 0.017);
+
+    menuButtons.chooseModel = [];
+    const keys = ['male', 'female'];
+
+    for (let i = 0; i < 2; i++) {
+      const cx2 = cW / 2 + (i === 0 ? -(cardW + cardGap / 2) : cardGap / 2);
+      const cy2 = cardY;
+      const isSelected = currentModelIdx === i && !easterModelActive;
+
+      // Glow
+      if (isSelected) {
+        ctx.shadowColor = 'rgba(37, 162, 162, 0.5)';
+        ctx.shadowBlur = 24;
       }
+
+      // Karten-Hintergrund (Farbpalette: surface #1e3232, mid #1e5a5a, teal #25a2a2)
       ctx.beginPath();
-      ctx.arc(px, py, msR, 0, Math.PI * 2);
-      if (isActive) {
-        ctx.fillStyle = 'rgba(255, 215, 0, 0.9)';
+      ctx.roundRect(cx2, cy2, cardW, cardH, cardR);
+      ctx.fillStyle = isSelected
+        ? 'rgba(37, 162, 162, 0.12)'
+        : '#1e3232';
+      ctx.fill();
+      ctx.strokeStyle = isSelected
+        ? '#25a2a2'
+        : '#1e5a5a';
+      ctx.lineWidth = isSelected ? 2 : 1;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Thumbnail mit Gold-Glow
+      const thumb = modelThumbnails[keys[i]];
+      const thumbCx = cx2 + cardW / 2;
+      const thumbCy = cy2 + (cardH - labelFS * 2.2) / 2;
+      if (thumb && thumb.complete && thumb.naturalWidth > 0) {
+        const ttx = thumbCx - thumbSize / 2;
+        const tty = thumbCy - thumbSize / 2;
+        // Gold-Glow hinter dem Thumbnail
+        ctx.shadowColor = 'rgba(237, 212, 87, 0.45)';
+        ctx.shadowBlur = thumbSize * 0.3;
+        ctx.beginPath();
+        ctx.arc(thumbCx, thumbCy, thumbSize * 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(237, 212, 87, 0.08)';
         ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.drawImage(thumb, ttx, tty, thumbSize, thumbSize);
       } else {
-        ctx.strokeStyle = isHover ? 'rgba(255, 215, 0, 0.7)' : 'rgba(240, 236, 230, 0.35)';
-        ctx.lineWidth = 1.5;
+        // Lade-Ring
+        ctx.beginPath();
+        ctx.arc(thumbCx, thumbCy, thumbSize * 0.12, -Math.PI / 2, -Math.PI / 2 + (Date.now() % 1200) / 1200 * Math.PI * 2);
+        ctx.strokeStyle = 'rgba(37, 162, 162, 0.5)';
+        ctx.lineWidth = 2;
         ctx.stroke();
       }
-      ctx.shadowBlur = 0;
-      // Hit-Area (größer als Punkt für Touch)
-      const hitR = 12;
-      menuButtons.modelSwitch.push({ x: px - hitR, y: py - hitR, w: hitR * 2, h: hitR * 2, idx: mi });
+
+      menuButtons.chooseModel.push({ x: cx2, y: cy2, w: cardW, h: cardH, idx: i });
     }
-    // Tooltip bei Hover (Desktop)
-    if (hoverModelIdx >= 0) {
-      const tipFont = 11;
-      const tipText = MODEL_LIST[hoverModelIdx].label;
-      ctx.font = `400 ${tipFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
-      const tipW = ctx.measureText(tipText).width + 12;
-      const tipH = tipFont * 2;
-      const tipX = msCx - msTotalW / 2 + hoverModelIdx * msGap - tipW / 2;
-      const tipY = msCy + msR + 6;
+
+    // --- Optionen (Toggles mit Icons) ---
+    const optY = cardY + cardH + _sf(0.05, 0.035);
+    const optGap2 = _sf(0.06, 0.04);
+    const pillW = _sf(0.1, 0.05);
+    const pillH = pillW * 0.46;
+    const optLabelFS = _sf(0.03, 0.014);
+    const iconR = _sf(0.028, 0.014);
+    const optCx = cW / 2;
+
+    const toggles = [
+      { key: 'rotate', label: t('modelRotate'), active: modelRotate, icon: 'rotate' },
+      { key: 'timer', label: 'Timer', active: timerVisible, icon: 'stopwatch' },
+      { key: 'distraction', label: lang === 'de' ? 'Ablenkungen' : 'Distractions', active: distractionModeIdx === 1, icon: 'lotus' },
+    ];
+    menuButtons.choosingToggles = [];
+    const colW = pillW + _sf(0.03, 0.018);
+    const totalW = toggles.length * colW + (toggles.length - 1) * optGap2;
+    let togX = optCx - totalW / 2;
+
+    for (let ti = 0; ti < toggles.length; ti++) {
+      const tog = toggles[ti];
+      const tcx2 = togX + colW / 2;
+
+      // --- Icon ---
+      const iconCy = optY;
+      const ir = iconR;
+      const activeCol = tog.icon === 'stopwatch' ? 'rgba(237, 212, 87, 1)' :
+                        tog.icon === 'lotus' ? 'rgba(237, 112, 112, 1)' :
+                        'rgba(37, 162, 162, 1)';
+      const dimCol = 'rgba(250, 230, 230, 1)';
+      const col = tog.active ? activeCol : dimCol;
+      ctx.globalAlpha = tog.active ? 0.95 : 0.3;
+
+      if (tog.icon === 'rotate') {
+        ctx.strokeStyle = col;
+        ctx.lineWidth = ir * 0.2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(tcx2, iconCy, ir * 0.7, -Math.PI * 0.75, Math.PI * 0.55);
+        ctx.stroke();
+        const ax = tcx2 + Math.cos(Math.PI * 0.55) * ir * 0.7;
+        const ay = iconCy + Math.sin(Math.PI * 0.55) * ir * 0.7;
+        const aL = ir * 0.4;
+        ctx.fillStyle = col;
+        ctx.beginPath();
+        ctx.moveTo(ax + Math.cos(Math.PI * 0.55 + 0.4) * aL, ay + Math.sin(Math.PI * 0.55 + 0.4) * aL);
+        ctx.lineTo(ax, ay);
+        ctx.lineTo(ax + Math.cos(Math.PI * 0.55 - 1.1) * aL, ay + Math.sin(Math.PI * 0.55 - 1.1) * aL);
+        ctx.fill();
+        ctx.lineCap = 'butt';
+      } else if (tog.icon === 'stopwatch') {
+        ctx.strokeStyle = col;
+        ctx.lineWidth = ir * 0.15;
+        ctx.beginPath(); ctx.arc(tcx2, iconCy + ir * 0.1, ir * 0.6, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(tcx2, iconCy + ir * 0.1); ctx.lineTo(tcx2 + ir * 0.35, iconCy - ir * 0.12); ctx.stroke();
+        ctx.lineWidth = ir * 0.18;
+        ctx.beginPath(); ctx.moveTo(tcx2 - ir * 0.2, iconCy - ir * 0.55); ctx.lineTo(tcx2 + ir * 0.2, iconCy - ir * 0.55); ctx.stroke();
+        ctx.lineWidth = ir * 0.13;
+        ctx.beginPath(); ctx.moveTo(tcx2, iconCy - ir * 0.55); ctx.lineTo(tcx2, iconCy - ir * 0.75); ctx.stroke();
+      } else if (tog.icon === 'lotus') {
+        const lr2 = ir * 0.8;
+        for (let p = 0; p < 6; p++) {
+          const a = (p / 6) * Math.PI * 2 - Math.PI / 2;
+          ctx.beginPath();
+          ctx.ellipse(tcx2 + Math.cos(a) * lr2 * 0.38, iconCy + Math.sin(a) * lr2 * 0.38,
+                      lr2 * 0.28, lr2 * 0.58, a + Math.PI / 2, 0, Math.PI * 2);
+          ctx.fillStyle = col;
+          ctx.fill();
+        }
+        ctx.beginPath(); ctx.arc(tcx2, iconCy, lr2 * 0.2, 0, Math.PI * 2);
+        ctx.fillStyle = col; ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // --- Pill-Toggle ---
+      const py = iconCy + ir * 1.3 + _sf(0.015, 0.008);
+      const px = tcx2 - pillW / 2;
+      const pillR2 = pillH / 2;
+
       ctx.beginPath();
-      ctx.roundRect(tipX, tipY, tipW, tipH, 4);
-      ctx.fillStyle = 'rgba(16, 18, 24, 0.9)';
+      ctx.roundRect(px, py, pillW, pillH, pillR2);
+      if (tog.active) {
+        const pg = ctx.createLinearGradient(px, py, px + pillW, py);
+        pg.addColorStop(0, 'rgba(37, 162, 162, 0.25)');
+        pg.addColorStop(1, 'rgba(37, 162, 162, 0.45)');
+        ctx.fillStyle = pg;
+      } else {
+        ctx.fillStyle = '#1e3232';
+      }
       ctx.fill();
-      ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
+      ctx.strokeStyle = tog.active ? '#25a2a2' : '#1e5a5a';
       ctx.lineWidth = 1;
       ctx.stroke();
-      ctx.fillStyle = 'rgba(255, 215, 0, 1.0)';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(tipText, tipX + tipW / 2, tipY + tipH / 2);
-      ctx.textAlign = 'start';
+
+      // Knob
+      const kR = pillH * 0.36;
+      const kX = tog.active ? px + pillW - pillR2 : px + pillR2;
+      const kY = py + pillH / 2;
+      if (tog.active) {
+        ctx.shadowColor = 'rgba(37, 162, 162, 0.5)';
+        ctx.shadowBlur = 6;
+      }
+      ctx.beginPath();
+      ctx.arc(kX, kY, kR, 0, Math.PI * 2);
+      ctx.fillStyle = tog.active ? '#25a2a2' : '#3a7070';
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Label
+      const ly2 = py + pillH + _sf(0.03, 0.018);
+      ctx.font = `400 ${optLabelFS}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
+      ctx.fillStyle = tog.active ? '#fae6e6' : '#5a8888';
+      ctx.fillText(tog.label, tcx2, ly2);
+
+      // Hit-Area
+      const hP = _sf(0.012, 0.006);
+      menuButtons.choosingToggles.push({
+        x: tcx2 - colW / 2 - hP, y: iconCy - ir - hP,
+        w: colW + hP * 2, h: (ly2 + optLabelFS) - (iconCy - ir) + hP * 2,
+        key: tog.key
+      });
+
+      togX += colW + optGap2;
     }
+
+    ctx.textAlign = 'start';
   }
 
   // --- Zurück-Button (✕) — immer sichtbar im Kugelmodus ---
@@ -7373,15 +7625,15 @@ function frame() {
     const bcy = by + bSize / 2;
     ctx.beginPath();
     ctx.arc(bcx, bcy, bSize / 2, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(10, 22, 40, 0.6)';
+    ctx.fillStyle = 'rgba(10, 10, 30, 0.6)';
     ctx.fill();
-    ctx.strokeStyle = 'rgba(240, 236, 230, 0.25)';
+    ctx.strokeStyle = 'rgba(250, 230, 230, 0.25)';
     ctx.lineWidth = 1;
     ctx.stroke();
 
     // ✕ Symbol
     const cross = bSize * 0.22;
-    ctx.strokeStyle = 'rgba(240, 236, 230, 0.7)';
+    ctx.strokeStyle = 'rgba(250, 230, 230, 0.7)';
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.beginPath();
