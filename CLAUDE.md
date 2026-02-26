@@ -14,8 +14,8 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - "by Jochen Hornung Dev Studios" + klickbarer Link "jochenhornung.de"
 - Einstellungen: Meditationszeit, Gedanken-Sound, Meditations-Sound, Gedankenmodus, Atmen, Timer-Anzeige
 - **"Klicke hier um zu starten"** in Accent-Farbe (pulsierend, erst aktiv wenn Zeit gewählt)
-- **"Wähle eine Meditationszeit"** in #f4a842 (warm orange, font-weight 700) wenn keine Zeit gewählt
-- **MEDITATIONSZEIT-Label** wird ebenfalls #f4a842 wenn keine Zeit gewählt
+- **"Wähle eine Meditationszeit"** in #edd457 (gelb, font-weight 700) wenn keine Zeit gewählt
+- **MEDITATIONSZEIT-Label** wird ebenfalls #edd457 wenn keine Zeit gewählt
 - Tingsha-Sound bei jedem Button-Klick (kein Sound bei Start-Klick)
 - ESC-Taste kehrt aus jedem State zum Menü zurück
 
@@ -113,7 +113,7 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Live**: https://jsphere.jochenhornung.de/ (GitHub Pages, Netlify nur für DNS)
 - **Rendering**: 2D Canvas + Three.js Offscreen-Rendering für 3D-Modell
 - **Input**: Maus (nur bei gedrückter Taste), Touch, Device-Gyroscope
-- **States**: `idle` (Menü) → `ready` → `shaking` → `meditating` → `done`
+- **States**: `idle` (Menü) → `choosing` (Figurauswahl) → `ready` → `shaking` → `meditating` → `done`
 - **Kugel**: Radiale Gradienten für Wasser, Glasrand, Glanzpunkt, Kaustiken
 - **Responsive**: Füllt ganzen Viewport, Kugel = 70% der kleineren Achse
 
@@ -121,7 +121,7 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Stil**: ZPMA-inspiriert (Fullscreen Canvas-Overlay, nicht HTML)
 - **Font**: `-apple-system, "SF Pro Display", "Helvetica Neue"` weight 900 für Titel, "Courier New" monospace für Settings
 - **Titel-Glow**: 3 Schichten — weicher Teal-Schein (blur 60, alpha 0.5/0.2) → mittlerer (blur 30, alpha 0.8/0.3) → heller Kern mit Drop-Shadow
-- **Farb-Palette**: bg=#0a1628, primary=#1a3a5c, secondary=#3a6080, teal=#2abfbf, accent=#e86a7a, light=#f0ece6, hint=#f4a842, gold=#ffd700
+- **Farb-Palette** (siehe `jsphere-farbpalette.html`): bg=#000 (reines Schwarz), surface=#1e3232, mid=#1e5a5a, teal=#25a2a2, yellow=#edd457, coral=#ed7070, cream=#fae6e6
 - **Text-Opacities**: Labels 0.95, nicht-ausgewählte Buttons 0.9, Credits 0.9, jochenhornung.de 0.75(teal), Button-Borders 0.5
 - **Kein Default**: `selectedDurationIdx = -1`, erst klicken aktiviert START
 - **Reihenfolge**: Titel → Untertitel → Credits → Zeitdrehrad → ATEMRHYTHMUS → MEDITATIONS-SOUND → GEDANKENMODUS → GEDANKENFLUSS → DEIN GESICHT → Start-Button → Footer
@@ -132,7 +132,7 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 
 ### 3D-Modell-Integration
 - **Three.js v0.170.0** via importmap (CDN jsdelivr)
-- **Modell**: `japanese_monk_cyborg_sitting.glb` — Cyborg-Mönch (Sketchfab, Romain Brunas)
+- **Modelle**: `model_male_compressed.glb` (351 KB) + `model_female_compressed.glb` (352 KB) — Meshy AI, DRACO-komprimiert
 - **Offscreen Canvas**: WebGLRenderer (alpha:true, ACES tonemap, sRGB output, exposure 1.8), Render-Größe r*1.8
 - **Mobile Display**: Mönch-Bild wird 1.4× skaliert (statt 1.0×) damit er tiefer sitzt wie auf Desktop
 - **drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount)**: Zentrale Funktion
@@ -213,7 +213,7 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Asymmetrische Welle**: Piecewise Sine für glatte Übergänge bei unterschiedlichen Ein-/Ausatem-Dauern
 - **Default**: Kohärent (`breathingMode = 1`)
 - **Kugel-Radius**: Oszilliert ±2.5% mit der Atem-Welle
-- **Nebel**: Nur Cyan (#2abfbf), direkt an Kugelrand (clipR=r+2), 3 Gradient-Schichten + 5 Strähnen
+- **Nebel**: Nur Cyan (#25a2a2), direkt an Kugelrand (clipR=r+2), 3 Gradient-Schichten + 5 Strähnen
 - **Atem-Sound**: Gefiltertes Rauschen (Bandpass 350–750 Hz), schwillt mit Einatmen an (Vol 0.22). **Spatial Reverb**: ConvolverNode mit algorithmisch generierter Stereo-Impulsantwort (2s Hallfahne, Decay 2.8). Meditation 35% Wet, Schütteln 10% Wet. Erzeugt räumlichen Meeresrauschen-Charakter, besonders immersiv mit AirPods Pro.
 - **State**: `BREATHING_MODES[]`, `BREATHING_TIMING[]`, `breathingMode` (0–4)
 
@@ -223,7 +223,7 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Mobile**: Tap-Tooltip unter Icon, gleicher Stil, auto-hide nach 2s mit Fade-out
 - **Default**: Aus (`timerVisible = false`)
 - **Anzeige**: Uhrzeitanzeige unter der Kugel (optional)
-- **Counter-Ring**: Rot (255,70,90) bis 99%, bei 100% Gold (255,215,0) mit Glow + "Du darfst jetzt loslassen ..."
+- **Counter-Ring**: Rot (255,70,90) bis 99%, bei 100% Gelb (237,212,87) mit Glow + "Du darfst jetzt loslassen ..."
 - **Position**: `rFixed - 3` (leicht innerhalb der Glaskante)
 - **rFixed**: Counter-Ring nutzt fixen Radius, bewegt sich nicht mit Atem-Animation
 
@@ -266,7 +266,7 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Schweben2-alt (idx=1) + Schweben3-alt (idx=2) sind EINGEFROREN** — nicht verändern ohne ausdrückliche User-Anweisung
 - **Schweben2 (idx=0) ist AUSGEBLENDET** — nur versteckt, nicht gelöscht
 - Mönch-Silhouetten-Abstoßung: Pixelgenaue 48×48 Kollisionsmaske, Safari-Fallback via Haupt-Canvas
-- DPR-Skalierung: idle-State nutzt `devicePixelRatio` (max 2) für scharfes Menü, alle anderen States dpr=1 für Performance. Umschaltung via `resize()` bei State-Wechsel
+- DPR-Skalierung: idle- und choosing-State nutzen `devicePixelRatio` (max 2) für scharfe Schrift, alle anderen States dpr=1 für Performance. Umschaltung via `resize()` bei State-Wechsel
 - **Font-Kaskade**: `"SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace` — schärfste verfügbare Monospace je Plattform (Mac: SF Mono, Win 11: Cascadia, Win 10: Consolas)
 - Meditation: Alles linear (Verblassen sqrt-Kurve, Reibung, Brownsche Bewegung, Sog)
 - Counter-Rate: Desktop 0.55, Mobile 0.35
@@ -283,7 +283,8 @@ Folgende Keys werden gespeichert:
 - `msphere_faceswap` — Face-Swap-Bild (data URL)
 - `msphere_facemode` — Face-Modus (idx)
 - `msphere_faceswap_last` — Letzte Faceswap-Nutzung (Timestamp, für Rate-Limiting)
-- `msphere_model` — Gewähltes 3D-Modell (0-3, Default: 2=Zen)
+- `msphere_model` — Gewähltes 3D-Modell (0=male, 1=female, Default: 0)
+- `msphere_rotate` — Figur dreht sich 360° (true/false)
 - **NICHT gespeichert**: Meditationszeit (wird jedes Mal neu gewählt), Easter-Egg-Modus
 
 ## Easter Eggs
@@ -326,38 +327,47 @@ Folgende Keys werden gespeichert:
 ## Sicherungs-Tags
 - `v1.0-pre-payment` — Snapshot vor Payment-Feature (alle Fixes fertig)
 - `v2.0-model-switcher` — Model-Switcher, Spatial Audio, neue Modelle, Alpha-Kollisionsmaske
+- `v3.0-choosing-palette` — Choosing-Screen, neue Farbpalette, male/female Modelle
 
-## 3D-Modelle & Model-Switcher
-- **Quelle Original**: Sketchfab (Romain Brunas) — `monk_compressed.glb`
+## 3D-Modelle & Choosing-Screen
 - **Quelle Meshy**: meshy.ai (Pro-Account), Text-to-3D + Textur-Generierung, CC BY 4.0
 - **Komprimierung**: `npx @gltf-transform/cli draco input.glb output.glb`
-- **MODEL_LIST** (4 Modelle, per Dev-Switcher wählbar):
-  | Idx | Key | Datei | Label | Größe |
-  |-----|-----|-------|-------|-------|
-  | 0 | grey | `meshy_grey_compressed.glb` | Grau | 1,7 MB |
-  | 1 | bronze | `meshy_bronze_compressed.glb` | Bronze | 6 MB |
-  | 2 | zen2 | `meshy_zen2_compressed.glb` | Zen | 7,6 MB |
-  | 3 | monk | `monk_compressed.glb` | Mönch | 2,1 MB |
+- **MODEL_LIST** (2 Modelle, User wählt im Choosing-Screen):
+  | Idx | Key | Datei | Größe |
+  |-----|-----|-------|-------|
+  | 0 | male | `model_male_compressed.glb` | 351 KB |
+  | 1 | female | `model_female_compressed.glb` | 352 KB |
+- **Alte Modelle archiviert**: `models_archive/` (grey, bronze, zen2, monk + Originale)
 - **EASTER_MODELS** (nur in Easter-Egg-Modi sichtbar):
-  | Key | Datei | Label | Größe | Trigger |
-  |-----|-------|-------|-------|---------|
-  | zoe | `meshy_zoe_compressed.glb` | Zoe | 356 KB | 3× Tap / "ZOE" |
-  | jochen | `meshy_jochen_compressed.glb` | Jochen | 366 KB | 4× Tap / "JOCHEN" |
-- **Material-Anpassungen**:
-  - Zen + Bronze: `color ×1.6`, Emissive `#222218` 40% (aufhellen)
-  - Grau: `color ×0.7` (mehr Schattentiefe)
-  - Easter-Modelle: `color ×(1.3, 1.1, 0.7)` Gold-Shift + Emissive `#503810` 8% (goldener Hauch ohne Schatten zu verlieren)
-- **Default**: Zen (idx 2), gespeichert in `msphere_model`
-- **Dev-Switcher UI**: 4 kleine Punkte oben Mitte im Play-State, aktiver Punkt gold gefüllt, Hover-Tooltip mit Label. Nur für Entwickler, nicht für Endnutzer sichtbar.
-- **Kollisionsmaske**: 48×48 Uint8Array, liest **Alpha-Kanal** direkt vom WebGL-Canvas (`gl.readPixels`). Alpha > 20 = Modell-Pixel. Bei Face-Swap: Brightness > 25 vom Face-Swap-Bild. Funktioniert modellunabhängig.
+  | Key | Datei | Größe | Trigger |
+  |-----|-------|-------|---------|
+  | zoe | `meshy_zoe_compressed.glb` | 356 KB | 3× Tap / "ZOE" |
+  | jochen | `meshy_jochen_compressed.glb` | 366 KB | 4× Tap / "JOCHEN" |
+- **Material-Anpassungen**: Universeller Gold-Glow für alle Modelle: `color ×(1.3, 1.1, 0.7)` + Emissive `#503810` 8%
+- **Default**: Male (idx 0), gespeichert in `msphere_model`
+- **Choosing-Screen** (`state === 'choosing'`):
+  - Erscheint nach "Meditation starten" (Easter-Modelle überspringen ihn)
+  - 2 Modell-Karten mit Thumbnails + Gold-Glow (kein Text, selbsterklärend)
+  - 3 Pill-Toggles: Figur dreht / Timer / Ablenkungen
+  - Schwarzer Hintergrund + Sterne (wie Hauptmenü)
+  - Farbpalette: Surface #1e3232, Mid #1e5a5a Borders, Teal #25a2a2 Selected
+  - Klick auf Karte → lädt Modell + wechselt zu `ready`
+- **Thumbnail-Generierung**: Nutzt Haupt-Renderer (kein Extra-WebGL-Kontext), sequentielle Queue mit 1.5s Verzögerung
+- **Rotation**: `modelRotate` — 360° Drehung (~63s/Umdrehung), per Toggle im Choosing-Screen + localStorage
+- **Kollisionsmaske**: 48×48 Uint8Array, liest Alpha-Kanal direkt vom WebGL-Canvas (`gl.readPixels`). Funktioniert modellunabhängig.
 - **Face Swap**: `renderMonkForFaceSwap()` rendert das aktuelle Modell — funktioniert mit jedem Modell automatisch.
-- **Easter-Modell-Rotation**: 360° stetige Drehung (~63s/Umdrehung) nur für Easter-Modelle, normale Modelle haben subtiles Atmen (±0.05 rad)
-- **Meshy-Prompt für personalisierte Modelle**: Image-to-3D mit Gemini-generiertem Meditationsbild als Vorlage. Prompt: "A seated zen meditation figure in full lotus position (padmasana) on a small lotus flower pedestal. Eyes closed, hands resting on knees in chin mudra. Serene, calm expression. Realistic human skin and proportions. Simple, clean geometry. Dark neutral background. Studio lighting from above."
 
-## Offene Fragen / Nächste Schritte
+## Nächste Schritte
+1. **Personalisierte 3D-Modelle** (Model-Flow): Meshy-Pipeline auf Vercel bauen — Plan in `PLAN_personalisierte_3d_modelle.md`
+   - Foto → Meshy Image-to-Image → Image-to-3D → DRACO → App
+   - 3 Serverless Functions auf `m-sphere-api` (Vercel)
+   - PayPal Authorize/Capture (9,99 €), ~95% Marge
+2. **iOS-App** (Hybrid WKWebView + native StoreKit): Warten auf Xcode 26.3 final (März 2026?)
+   - Apple Developer Account (99€/Jahr) → Small Business Program (15% Kommission)
+   - WKWebView-Wrapper + JS↔Swift-Bridge für StoreKit In-App Purchases
+   - Agentic Coding in Xcode 26.3 kann dabei helfen
+
+## Offene Fragen
 - iOS AudioContext "interrupted" nach Ruhezustand — Sound stirbt, nur Refresh hilft (WebKit Bug #263627)
 - Partikel-Formen variieren (nicht nur Kreise — Icons, Symbole?)
-- Wasser-Visualisierung im Done-State verbessern
-- Settings-Menüs als Dreh-Räder (Plan existiert, noch nicht umgesetzt)
 - Zoe-Modus visuell kennzeichnen (z.B. Titel-Glow rosa statt teal)
-- Model-Switcher: Aktuell Dev-only (4 Punkte oben), für Endnutzer ggf. in Settings integrieren
