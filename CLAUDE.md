@@ -1,4 +1,4 @@
-# M-Sphere
+# J-Sphere
 
 ## Kernidee
 Interaktive Schneekugel als Meditations-Erfahrung.
@@ -9,7 +9,7 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 
 ### 1. Overlay-Menü (idle)
 - Fullscreen-Overlay im ZPMA-Stil (dunkler Hintergrund, subtile Sterne)
-- **"M-SPHERE"** als Titel (SF Pro Display, dreistufiger Teal-Glow, verstärkte Opacities)
+- **"J-SPHERE"** als Titel (SF Pro Display, dreistufiger Teal-Glow, verstärkte Opacities)
 - "INTERACTIVE MEDITATION" Untertitel
 - "by Jochen Hornung Dev Studios" + klickbarer Link "jochenhornung.de"
 - Einstellungen: Meditationszeit, Gedanken-Sound, Meditations-Sound, Gedankenmodus, Atmen, Timer-Anzeige
@@ -107,10 +107,10 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
 - **Wu Wei** (Daoismus): Nicht-Tun als höchstes Handeln
 
 ## Technische Umsetzung
-- **Name**: M-Sphere (ehemals "Kugel")
+- **Name**: J-Sphere (ehemals M-Sphere, ehemals "Kugel")
 - **Datei**: `index.html` (Single-File-Webapp, `<script type="module">`)
 - **Repo**: https://github.com/s0f4surf3r/m-sphere (public, GitHub Pages)
-- **Live**: https://msphere.jochenhornung.de/ (Netlify)
+- **Live**: https://jsphere.jochenhornung.de/ (GitHub Pages, Netlify nur für DNS)
 - **Rendering**: 2D Canvas + Three.js Offscreen-Rendering für 3D-Modell
 - **Input**: Maus (nur bei gedrückter Taste), Touch, Device-Gyroscope
 - **States**: `idle` (Menü) → `ready` → `shaking` → `meditating` → `done`
@@ -190,7 +190,11 @@ Inspiriert von Thomas Metzingers Schneekugel-Bild, aber radikal weitergedacht.
   - **Schweben** (idx=6, DEFAULT): Kollision ohne Sog, bester Modus
   - **Sichtbar im Menü**: `THOUGHT_MODES_VISIBLE = [6, 3, 4, 5]`
   - **Migration**: Gespeicherter idx=0 wird automatisch auf idx=6 umgeleitet
-- **Mönch-Kollisionsmaske**: 48×48 Uint8Array, Update alle 30 Frames. Chrome: gl.readPixels. Safari: ctx.getImageData vom Haupt-Canvas (Brightness >180). Partikel werden radial zur nächsten freien Stelle geschoben.
+- **Mönch-Kollisionsmaske**: 48×48 Uint8Array, Update alle 30 Frames
+  - **Normal**: `captureMonkMask()` — liest Alpha-Kanal direkt vom WebGL-Canvas (`gl.readPixels`), Alpha > 20 = solid
+  - **Face-Swap**: `captureMonkMaskFromImage(img)` — liest Brightness vom Face-Swap-Bild via Temp-Canvas (48×48), Brightness > 25 = solid
+  - **Horizontale Lückenfüllung**: Konvexe Hülle pro Zeile verhindert Einbuchtungen an Lotussockel/Hüfte
+  - Partikel werden radial zur nächsten freien Stelle geschoben
 - **Physik**: Desktop leichte Reibung (0.995), Mobile stärkere Reibung (0.98) + Gravitation (0.002)
 
 ### Mönch-Verhalten je State
@@ -280,23 +284,31 @@ Folgende Keys werden gespeichert:
 - `msphere_facemode` — Face-Modus (idx)
 - `msphere_faceswap_last` — Letzte Faceswap-Nutzung (Timestamp, für Rate-Limiting)
 - `msphere_model` — Gewähltes 3D-Modell (0-3, Default: 2=Zen)
-- **NICHT gespeichert**: Meditationszeit (wird jedes Mal neu gewählt)
+- **NICHT gespeichert**: Meditationszeit (wird jedes Mal neu gewählt), Easter-Egg-Modus
 
 ## Easter Eggs
-- **Levi**: Swipe-Links auf "M-SPHERE" Titel → `easterEggVoice = 'levi'`, Text "In Liebe von deinem Papa!"
-- **Zoe**: 3× Tap auf "M-SPHERE" Titel → `easterEggVoice = 'zoe'`, Text "Für Zoe ♡"
+- **Levi**: Swipe-Links auf "J-SPHERE" Titel → `easterEggVoice = 'levi'`, Text "In Liebe von deinem Papa!" (kein eigenes Modell)
+- **Zoe**: 3× Tap auf "J-SPHERE" Titel ODER Keyboard "ZOE" → `easterEggVoice = 'zoe'`, Text "In Liebe von deinem Liebling Jochen!", eigenes 3D-Modell (`meshy_zoe_compressed.glb`), Voice `dubistdaswasser_zoe.m4a`
+- **Jochen**: 4× Tap auf "J-SPHERE" Titel ODER Keyboard "JOCHEN" → `easterEggVoice = 'jochen'`, Text "Für Jochen ♡", eigenes 3D-Modell (`meshy_jochen_compressed.glb`), Default-Voice
+- **Easter-Modelle**: Beide mit goldenem Farbshift (color ×1.3/1.1/0.7 + Emissive `#503810` 8%) und langsamer 360°-Drehung (~63s/Umdrehung) während Meditation
+- **Face-Swap gratis**: In Zoe- und Jochen-Modus wird PayPal-Overlay übersprungen
 - **Levi-Voice ist DE-Default**: `dubistdaswasser_kind.m4a` spielt immer für DE (nicht nur im Easter-Egg)
+- **Aktivierung**: `activateEasterEgg(eeKey)` zentrale Funktion für alle Easter Eggs
+- **3×/4× Tap**: 3. Tap wartet 400ms auf möglichen 4. Tap (Timer-basiert)
 
 ## Face Swap
 - **API**: Replicate (Modell `278a81e...`), Proxy via Vercel Serverless (`/Users/joho21/Projekte/m-sphere-api/api/faceswap.js`)
 - **Rate-Limiting**: 1× pro Tag pro IP (Server-seitig in-memory Map) + Client-seitig localStorage
 - **Labels**: Aus / Mediathek / Kamera / Laden (einheitlich auf allen Geräten)
+- **Laden-Button**: Toast-Hinweis "Bitte nur ein zuvor gespeichertes Face-Swap-Bild verwenden"
 - **Kamera-Bug-Fix**: Nach Chrome-Permission-Dialog wird `menuExpanded.face = true` gesetzt
 - **Menü-Verhalten**: Einklapp-Menüs bleiben nach Auswahl offen, schließen nur bei anderer Kategorie oder manuellem Zuklappen
 - **PayPal-Bezahlung**: 0,50 € per Authorize/Capture-Flow (erst autorisieren, nach erfolgreichem Swap capturen, bei Fehler void)
 - **PayPal SDK**: Wird on-demand geladen, Client-ID in `PAYPAL_CLIENT_ID`
 - **API-Proxy**: `https://m-sphere-api.vercel.app/api/paypal` (create-order, authorize-order, capture-payment, void-payment)
-- **Zoe-Modus**: Face Swap kostenlos (PayPal-Overlay wird übersprungen)
+- **Zoe/Jochen-Modus**: Face Swap kostenlos (PayPal-Overlay wird übersprungen)
+- **Speichern**: Desktop nutzt `<a download>`, Touch-Geräte nutzen `navigator.share()` (kein Share Sheet auf Mac)
+- **Kollision bei Face-Swap**: `captureMonkMaskFromImage()` liest Brightness vom Face-Swap-Bild statt WebGL-Alpha → Silhouette stimmt mit angezeigtem Bild überein
 
 ## Ablenkungsmodus (Lotus-Icon)
 - **Lotus-Icon**: Im Footer, Teal wenn inaktiv, Rosa/Rot wenn aktiv
@@ -326,10 +338,21 @@ Folgende Keys werden gespeichert:
   | 1 | bronze | `meshy_bronze_compressed.glb` | Bronze | 6 MB |
   | 2 | zen2 | `meshy_zen2_compressed.glb` | Zen | 7,6 MB |
   | 3 | monk | `monk_compressed.glb` | Mönch | 2,1 MB |
+- **EASTER_MODELS** (nur in Easter-Egg-Modi sichtbar):
+  | Key | Datei | Label | Größe | Trigger |
+  |-----|-------|-------|-------|---------|
+  | zoe | `meshy_zoe_compressed.glb` | Zoe | 356 KB | 3× Tap / "ZOE" |
+  | jochen | `meshy_jochen_compressed.glb` | Jochen | 366 KB | 4× Tap / "JOCHEN" |
+- **Material-Anpassungen**:
+  - Zen + Bronze: `color ×1.6`, Emissive `#222218` 40% (aufhellen)
+  - Grau: `color ×0.7` (mehr Schattentiefe)
+  - Easter-Modelle: `color ×(1.3, 1.1, 0.7)` Gold-Shift + Emissive `#503810` 8% (goldener Hauch ohne Schatten zu verlieren)
 - **Default**: Zen (idx 2), gespeichert in `msphere_model`
 - **Dev-Switcher UI**: 4 kleine Punkte oben Mitte im Play-State, aktiver Punkt gold gefüllt, Hover-Tooltip mit Label. Nur für Entwickler, nicht für Endnutzer sichtbar.
-- **Kollisionsmaske**: 48×48 Uint8Array, liest **Alpha-Kanal** direkt vom WebGL-Canvas (`gl.readPixels`). Alpha > 10 = Modell-Pixel. Funktioniert modellunabhängig (kein Brightness-Schwellwert mehr).
+- **Kollisionsmaske**: 48×48 Uint8Array, liest **Alpha-Kanal** direkt vom WebGL-Canvas (`gl.readPixels`). Alpha > 20 = Modell-Pixel. Bei Face-Swap: Brightness > 25 vom Face-Swap-Bild. Funktioniert modellunabhängig.
 - **Face Swap**: `renderMonkForFaceSwap()` rendert das aktuelle Modell — funktioniert mit jedem Modell automatisch.
+- **Easter-Modell-Rotation**: 360° stetige Drehung (~63s/Umdrehung) nur für Easter-Modelle, normale Modelle haben subtiles Atmen (±0.05 rad)
+- **Meshy-Prompt für personalisierte Modelle**: Image-to-3D mit Gemini-generiertem Meditationsbild als Vorlage. Prompt: "A seated zen meditation figure in full lotus position (padmasana) on a small lotus flower pedestal. Eyes closed, hands resting on knees in chin mudra. Serene, calm expression. Realistic human skin and proportions. Simple, clean geometry. Dark neutral background. Studio lighting from above."
 
 ## Offene Fragen / Nächste Schritte
 - iOS AudioContext "interrupted" nach Ruhezustand — Sound stirbt, nur Refresh hilft (WebKit Bug #263627)
@@ -338,4 +361,3 @@ Folgende Keys werden gespeichert:
 - Settings-Menüs als Dreh-Räder (Plan existiert, noch nicht umgesetzt)
 - Zoe-Modus visuell kennzeichnen (z.B. Titel-Glow rosa statt teal)
 - Model-Switcher: Aktuell Dev-only (4 Punkte oben), für Endnutzer ggf. in Settings integrieren
-- Laden-Button (Face Swap): Toast-Hinweis "Bitte nur ein zuvor gespeichertes Face-Swap-Bild verwenden"
