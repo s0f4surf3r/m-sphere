@@ -98,6 +98,21 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 <div id="menuSpacer" style="width:1px;height:0;pointer-events:none"></div>
 <input type="file" id="faceInput" accept="image/*" capture="user" style="display:none">
 <input type="file" id="faceLoadInput" accept="image/png,image/jpeg,image/webp,image/heic" style="display:none">
+<input type="file" id="deinIchInput" accept="image/*" multiple style="display:none">
+<div id="deinIchConsent" style="display:none;position:fixed;inset:0;z-index:9999;
+  background:rgba(10,22,40,0.92);align-items:center;justify-content:center;
+  font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">
+  <div style="background:#1e3232;border-radius:16px;padding:28px 24px;max-width:380px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+    <div id="consentTitle" style="color:#fae6e6;font-size:18px;font-weight:700;margin-bottom:12px"></div>
+    <div id="consentText" style="color:rgba(250,230,230,0.7);font-size:13px;line-height:1.6;margin-bottom:20px;text-align:left;white-space:pre-line;max-height:50vh;overflow-y:auto"></div>
+    <button id="consentAccept" style="display:block;width:100%;padding:10px 0;margin-bottom:10px;background:rgba(37,162,162,0.15);
+      border:1px solid rgba(37,162,162,0.5);color:rgba(37,162,162,0.95);border-radius:8px;font-size:15px;cursor:pointer;
+      font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
+    <button id="consentDecline" style="display:block;width:100%;padding:8px 0;background:none;
+      border:1px solid rgba(250,230,230,0.3);color:#fae6e6;border-radius:8px;font-size:14px;cursor:pointer;
+      font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
+  </div>
+</div>
 <div id="paypalOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,22,40,0.92);
   align-items:center;justify-content:center;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">
   <div style="background:#1e3232;border-radius:16px;padding:28px 24px;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
@@ -192,6 +207,23 @@ const TR = {
     gedankenmodus: 'GEDANKENMODUS',
     gedankenfluss: 'GEDANKENFLUSS',
     deinGesicht: 'DEIN GESICHT',
+    deinIch: 'DEIN ICH',
+    deinIchFoto: 'Foto hochladen',
+    deinIchHint: '1-2 Fotos • Dauer ~5 Min',
+    deinIchStep1: 'Bild wird erstellt',
+    deinIchStep2: '3D-Modell wird gebaut',
+    deinIchStep3: 'Modell wird optimiert',
+    deinIchWeiter: 'Weiter',
+    deinIchNochmal: 'Nochmal',
+    deinIchAktiv: 'Aktiv',
+    deinIchNeu: 'Neu',
+    deinIchLoeschen: 'Löschen',
+    deinIchLaden: 'Dein Modell wird geladen',
+    deinIchFehler: 'Fehler beim Erstellen',
+    dsgvoTitel: 'DEIN ICH',
+    dsgvoText: 'FÜR BESTE ERGEBNISSE\n\n• 1–2 Fotos von dir, frontal\n• Gutes Licht, ganzes Gesicht sichtbar\n• Neutraler Hintergrund wenn möglich\n• Kein starkes Gegenlicht\n\nDATENSCHUTZ\n\nDeine Fotos werden zur Erstellung eines personalisierten 3D-Modells an folgende Dienste übermittelt:\n\n• Google Gemini (USA) — Bilderzeugung\n• Meshy AI (USA) — 3D-Modellierung\n\nDie Fotos werden nur für die Verarbeitung genutzt und danach gelöscht. Das fertige Modell wird ausschließlich lokal auf deinem Gerät gespeichert.',
+    dsgvoAccept: 'Zustimmen & fortfahren',
+    dsgvoDecline: 'Abbrechen',
     timerAn: '⏱ An',
     timerAus: '⏱',
     clickStart: 'Meditation starten',
@@ -268,6 +300,23 @@ const TR = {
     gedankenmodus: 'THOUGHT MODE',
     gedankenfluss: 'THOUGHT FLOW',
     deinGesicht: 'YOUR FACE',
+    deinIch: 'YOUR SELF',
+    deinIchFoto: 'Upload photo',
+    deinIchHint: '1-2 photos • ~5 min',
+    deinIchStep1: 'Creating image',
+    deinIchStep2: 'Building 3D model',
+    deinIchStep3: 'Optimizing model',
+    deinIchWeiter: 'Continue',
+    deinIchNochmal: 'Retry',
+    deinIchAktiv: 'Active',
+    deinIchNeu: 'New',
+    deinIchLoeschen: 'Delete',
+    deinIchLaden: 'Loading your model',
+    deinIchFehler: 'Error creating model',
+    dsgvoTitel: 'YOUR SELF',
+    dsgvoText: 'FOR BEST RESULTS\n\n• 1–2 photos of yourself, facing forward\n• Good lighting, full face visible\n• Neutral background if possible\n• No strong backlight\n\nPRIVACY\n\nYour photos will be sent to the following services to create a personalized 3D model:\n\n• Google Gemini (USA) — Image generation\n• Meshy AI (USA) — 3D modeling\n\nPhotos are only used for processing and deleted afterwards. The finished model is stored exclusively on your device.',
+    dsgvoAccept: 'Agree & continue',
+    dsgvoDecline: 'Cancel',
     timerAn: '⏱ On',
     timerAus: '⏱',
     clickStart: 'Start meditation',
@@ -337,7 +386,7 @@ const TR = {
 function t(key) { return TR[lang][key] || TR.de[key] || key; }
 
 // Safari-Erkennung: Canvas 2D ist deutlich langsamer (radialGradient, compositing)
-const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+const isSafari = /AppleWebKit/i.test(navigator.userAgent) && !/Chrome/i.test(navigator.userAgent);
 
 // --- Koordinaten-Konvertierung (robust für iOS Safari) ---
 function canvasCoords(clientX, clientY) {
@@ -509,6 +558,17 @@ let faceSwapPollTimer = null;
 let faceSwapPredictionId = null;
 let faceSwapShowSave = false; // Speichern-Overlay anzeigen
 let faceSwapMask = null; // Transparenz-Maske (Canvas) zum Hintergrund-Entfernen
+
+// --- Dein Ich ---
+let deinIchStatus = 'idle'; // 'idle'|'uploading'|'gemini'|'preview'|'meshy3d'|'remesh'|'downloading'|'done'|'error'
+let deinIchProgress = 0;
+let deinIchStep = 0; // 0=Gemini, 1=Meshy3D, 2=Remesh, 3=Download
+let deinIchError = null;
+let deinIchPreviewImg = null;
+let deinIchPollTimer = null;
+let deinIchTaskId = null;
+let deinIchGeminiBase64 = null; // Gemini-Bild als base64 für 3D-API
+
 let webcamStream = null;
 let webcamReady = false;
 
@@ -544,7 +604,7 @@ let menuScrollRowAreas = {};  // Key = collapseKey, Value = {x, y, w, h, maxOffs
 // --- Legal Overlay (Impressum/Datenschutz/About/Menu) ---
 let legalOverlay = null; // 'menu' | 'about' | 'impressum' | 'datenschutz' | null
 // Ausklappbare Menü-Sektionen (true = offen)
-const menuExpanded = { breathing: true, meditation: false, thoughtMode: false, flowLevel: false, face: false };
+const menuExpanded = { breathing: true, meditation: false, thoughtMode: false, flowLevel: false, deinIch: false, face: false };
 let menuToggleAreas = {}; // Hit-Areas für Sektions-Header
 let legalScrollY = 0;
 let legalCloseBtn = null;
@@ -778,6 +838,9 @@ const MODEL_LIST = [
   { key: 'male', file: 'model_male_compressed.glb', label: 'Männlich' },
   { key: 'female', file: 'model_female_compressed.glb', label: 'Weiblich' },
 ];
+let customModelBlob = null;
+let customModelUrl = null;
+let customModelExists = false;
 const EASTER_MODELS = {
   zoe: { key: 'zoe', file: 'meshy_zoe_compressed.glb', label: 'Zoe' },
   jochen: { key: 'jochen', file: 'meshy_jochen_compressed.glb', label: 'Jochen' },
@@ -832,6 +895,66 @@ function loadModel(idx, override) {
   });
 }
 loadModel(currentModelIdx);
+
+// --- IndexedDB für Custom-Modelle ---
+function openModelDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('jsphere', 1);
+    req.onupgradeneeded = () => { req.result.createObjectStore('models'); };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+function saveCustomModel(blob) {
+  return openModelDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction('models', 'readwrite');
+    tx.objectStore('models').put(blob, 'custom');
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  }));
+}
+function loadCustomModel() {
+  return openModelDB().then(db => new Promise((resolve) => {
+    const tx = db.transaction('models', 'readonly');
+    const req = tx.objectStore('models').get('custom');
+    req.onsuccess = () => {
+      const blob = req.result;
+      if (blob) {
+        customModelBlob = blob;
+        if (customModelUrl) URL.revokeObjectURL(customModelUrl);
+        customModelUrl = URL.createObjectURL(blob);
+        customModelExists = true;
+      } else {
+        customModelBlob = null;
+        customModelUrl = null;
+        customModelExists = false;
+      }
+      resolve(blob || null);
+    };
+    req.onerror = () => { resolve(null); };
+  })).catch(() => null);
+}
+function deleteCustomModel() {
+  if (customModelUrl) URL.revokeObjectURL(customModelUrl);
+  customModelBlob = null;
+  customModelUrl = null;
+  customModelExists = false;
+  return openModelDB().then(db => new Promise((resolve) => {
+    const tx = db.transaction('models', 'readwrite');
+    tx.objectStore('models').delete('custom');
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => resolve();
+  })).catch(() => {});
+}
+// Beim App-Start: Custom-Modell aus IndexedDB laden (non-blocking)
+loadCustomModel().then(blob => {
+  if (blob) {
+    console.log('Custom model loaded from IndexedDB (' + (blob.size / 1024 / 1024).toFixed(1) + ' MB)');
+    // Thumbnail für Custom-Modell generieren
+    _thumbQueue.push({ key: 'custom', file: customModelUrl, label: 'Dein Ich' });
+    _genNextThumb();
+  }
+});
 
 // Thumbnails für Choosing-Screen generieren (nutzt Haupt-Renderer, sequentiell)
 let _thumbQueue = [...MODEL_LIST];
@@ -1124,8 +1247,8 @@ function onMouseMove(e) {
 canvas.addEventListener('mousedown', (e) => {
   e.preventDefault(); // Safari: verhindert Text-Selection/Drag
   const [mx, my] = canvasCoords(e.clientX, e.clientY);
-  // Dreh-Rad: Mouse-Drag starten (idle-State)
-  if (state === 'idle' && dialHitArea) {
+  // Dreh-Rad: Mouse-Drag starten (idle-State, nicht bei Overlay)
+  if (state === 'idle' && dialHitArea && !legalOverlay) {
     const sy = my + (window.scrollY || 0);
     const d = dialHitArea;
     if (mx >= d.x && mx <= d.x + d.w && sy >= d.y && sy <= d.y + d.h) {
@@ -1337,8 +1460,8 @@ function onTouchStart(e) {
     menuTouchDist = 0;
     titleTouchStartX = tx;
     titleTouchStartY = ty;
-    // Dreh-Rad: Touch-Start prüfen (alle Touch-Geräte, inkl. iPad)
-    if (dialHitArea) {
+    // Dreh-Rad: Touch-Start prüfen (alle Touch-Geräte, inkl. iPad, nicht bei Overlay)
+    if (dialHitArea && !legalOverlay) {
       const sy = ty + (window.scrollY || 0);
       const d = dialHitArea;
       if (tx >= d.x && tx <= d.x + d.w && sy >= d.y && sy <= d.y + d.h) {
@@ -2519,6 +2642,38 @@ function desaturate(hex, amount) {
   ];
 }
 
+// Pre-rendered Partikel-Sprites (Offscreen-Canvas pro Neon-Farbe)
+// drawImage() von gecachtem Canvas ist hardware-beschleunigt — ersetzt createRadialGradient() pro Frame
+const SPRITE_SIZE = 64;
+const SPRITE_HALF = SPRITE_SIZE / 2;
+const particleSpriteMap = new Map();
+NEON_COLORS.forEach(color => {
+  const c = document.createElement('canvas');
+  c.width = SPRITE_SIZE;
+  c.height = SPRITE_SIZE;
+  const sctx = c.getContext('2d');
+  const [r, g, b] = hexToRgb(color);
+  const grad = sctx.createRadialGradient(SPRITE_HALF, SPRITE_HALF, 0, SPRITE_HALF, SPRITE_HALF, SPRITE_HALF);
+  grad.addColorStop(0, `rgba(${r},${g},${b},1)`);
+  grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+  sctx.fillStyle = grad;
+  sctx.fillRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
+  particleSpriteMap.set(color, c);
+});
+// Ein graues Sprite für Meditation (alle entsättigten Farben → rgb(80,80,80))
+const particleSpriteGray = (() => {
+  const c = document.createElement('canvas');
+  c.width = SPRITE_SIZE;
+  c.height = SPRITE_SIZE;
+  const sctx = c.getContext('2d');
+  const grad = sctx.createRadialGradient(SPRITE_HALF, SPRITE_HALF, 0, SPRITE_HALF, SPRITE_HALF, SPRITE_HALF);
+  grad.addColorStop(0, 'rgba(80,80,80,1)');
+  grad.addColorStop(1, 'rgba(80,80,80,0)');
+  sctx.fillStyle = grad;
+  sctx.fillRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
+  return c;
+})();
+
 function drawParticles() {
   // Entsättigungs-Faktor: 0 beim Schütteln, steigt während Meditation
   let desat = 0;
@@ -2573,23 +2728,11 @@ function drawParticles() {
     const glowAlpha = (1 - desat * 0.8) * 0.25;
     const glowR = sz * 2.5;
     if (glowR > 0.5) {
-      if (isSafari) {
-        // Safari: einfacher Kreis statt radialGradient (massiv schneller)
-        const mobGlowBoost = (cW < 600) ? 2.0 : 1.0; // Mobile: Glow verstärken
-        ctx.globalAlpha = glowAlpha * 0.4 * edgeFade * mobGlowBoost;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, glowR * 0.7, 0, Math.PI * 2);
-        ctx.fillStyle = `rgb(${cr},${cg},${cb})`;
-        ctx.fill();
-      } else {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
-        const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
-        glow.addColorStop(0, `rgba(${cr},${cg},${cb},${glowAlpha})`);
-        glow.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
-        ctx.fillStyle = glow;
-        ctx.fill();
-      }
+      // Pre-rendered Sprites: drawImage statt createRadialGradient (hardware-beschleunigt)
+      const sprite = desat > 0.5 ? particleSpriteGray : particleSpriteMap.get(p.color);
+      ctx.globalAlpha = glowAlpha * edgeFade;
+      const drawSize = glowR * 2;
+      ctx.drawImage(sprite, p.x - glowR, p.y - glowR, drawSize, drawSize);
     }
   }
   ctx.globalAlpha = 1;
@@ -2632,7 +2775,7 @@ function drawMenu() {
   const _prevLotus = menuButtons.lotus; // Hit-Area beibehalten falls Rendering fehlschlägt
   const _prevGk = menuButtons.gkLink;
   const _prevLink = menuButtons.link;
-  menuButtons = { timer: [], breathing: [], timerToggle: null, customTime: null, shake: [], meditation: [], start: null, faceSwap: [], faceSave: null, lotus: _prevLotus, lotusHint: null, gkLink: _prevGk, link: _prevLink };
+  menuButtons = { timer: [], breathing: [], timerToggle: null, customTime: null, shake: [], meditation: [], start: null, deinIch: [], faceSwap: [], faceSave: null, lotus: _prevLotus, lotusHint: null, gkLink: _prevGk, link: _prevLink };
 
   // Vertikales Layout berechnen — dynamisch an Fensterhöhe angepasst
   const vScale = isMobilePortrait ? 1.0 : Math.max(0.7, Math.min(1.4, H / 800));
@@ -2663,11 +2806,22 @@ function drawMenu() {
     const _rowCollapsed = rowFont * 2;
     const _rowExpanded = rowFont * 2 + btnGap + btnH * 0.9;
     let _sectionsH = 0;
-    for (const key of ['breathing', 'meditation', 'thoughtMode', 'flowLevel', 'face']) {
+    for (const key of ['breathing', 'meditation', 'thoughtMode', 'flowLevel', 'deinIch']) {
       _sectionsH += menuExpanded[key] ? _rowExpanded : _rowCollapsed;
     }
+    // deinIch expanded adds extra content (hint text, preview image, buttons)
+    if (menuExpanded.deinIch) {
+      const isPipelineActive = deinIchStatus !== 'idle' && deinIchStatus !== 'done' && deinIchStatus !== 'error';
+      if (deinIchStatus === 'preview' && deinIchPreviewImg) {
+        _sectionsH += btnH * 2.5 + rowFont * 1.5; // preview image + buttons
+      } else if (isPipelineActive) {
+        _sectionsH += rowFont * 4; // progress steps
+      } else {
+        _sectionsH += rowFont * 0.6; // hint text
+      }
+    }
     let _innerGapSum = 0;
-    for (const key of ['breathing', 'meditation', 'thoughtMode', 'flowLevel']) {
+    for (const key of ['breathing', 'meditation', 'thoughtMode', 'flowLevel', 'deinIch']) {
       _innerGapSum += sectionGap * (menuExpanded[key] ? 0.6 : 1.0);
     }
     const _titleSubH = titleSize + subtitleSize * 1.2;
@@ -3125,40 +3279,156 @@ function drawMenu() {
   menuButtons.flowLevel = flowRow.btns;
   curY = flowRow.bottomY + sectionGap * (menuExpanded.flowLevel ? 0.6 : 1);
 
-  // --- DEIN GESICHT ---
-  const faceHasSwap = faceSwapStatus === 'done' && faceSwapImg;
-  const faceLabel = faceHasSwap && !menuExpanded.face ? t('deinGesicht') + ' ✓' : t('deinGesicht');
-  const faceMobileLabels = [t('aus'), t('mediathek'), t('kamera'), t('laden')];
-  const faceMobileIdx = faceModeIdx;
-  const faceRow = drawSettingsRow(faceLabel, faceMobileLabels, faceMobileIdx, curY, faceHasSwap && !menuExpanded.face ? '#25a2a2' : null, 'face');
-  menuButtons.faceSwap = faceRow.btns;
-  curY = faceRow.bottomY;
+  // --- DEIN ICH ---
+  {
+    const diHasDone = customModelExists;
+    const diLabel = diHasDone && !menuExpanded.deinIch ? t('deinIch') + ' ✓' : t('deinIch');
+    const isPipelineActive = deinIchStatus !== 'idle' && deinIchStatus !== 'done' && deinIchStatus !== 'error';
 
-  // Status-Anzeige unter den Buttons (Foto- und Webcam-Modus) — nur wenn aufgeklappt
-  if (faceModeIdx >= 1 && menuExpanded.face) {
-    const statusY = curY + rowFont * 0.4;
-    ctx.textAlign = 'center';
-    ctx.font = `400 ${rowFont * 0.85}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
+    if (isPipelineActive || deinIchStatus === 'preview') {
+      // Pipeline läuft oder Preview → Sektion immer offen
+      const diRow = drawSettingsRow(diLabel, [], -1, curY, '#edd457', 'deinIch');
+      curY = diRow.bottomY;
+      menuButtons.deinIch = [];
 
-    if (faceSwapStatus === 'uploading' || faceSwapStatus === 'processing') {
-      const dots = '.'.repeat(Math.floor(Date.now() / 500) % 4);
-      const label = faceSwapStatus === 'uploading' ? t('sendeBild') : t('faceSwapLaeuft');
-      ctx.fillStyle = 'rgba(237, 212, 87, 0.9)';
-      ctx.fillText(label + dots, cx, statusY);
-      curY = statusY + rowFont * 0.4;
-    } else if (faceSwapStatus === 'done' && faceSwapImg) {
-      ctx.fillStyle = isMobilePortrait ? 'rgba(37, 162, 162, 1.0)' : 'rgba(37, 162, 162, 0.9)';
-      ctx.fillText(t('gesichtAktiv'), cx, statusY);
-      curY = statusY + rowFont * 0.4;
-    } else if (faceSwapStatus === 'error') {
-      ctx.fillStyle = isMobilePortrait ? 'rgba(255, 130, 130, 1.0)' : 'rgba(237, 112, 112, 0.9)';
-      const errMsg = faceSwapError || t('faceSwapFehler');
-      ctx.fillText(errMsg.length > 40 ? errMsg.substring(0, 37) + '...' : errMsg, cx, statusY);
-      curY = statusY + rowFont * 0.4;
+      if (deinIchStatus === 'preview' && deinIchPreviewImg) {
+        // Preview-Bild anzeigen
+        const prevSize = btnH * 2.5;
+        const prevX = cx - prevSize / 2;
+        const prevY = curY + rowFont * 0.3;
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(prevX, prevY, prevSize, prevSize, 8);
+        ctx.clip();
+        ctx.drawImage(deinIchPreviewImg, prevX, prevY, prevSize, prevSize);
+        ctx.restore();
+        ctx.strokeStyle = 'rgba(37, 162, 162, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(prevX, prevY, prevSize, prevSize, 8);
+        ctx.stroke();
+        curY = prevY + prevSize + rowFont * 0.5;
+
+        // Weiter / Nochmal Buttons
+        const btnFont = rowFont * 0.85;
+        ctx.font = `700 ${btnFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
+        const wLabel = t('deinIchWeiter');
+        const nLabel = t('deinIchNochmal');
+        const wW = ctx.measureText(wLabel).width + btnFont * 1.6;
+        const nW = ctx.measureText(nLabel).width + btnFont * 1.6;
+        const bH = btnFont * 2;
+        const bGap = btnFont * 0.5;
+        const totalBW = wW + bGap + nW;
+        const bStartX = cx - totalBW / 2;
+
+        // Weiter-Button
+        ctx.beginPath();
+        ctx.roundRect(bStartX, curY, wW, bH, bH / 2);
+        ctx.fillStyle = 'rgba(37, 162, 162, 0.15)';
+        ctx.fill();
+        ctx.strokeStyle = '#25a2a2';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = '#25a2a2';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(wLabel, bStartX + wW / 2, curY + bH / 2);
+        menuButtons.deinIch.push({ x: bStartX, y: curY, w: wW, h: bH, action: 'confirm' });
+
+        // Nochmal-Button
+        const nX = bStartX + wW + bGap;
+        ctx.beginPath();
+        ctx.roundRect(nX, curY, nW, bH, bH / 2);
+        ctx.fillStyle = 'rgba(250, 230, 230, 0.08)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(250, 230, 230, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(250, 230, 230, 0.8)';
+        ctx.fillText(nLabel, nX + nW / 2, curY + bH / 2);
+        menuButtons.deinIch.push({ x: nX, y: curY, w: nW, h: bH, action: 'retry' });
+
+        ctx.textAlign = 'start';
+        ctx.textBaseline = 'alphabetic';
+        curY += bH + rowFont * 0.3;
+      } else {
+        // Progress-Anzeige
+        const statusY = curY + rowFont * 0.4;
+        ctx.textAlign = 'center';
+        ctx.font = `400 ${rowFont * 0.85}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
+        const stepLabels = [t('deinIchStep1'), t('deinIchStep2'), t('deinIchStep3')];
+        const stepNum = Math.min(deinIchStep, 2);
+        const dots = '.'.repeat(Math.floor(Date.now() / 500) % 4);
+        ctx.fillStyle = 'rgba(237, 212, 87, 0.9)';
+        ctx.fillText(`${stepNum + 1}/3: ${stepLabels[stepNum]}${dots}`, cx, statusY);
+        curY = statusY + rowFont * 0.6;
+
+        // Progress-Balken
+        const barW = Math.min(cx * 1.2, 280);
+        const barH = rowFont * 0.35;
+        const barX = cx - barW / 2;
+        // Hintergrund
+        ctx.fillStyle = 'rgba(250, 230, 230, 0.1)';
+        ctx.beginPath();
+        ctx.roundRect(barX, curY, barW, barH, barH / 2);
+        ctx.fill();
+        // Fortschritt
+        const totalProgress = (deinIchStep * 100 + deinIchProgress) / 3;
+        const fillW = barW * Math.min(totalProgress / 100, 1);
+        if (fillW > 0) {
+          ctx.fillStyle = '#25a2a2';
+          ctx.beginPath();
+          ctx.roundRect(barX, curY, Math.max(fillW, barH), barH, barH / 2);
+          ctx.fill();
+        }
+        // Prozent-Text
+        ctx.fillStyle = 'rgba(250, 230, 230, 0.6)';
+        ctx.font = `400 ${rowFont * 0.7}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
+        ctx.fillText(Math.round(totalProgress) + '%', cx, curY + barH + rowFont * 0.5);
+
+        ctx.textAlign = 'start';
+        curY += barH + rowFont * 0.8;
+      }
+    } else if (diHasDone) {
+      // Custom-Modell vorhanden: Aktiv / Neu / Löschen
+      const diRow = drawSettingsRow(diLabel, [t('deinIchAktiv'), t('deinIchNeu'), t('deinIchLoeschen')], 0, curY, '#25a2a2', 'deinIch');
+      menuButtons.deinIch = diRow.btns.map((btn, i) => ({ ...btn, action: ['active', 'new', 'delete'][i] }));
+      curY = diRow.bottomY;
+    } else if (deinIchStatus === 'error') {
+      // Fehler: Erneut versuchen
+      const diRow = drawSettingsRow(diLabel, [t('deinIchFoto')], -1, curY, null, 'deinIch');
+      menuButtons.deinIch = diRow.btns.map(btn => ({ ...btn, action: 'upload' }));
+      curY = diRow.bottomY;
+      if (menuExpanded.deinIch) {
+        const errY = curY + rowFont * 0.4;
+        ctx.textAlign = 'center';
+        ctx.font = `400 ${rowFont * 0.8}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
+        ctx.fillStyle = 'rgba(237, 112, 112, 0.9)';
+        const errMsg = deinIchError || t('deinIchFehler');
+        ctx.fillText(errMsg.length > 40 ? errMsg.substring(0, 37) + '...' : errMsg, cx, errY);
+        ctx.textAlign = 'start';
+        curY = errY + rowFont * 0.4;
+      }
+    } else {
+      // Idle: Foto hochladen Button
+      const diRow = drawSettingsRow(diLabel, [t('deinIchFoto')], -1, curY, null, 'deinIch');
+      menuButtons.deinIch = diRow.btns.map(btn => ({ ...btn, action: 'upload' }));
+      curY = diRow.bottomY;
+      // Hint-Text
+      if (menuExpanded.deinIch) {
+        const hintY = curY + rowFont * 0.3;
+        ctx.textAlign = 'center';
+        ctx.font = `400 ${rowFont * 0.7}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
+        ctx.fillStyle = 'rgba(250, 230, 230, 0.5)';
+        ctx.fillText(t('deinIchHint'), cx, hintY);
+        ctx.textAlign = 'start';
+        curY = hintY + rowFont * 0.3;
+      }
     }
-
-    ctx.textAlign = 'start';
   }
+  // --- DEIN GESICHT (ausgeblendet) ---
+  // Face-Swap-Sektion wird nicht mehr gerendert, Code bleibt für spätere Reaktivierung erhalten
+  menuButtons.faceSwap = [];
 
   // Start-Button: struktureller Abstand zur Settings-Gruppe
   curY += isMobilePortrait ? layoutGap * 0.8 : sectionGap * 2;
@@ -4171,18 +4441,20 @@ function drawLegalOverlay() {
           titleY += titleFont * 1.3;
         }
 
-        // Amazon-Link
-        const linkFont = fontSize * 0.8;
-        ctx.font = `400 ${linkFont}px ${fontFamily}`;
-        ctx.fillStyle = 'rgba(37, 162, 162, 0.7)';
-        const linkLabel = lang === 'de' ? '→ Bei Amazon ansehen' : '→ View on Amazon';
-        const linkY = Math.min(titleY + fontSize * 0.3, cardTop + coverH - linkFont);
-        ctx.fillText(linkLabel, cardTextX, linkY);
-        const linkW = ctx.measureText(linkLabel).width;
-        menuButtons.bookLinks.push({
-          x: cardTextX, y: linkY, w: linkW, h: linkFont * 1.5,
-          url: `https://www.amazon.de/dp/${book.asin}?tag=jochenhornung-21`
-        });
+        // Amazon-Link (nicht in nativer App)
+        if (!window.__stripAffiliateLinks) {
+          const linkFont = fontSize * 0.8;
+          ctx.font = `400 ${linkFont}px ${fontFamily}`;
+          ctx.fillStyle = 'rgba(37, 162, 162, 0.7)';
+          const linkLabel = lang === 'de' ? '→ Bei Amazon ansehen' : '→ View on Amazon';
+          const linkY = Math.min(titleY + fontSize * 0.3, cardTop + coverH - linkFont);
+          ctx.fillText(linkLabel, cardTextX, linkY);
+          const linkW = ctx.measureText(linkLabel).width;
+          menuButtons.bookLinks.push({
+            x: cardTextX, y: linkY, w: linkW, h: linkFont * 1.5,
+            url: `https://www.amazon.de/dp/${book.asin}?tag=jochenhornung-21`
+          });
+        }
       }
       y += bookCardH;
     }
@@ -4380,6 +4652,26 @@ function handleMenuClick(x, y) {
       return true;
     }
   }
+  // Dein Ich
+  for (const btn of menuButtons.deinIch || []) {
+    if (hitBtn(btn)) {
+      if (btn.action === 'upload' || btn.action === 'new') {
+        document.getElementById('deinIchInput').click();
+      } else if (btn.action === 'confirm') {
+        confirmDeinIchPreview();
+      } else if (btn.action === 'retry') {
+        cancelDeinIch();
+        document.getElementById('deinIchInput').click();
+      } else if (btn.action === 'delete') {
+        cancelDeinIch();
+        deleteCustomModel();
+        delete modelThumbnails['custom'];
+      }
+      // 'active' = no-op
+      try { playTingsha(); } catch(err) {}
+      return true;
+    }
+  }
   // Face Swap
   for (const btn of menuButtons.faceSwap || []) {
     if (hitBtn(btn)) {
@@ -4558,7 +4850,11 @@ canvas.addEventListener('click', (e) => {
     if (menuButtons.chooseModel) {
       for (const btn of menuButtons.chooseModel) {
         if (cx >= btn.x && cx <= btn.x + btn.w && cy >= btn.y && cy <= btn.y + btn.h) {
-          loadModel(btn.idx);
+          if (btn.key === 'custom') {
+            loadModel(0, { key: 'custom', file: customModelUrl, label: 'Dein Ich' });
+          } else {
+            loadModel(btn.idx);
+          }
           state = 'ready';
           resize();
           try { playTingsha(); } catch(err) {}
@@ -4701,7 +4997,11 @@ canvas.addEventListener('touchend', (e) => {
       if (menuButtons.chooseModel) {
         for (const btn of menuButtons.chooseModel) {
           if (tx >= btn.x && tx <= btn.x + btn.w && ty >= btn.y && ty <= btn.y + btn.h) {
-            loadModel(btn.idx);
+            if (btn.key === 'custom') {
+              loadModel(0, { key: 'custom', file: customModelUrl, label: 'Dein Ich' });
+            } else {
+              loadModel(btn.idx);
+            }
             state = 'ready';
             resize();
             try { playTingsha(); } catch(err) {}
@@ -5956,6 +6256,7 @@ function drawStatue(cx, cy, r) {
 
 // --- Face Swap ---
 const FACESWAP_API = 'https://m-sphere-api.vercel.app/api/faceswap';
+const DEIN_ICH_API = 'https://m-sphere-api.vercel.app/api/model';
 const PAYPAL_API = 'https://m-sphere-api.vercel.app/api/paypal';
 const PAYPAL_CLIENT_ID = 'AbePmS6sEIkimiUFTrpQWHkFDAQmYzfK4RiBKYjZ0YnP-gwwQrXoHw8H8NORAX49K4tVDHsuUBdWFCtZ';
 const ZOE_SECRET = 'zoe-loves-papa-2024';
@@ -6387,6 +6688,254 @@ function _faceDownloadFallback(canvas, filename) {
   a.click();
 }
 
+// --- Dein Ich: Pipeline-Funktionen ---
+function resizePhoto(dataUrl, maxSize = 512) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+      c.width = img.width * scale;
+      c.height = img.height * scale;
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      resolve(c.toDataURL('image/jpeg', 0.85));
+    };
+    img.src = dataUrl;
+  });
+}
+
+function cancelDeinIch() {
+  if (deinIchPollTimer) { clearInterval(deinIchPollTimer); deinIchPollTimer = null; }
+  deinIchStatus = 'idle';
+  deinIchProgress = 0;
+  deinIchStep = 0;
+  deinIchError = null;
+  deinIchPreviewImg = null;
+  deinIchTaskId = null;
+  deinIchGeminiBase64 = null;
+}
+
+function startDeinIch(photoDataUrls) {
+  cancelDeinIch();
+  deinIchStatus = 'uploading';
+  deinIchStep = 0;
+  deinIchProgress = 10;
+  menuExpanded.deinIch = true;
+
+  // Fotos resizen
+  Promise.all(photoDataUrls.map(url => resizePhoto(url, 512)))
+    .then(resizedPhotos => {
+      deinIchStatus = 'gemini';
+      deinIchProgress = 30;
+      return fetch(DEIN_ICH_API + '/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photos: resizedPhotos })
+      });
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) throw new Error(data.error);
+      // Gemini-Bild als Preview anzeigen
+      deinIchGeminiBase64 = data.image; // base64 string
+      const img = new Image();
+      img.onload = () => {
+        deinIchPreviewImg = img;
+        deinIchStatus = 'preview';
+        deinIchProgress = 100;
+      };
+      img.onerror = () => { throw new Error('Preview image failed to load'); };
+      img.src = 'data:image/png;base64,' + data.image;
+    })
+    .catch(err => {
+      deinIchStatus = 'error';
+      deinIchError = err.message || t('deinIchFehler');
+    });
+}
+
+function confirmDeinIchPreview() {
+  deinIchStatus = 'meshy3d';
+  deinIchStep = 1;
+  deinIchProgress = 0;
+
+  fetch(DEIN_ICH_API + '/generate-3d', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image_url: deinIchGeminiBase64 })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) throw new Error(data.error);
+      deinIchTaskId = data.task_id || data.result;
+      deinIchProgress = 20;
+      // Starte Polling
+      deinIchPollTimer = setInterval(pollDeinIch3D, 5000);
+    })
+    .catch(err => {
+      deinIchStatus = 'error';
+      deinIchError = err.message || t('deinIchFehler');
+    });
+}
+
+function pollDeinIch3D() {
+  if (!deinIchTaskId) return;
+  fetch(DEIN_ICH_API + '/status?step=3d&id=' + deinIchTaskId)
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) throw new Error(data.error);
+      if (data.status === 'SUCCEEDED' || data.status === 'succeeded') {
+        clearInterval(deinIchPollTimer);
+        deinIchPollTimer = null;
+        deinIchProgress = 100;
+        // Starte Remesh
+        startDeinIchRemesh(deinIchTaskId);
+      } else if (data.status === 'FAILED' || data.status === 'failed') {
+        throw new Error('3D generation failed');
+      } else {
+        // Progress aktualisieren
+        deinIchProgress = Math.min(90, deinIchProgress + 5);
+      }
+    })
+    .catch(err => {
+      clearInterval(deinIchPollTimer);
+      deinIchPollTimer = null;
+      deinIchStatus = 'error';
+      deinIchError = err.message || t('deinIchFehler');
+    });
+}
+
+function startDeinIchRemesh(taskId) {
+  deinIchStatus = 'remesh';
+  deinIchStep = 2;
+  deinIchProgress = 0;
+
+  fetch(DEIN_ICH_API + '/remesh', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ task_id: taskId })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) throw new Error(data.error);
+      deinIchTaskId = data.task_id || data.result;
+      deinIchProgress = 20;
+      deinIchPollTimer = setInterval(pollDeinIchRemesh, 5000);
+    })
+    .catch(err => {
+      deinIchStatus = 'error';
+      deinIchError = err.message || t('deinIchFehler');
+    });
+}
+
+function pollDeinIchRemesh() {
+  if (!deinIchTaskId) return;
+  fetch(DEIN_ICH_API + '/remesh?id=' + deinIchTaskId)
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) throw new Error(data.error);
+      if (data.status === 'SUCCEEDED' || data.status === 'succeeded') {
+        clearInterval(deinIchPollTimer);
+        deinIchPollTimer = null;
+        deinIchProgress = 100;
+        // GLB herunterladen
+        const glbUrl = data.model_urls?.glb || data.glb_url;
+        if (!glbUrl) throw new Error('No GLB URL in response');
+        downloadDeinIchModel(glbUrl);
+      } else if (data.status === 'FAILED' || data.status === 'failed') {
+        throw new Error('Remesh failed');
+      } else {
+        deinIchProgress = Math.min(90, deinIchProgress + 5);
+      }
+    })
+    .catch(err => {
+      clearInterval(deinIchPollTimer);
+      deinIchPollTimer = null;
+      deinIchStatus = 'error';
+      deinIchError = err.message || t('deinIchFehler');
+    });
+}
+
+function downloadDeinIchModel(glbUrl) {
+  deinIchStatus = 'downloading';
+  deinIchStep = 3;
+  deinIchProgress = 50;
+
+  fetch(glbUrl)
+    .then(res => {
+      if (!res.ok) throw new Error('Download failed: ' + res.status);
+      return res.blob();
+    })
+    .then(blob => {
+      deinIchProgress = 80;
+      return saveCustomModel(blob).then(() => blob);
+    })
+    .then(blob => {
+      // ObjectURL erstellen und Modell laden
+      if (customModelUrl) URL.revokeObjectURL(customModelUrl);
+      customModelBlob = blob;
+      customModelUrl = URL.createObjectURL(blob);
+      customModelExists = true;
+      deinIchProgress = 100;
+      deinIchStatus = 'done';
+      deinIchGeminiBase64 = null;
+      deinIchPreviewImg = null;
+      // Modell direkt laden
+      loadModel(0, { key: 'custom', file: customModelUrl, label: 'Dein Ich' });
+      // Thumbnail generieren
+      delete modelThumbnails['custom'];
+      _thumbQueue.push({ key: 'custom', file: customModelUrl, label: 'Dein Ich' });
+      _genNextThumb();
+    })
+    .catch(err => {
+      deinIchStatus = 'error';
+      deinIchError = err.message || t('deinIchFehler');
+    });
+}
+
+// DSGVO-Einwilligungs-Dialog für Dein Ich
+let _consentCallback = null;
+function showDeinIchConsent(onAccept) {
+  const overlay = document.getElementById('deinIchConsent');
+  document.getElementById('consentTitle').textContent = t('dsgvoTitel');
+  document.getElementById('consentText').textContent = t('dsgvoText');
+  document.getElementById('consentAccept').textContent = t('dsgvoAccept');
+  document.getElementById('consentDecline').textContent = t('dsgvoDecline');
+  _consentCallback = onAccept;
+  overlay.style.display = 'flex';
+}
+function hideDeinIchConsent() {
+  document.getElementById('deinIchConsent').style.display = 'none';
+  _consentCallback = null;
+}
+document.getElementById('consentAccept').addEventListener('click', () => {
+  const cb = _consentCallback;
+  hideDeinIchConsent();
+  localStorage.setItem('msphere_deiních_consent', 'true');
+  if (cb) cb();
+});
+document.getElementById('consentDecline').addEventListener('click', () => {
+  hideDeinIchConsent();
+});
+
+// Dein-Ich File-Input Handler
+document.getElementById('deinIchInput').addEventListener('change', (e) => {
+  const files = Array.from(e.target.files);
+  if (files.length === 0) return;
+  const photoPromises = files.slice(0, 2).map(file => new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => resolve(ev.target.result);
+    reader.readAsDataURL(file);
+  }));
+  Promise.all(photoPromises).then(dataUrls => {
+    if (localStorage.getItem('msphere_deiních_consent') === 'true') {
+      startDeinIch(dataUrls);
+    } else {
+      showDeinIchConsent(() => startDeinIch(dataUrls));
+    }
+  });
+  e.target.value = '';
+});
+
 // Custom-Time-Overlay Funktionen
 function showCustomTimeInput() {
   const overlay = document.getElementById('customTimeOverlay');
@@ -6518,15 +7067,9 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
     hemiLight.intensity = 1.2 * warmth + 0.4 * (1 - warmth);
     ambientLight.intensity = 0.8 * warmth + 0.3 * (1 - warmth);
 
-    // Modell rotieren
+    // Modell rotieren — immer 360°-Drehung (~63s pro Umdrehung)
     if (model3D) {
-      if (easterModelActive || modelRotate) {
-        // Stetige 360°-Drehung (~63s pro Umdrehung)
-        model3D.rotation.y = Date.now() * 0.0001;
-      } else {
-        // Normal: subtiles Atmen
-        model3D.rotation.y = Math.sin(Date.now() * 0.0003) * 0.05;
-      }
+      model3D.rotation.y = Date.now() * 0.0001;
     }
 
     // Three.js rendern (Mobile: jeden 3. Frame, Safari Desktop: jeden 2. Frame — threeCanvas behält letztes Bild)
@@ -7417,8 +7960,10 @@ function frame() {
     ctx.fillStyle = '#fae6e6';
     ctx.fillText(chTitle, cW / 2, titleY);
 
-    // --- Modell-Karten (kompakter) ---
-    const cardW = _sf(0.36, 0.18);
+    // --- Modell-Karten (dynamisch: 2 oder 3 Karten) ---
+    const keys = customModelExists ? ['male', 'female', 'custom'] : ['male', 'female'];
+    const numCards = keys.length;
+    const cardW = _sf(numCards === 3 ? 0.3 : 0.36, numCards === 3 ? 0.15 : 0.18);
     const cardH = cardW * 1.2;
     const cardGap = _sf(0.04, 0.02);
     const cardY = titleY + tFS * 1.1;
@@ -7427,30 +7972,38 @@ function frame() {
     const labelFS = _sf(0.036, 0.017);
 
     menuButtons.chooseModel = [];
-    const keys = ['male', 'female'];
+    const totalCardW = numCards * cardW + (numCards - 1) * cardGap;
+    const cardsStartX = cW / 2 - totalCardW / 2;
 
-    for (let i = 0; i < 2; i++) {
-      const cx2 = cW / 2 + (i === 0 ? -(cardW + cardGap / 2) : cardGap / 2);
+    for (let i = 0; i < numCards; i++) {
+      const cx2 = cardsStartX + i * (cardW + cardGap);
       const cy2 = cardY;
-      const isSelected = currentModelIdx === i && !easterModelActive;
+      const isCustom = keys[i] === 'custom';
+      const isSelected = isCustom ? false : (currentModelIdx === i && !easterModelActive);
 
       // Glow
       if (isSelected) {
         ctx.shadowColor = 'rgba(37, 162, 162, 0.5)';
         ctx.shadowBlur = 24;
+      } else if (isCustom) {
+        ctx.shadowColor = 'rgba(237, 212, 87, 0.5)';
+        ctx.shadowBlur = 24;
       }
 
-      // Karten-Hintergrund (Farbpalette: surface #1e3232, mid #1e5a5a, teal #25a2a2)
+      // Karten-Hintergrund
       ctx.beginPath();
       ctx.roundRect(cx2, cy2, cardW, cardH, cardR);
-      ctx.fillStyle = isSelected
-        ? 'rgba(37, 162, 162, 0.12)'
-        : '#1e3232';
-      ctx.fill();
-      ctx.strokeStyle = isSelected
-        ? '#25a2a2'
-        : '#1e5a5a';
-      ctx.lineWidth = isSelected ? 2 : 1;
+      if (isCustom) {
+        ctx.fillStyle = 'rgba(237, 212, 87, 0.08)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(237, 212, 87, 0.6)';
+        ctx.lineWidth = 2;
+      } else {
+        ctx.fillStyle = isSelected ? 'rgba(37, 162, 162, 0.12)' : '#1e3232';
+        ctx.fill();
+        ctx.strokeStyle = isSelected ? '#25a2a2' : '#1e5a5a';
+        ctx.lineWidth = isSelected ? 2 : 1;
+      }
       ctx.stroke();
       ctx.shadowBlur = 0;
 
@@ -7461,12 +8014,11 @@ function frame() {
       if (thumb && thumb.complete && thumb.naturalWidth > 0) {
         const ttx = thumbCx - thumbSize / 2;
         const tty = thumbCy - thumbSize / 2;
-        // Gold-Glow hinter dem Thumbnail
-        ctx.shadowColor = 'rgba(237, 212, 87, 0.45)';
+        ctx.shadowColor = isCustom ? 'rgba(237, 212, 87, 0.55)' : 'rgba(237, 212, 87, 0.45)';
         ctx.shadowBlur = thumbSize * 0.3;
         ctx.beginPath();
         ctx.arc(thumbCx, thumbCy, thumbSize * 0.3, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(237, 212, 87, 0.08)';
+        ctx.fillStyle = isCustom ? 'rgba(237, 212, 87, 0.12)' : 'rgba(237, 212, 87, 0.08)';
         ctx.fill();
         ctx.shadowBlur = 0;
         ctx.drawImage(thumb, ttx, tty, thumbSize, thumbSize);
@@ -7474,91 +8026,46 @@ function frame() {
         // Lade-Ring
         ctx.beginPath();
         ctx.arc(thumbCx, thumbCy, thumbSize * 0.12, -Math.PI / 2, -Math.PI / 2 + (Date.now() % 1200) / 1200 * Math.PI * 2);
-        ctx.strokeStyle = 'rgba(37, 162, 162, 0.5)';
+        ctx.strokeStyle = isCustom ? 'rgba(237, 212, 87, 0.5)' : 'rgba(37, 162, 162, 0.5)';
         ctx.lineWidth = 2;
         ctx.stroke();
       }
 
-      menuButtons.chooseModel.push({ x: cx2, y: cy2, w: cardW, h: cardH, idx: i });
+      // Label unter der Karte (nur für Custom)
+      if (isCustom) {
+        ctx.font = `700 ${labelFS}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(237, 212, 87, 0.85)';
+        ctx.fillText(t('deinIch'), thumbCx, cy2 + cardH - labelFS * 0.6);
+      }
+
+      menuButtons.chooseModel.push({ x: cx2, y: cy2, w: cardW, h: cardH, idx: i, key: keys[i] });
     }
 
-    // --- Optionen (Toggles mit Icons) ---
+    // --- Optionen (Toggles — vertikal gestapelt) ---
     const optY = cardY + cardH + _sf(0.05, 0.035);
-    const optGap2 = _sf(0.06, 0.04);
-    const pillW = _sf(0.1, 0.05);
+    const pillW = _sf(0.12, 0.05);
     const pillH = pillW * 0.46;
-    const optLabelFS = _sf(0.03, 0.014);
-    const iconR = _sf(0.028, 0.014);
-    const optCx = cW / 2;
+    const optLabelFS = _sf(0.038, 0.014);
+    const rowH = _sf(0.065, 0.035);
 
     const toggles = [
-      { key: 'rotate', label: t('modelRotate'), active: modelRotate, icon: 'rotate' },
       { key: 'timer', label: 'Timer', active: timerVisible, icon: 'stopwatch' },
       { key: 'distraction', label: lang === 'de' ? 'Ablenkungen' : 'Distractions', active: distractionModeIdx === 1, icon: 'lotus' },
     ];
     menuButtons.choosingToggles = [];
-    const colW = pillW + _sf(0.03, 0.018);
-    const totalW = toggles.length * colW + (toggles.length - 1) * optGap2;
-    let togX = optCx - totalW / 2;
+
+    // Centered row layout: [pill] [label]
+    const rowContentW = pillW + _sf(0.03, 0.015) + cW * 0.4;
+    const rowStartX = cW / 2 - rowContentW / 2;
 
     for (let ti = 0; ti < toggles.length; ti++) {
       const tog = toggles[ti];
-      const tcx2 = togX + colW / 2;
-
-      // --- Icon ---
-      const iconCy = optY;
-      const ir = iconR;
-      const activeCol = tog.icon === 'stopwatch' ? 'rgba(237, 212, 87, 1)' :
-                        tog.icon === 'lotus' ? 'rgba(237, 112, 112, 1)' :
-                        'rgba(37, 162, 162, 1)';
-      const dimCol = 'rgba(250, 230, 230, 1)';
-      const col = tog.active ? activeCol : dimCol;
-      ctx.globalAlpha = tog.active ? 0.95 : 0.3;
-
-      if (tog.icon === 'rotate') {
-        ctx.strokeStyle = col;
-        ctx.lineWidth = ir * 0.2;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.arc(tcx2, iconCy, ir * 0.7, -Math.PI * 0.75, Math.PI * 0.55);
-        ctx.stroke();
-        const ax = tcx2 + Math.cos(Math.PI * 0.55) * ir * 0.7;
-        const ay = iconCy + Math.sin(Math.PI * 0.55) * ir * 0.7;
-        const aL = ir * 0.4;
-        ctx.fillStyle = col;
-        ctx.beginPath();
-        ctx.moveTo(ax + Math.cos(Math.PI * 0.55 + 0.4) * aL, ay + Math.sin(Math.PI * 0.55 + 0.4) * aL);
-        ctx.lineTo(ax, ay);
-        ctx.lineTo(ax + Math.cos(Math.PI * 0.55 - 1.1) * aL, ay + Math.sin(Math.PI * 0.55 - 1.1) * aL);
-        ctx.fill();
-        ctx.lineCap = 'butt';
-      } else if (tog.icon === 'stopwatch') {
-        ctx.strokeStyle = col;
-        ctx.lineWidth = ir * 0.15;
-        ctx.beginPath(); ctx.arc(tcx2, iconCy + ir * 0.1, ir * 0.6, 0, Math.PI * 2); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(tcx2, iconCy + ir * 0.1); ctx.lineTo(tcx2 + ir * 0.35, iconCy - ir * 0.12); ctx.stroke();
-        ctx.lineWidth = ir * 0.18;
-        ctx.beginPath(); ctx.moveTo(tcx2 - ir * 0.2, iconCy - ir * 0.55); ctx.lineTo(tcx2 + ir * 0.2, iconCy - ir * 0.55); ctx.stroke();
-        ctx.lineWidth = ir * 0.13;
-        ctx.beginPath(); ctx.moveTo(tcx2, iconCy - ir * 0.55); ctx.lineTo(tcx2, iconCy - ir * 0.75); ctx.stroke();
-      } else if (tog.icon === 'lotus') {
-        const lr2 = ir * 0.8;
-        for (let p = 0; p < 6; p++) {
-          const a = (p / 6) * Math.PI * 2 - Math.PI / 2;
-          ctx.beginPath();
-          ctx.ellipse(tcx2 + Math.cos(a) * lr2 * 0.38, iconCy + Math.sin(a) * lr2 * 0.38,
-                      lr2 * 0.28, lr2 * 0.58, a + Math.PI / 2, 0, Math.PI * 2);
-          ctx.fillStyle = col;
-          ctx.fill();
-        }
-        ctx.beginPath(); ctx.arc(tcx2, iconCy, lr2 * 0.2, 0, Math.PI * 2);
-        ctx.fillStyle = col; ctx.fill();
-      }
-      ctx.globalAlpha = 1;
+      const ry = optY + ti * rowH;
 
       // --- Pill-Toggle ---
-      const py = iconCy + ir * 1.3 + _sf(0.015, 0.008);
-      const px = tcx2 - pillW / 2;
+      const px = rowStartX;
+      const py = ry;
       const pillR2 = pillH / 2;
 
       ctx.beginPath();
@@ -7590,24 +8097,26 @@ function frame() {
       ctx.fill();
       ctx.shadowBlur = 0;
 
-      // Label
-      const ly2 = py + pillH + _sf(0.03, 0.018);
-      ctx.font = `400 ${optLabelFS}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
-      ctx.fillStyle = tog.active ? '#fae6e6' : '#5a8888';
-      ctx.fillText(tog.label, tcx2, ly2);
+      // Label (rechts neben der Pill)
+      const labelX = px + pillW + _sf(0.03, 0.015);
+      const labelY = py + pillH / 2;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.font = `500 ${optLabelFS}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
+      ctx.fillStyle = tog.active ? '#fae6e6' : 'rgba(250, 230, 230, 0.5)';
+      ctx.fillText(tog.label, labelX, labelY);
 
-      // Hit-Area
-      const hP = _sf(0.012, 0.006);
+      // Hit-Area (ganze Zeile)
+      const hP = _sf(0.01, 0.005);
       menuButtons.choosingToggles.push({
-        x: tcx2 - colW / 2 - hP, y: iconCy - ir - hP,
-        w: colW + hP * 2, h: (ly2 + optLabelFS) - (iconCy - ir) + hP * 2,
+        x: px - hP, y: py - hP,
+        w: rowContentW + hP * 2, h: pillH + hP * 2,
         key: tog.key
       });
-
-      togX += colW + optGap2;
     }
 
-    ctx.textAlign = 'start';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
   }
 
   // --- Zurück-Button (✕) — immer sichtbar im Kugelmodus ---
