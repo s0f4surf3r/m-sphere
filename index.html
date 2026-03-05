@@ -158,6 +158,42 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
       font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">Abbrechen</button>
   </div>
 </div>
+<div id="deinIchOverlay" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(10,22,40,0.93);
+  align-items:center;justify-content:center;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">
+  <div style="background:#1e3232;border-radius:16px;padding:24px 22px;max-width:360px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+    <div id="deiOverlayTitle" style="color:rgba(250,230,230,0.4);font-size:11px;letter-spacing:3px;font-family:'Courier New',monospace;margin-bottom:18px"></div>
+    <div id="deiProgress" style="display:none">
+      <div id="deiStepLabel" style="color:#edd457;font-size:14px;margin-bottom:14px;min-height:20px"></div>
+      <div style="height:4px;background:rgba(250,230,230,0.1);border-radius:2px;overflow:hidden;margin-bottom:8px">
+        <div id="deiProgressBar" style="height:100%;background:#25a2a2;border-radius:2px;transition:width 0.4s ease;width:0%"></div>
+      </div>
+      <div id="deiPercent" style="color:rgba(250,230,230,0.45);font-size:12px;font-family:'Courier New',monospace;margin-bottom:18px"></div>
+      <button id="deiAbbrechen" style="background:none;border:1px solid rgba(250,230,230,0.2);color:rgba(250,230,230,0.5);
+        padding:8px 28px;border-radius:8px;font-size:13px;cursor:pointer;
+        font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
+    </div>
+    <div id="deiPreviewSection" style="display:none">
+      <img id="deiPreviewImg" style="width:100%;border-radius:10px;border:1px solid rgba(37,162,162,0.4);margin-bottom:16px;display:block">
+      <div style="display:flex;gap:10px">
+        <button id="deiWeiter" style="flex:1;padding:11px;background:rgba(37,162,162,0.15);border:1.5px solid #25a2a2;
+          color:#25a2a2;border-radius:8px;font-size:15px;cursor:pointer;
+          font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
+        <button id="deiNochmal" style="flex:1;padding:11px;background:none;border:1px solid rgba(250,230,230,0.3);
+          color:rgba(250,230,230,0.8);border-radius:8px;font-size:14px;cursor:pointer;
+          font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
+      </div>
+    </div>
+    <div id="deiErrorSection" style="display:none">
+      <div id="deiErrorMsg" style="color:rgba(237,112,112,0.9);font-size:13px;line-height:1.6;margin-bottom:18px"></div>
+      <button id="deiRetry" style="display:block;width:100%;padding:10px;margin-bottom:10px;
+        background:rgba(37,162,162,0.15);border:1px solid rgba(37,162,162,0.5);color:#25a2a2;
+        border-radius:8px;font-size:14px;cursor:pointer;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
+      <button id="deiClose" style="display:block;width:100%;padding:8px;background:none;
+        border:1px solid rgba(250,230,230,0.2);color:rgba(250,230,230,0.5);border-radius:8px;
+        font-size:13px;cursor:pointer;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">Schließen</button>
+    </div>
+  </div>
+</div>
 <noscript><div style="position:fixed;inset:0;background:#000;color:#fae6e6;display:flex;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:2rem"><p>M-Sphere benötigt JavaScript.<br>Bitte aktiviere JavaScript in deinen Browser-Einstellungen.</p></div></noscript>
 <script>
 // Fallback für Browser ohne ES-Module oder importmap Support
@@ -3285,130 +3321,16 @@ function drawMenu() {
     const diLabel = diHasDone && !menuExpanded.deinIch ? t('deinIch') + ' ✓' : t('deinIch');
     const isPipelineActive = deinIchStatus !== 'idle' && deinIchStatus !== 'done' && deinIchStatus !== 'error';
 
-    if (isPipelineActive || deinIchStatus === 'preview') {
-      // Pipeline läuft oder Preview → Sektion immer offen
+    if (isPipelineActive || deinIchStatus === 'preview' || deinIchStatus === 'error') {
+      // Overlay übernimmt die Anzeige — im Menü nur Header zeigen
       const diRow = drawSettingsRow(diLabel, [], -1, curY, '#edd457', 'deinIch');
       curY = diRow.bottomY;
       menuButtons.deinIch = [];
-
-      if (deinIchStatus === 'preview' && deinIchPreviewImg) {
-        // Preview-Bild anzeigen
-        const prevSize = btnH * 2.5;
-        const prevX = cx - prevSize / 2;
-        const prevY = curY + rowFont * 0.3;
-        ctx.save();
-        ctx.beginPath();
-        ctx.roundRect(prevX, prevY, prevSize, prevSize, 8);
-        ctx.clip();
-        ctx.drawImage(deinIchPreviewImg, prevX, prevY, prevSize, prevSize);
-        ctx.restore();
-        ctx.strokeStyle = 'rgba(37, 162, 162, 0.5)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.roundRect(prevX, prevY, prevSize, prevSize, 8);
-        ctx.stroke();
-        curY = prevY + prevSize + rowFont * 0.5;
-
-        // Weiter / Nochmal Buttons
-        const btnFont = rowFont * 0.85;
-        ctx.font = `700 ${btnFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
-        const wLabel = t('deinIchWeiter');
-        const nLabel = t('deinIchNochmal');
-        const wW = ctx.measureText(wLabel).width + btnFont * 1.6;
-        const nW = ctx.measureText(nLabel).width + btnFont * 1.6;
-        const bH = btnFont * 2;
-        const bGap = btnFont * 0.5;
-        const totalBW = wW + bGap + nW;
-        const bStartX = cx - totalBW / 2;
-
-        // Weiter-Button
-        ctx.beginPath();
-        ctx.roundRect(bStartX, curY, wW, bH, bH / 2);
-        ctx.fillStyle = 'rgba(37, 162, 162, 0.15)';
-        ctx.fill();
-        ctx.strokeStyle = '#25a2a2';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.fillStyle = '#25a2a2';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(wLabel, bStartX + wW / 2, curY + bH / 2);
-        menuButtons.deinIch.push({ x: bStartX, y: curY, w: wW, h: bH, action: 'confirm' });
-
-        // Nochmal-Button
-        const nX = bStartX + wW + bGap;
-        ctx.beginPath();
-        ctx.roundRect(nX, curY, nW, bH, bH / 2);
-        ctx.fillStyle = 'rgba(250, 230, 230, 0.08)';
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(250, 230, 230, 0.3)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.fillStyle = 'rgba(250, 230, 230, 0.8)';
-        ctx.fillText(nLabel, nX + nW / 2, curY + bH / 2);
-        menuButtons.deinIch.push({ x: nX, y: curY, w: nW, h: bH, action: 'retry' });
-
-        ctx.textAlign = 'start';
-        ctx.textBaseline = 'alphabetic';
-        curY += bH + rowFont * 0.3;
-      } else {
-        // Progress-Anzeige
-        const statusY = curY + rowFont * 0.4;
-        ctx.textAlign = 'center';
-        ctx.font = `400 ${rowFont * 0.85}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
-        const stepLabels = [t('deinIchStep1'), t('deinIchStep2'), t('deinIchStep3')];
-        const stepNum = Math.min(deinIchStep, 2);
-        const dots = '.'.repeat(Math.floor(Date.now() / 500) % 4);
-        ctx.fillStyle = 'rgba(237, 212, 87, 0.9)';
-        ctx.fillText(`${stepNum + 1}/3: ${stepLabels[stepNum]}${dots}`, cx, statusY);
-        curY = statusY + rowFont * 0.6;
-
-        // Progress-Balken
-        const barW = Math.min(cx * 1.2, 280);
-        const barH = rowFont * 0.35;
-        const barX = cx - barW / 2;
-        // Hintergrund
-        ctx.fillStyle = 'rgba(250, 230, 230, 0.1)';
-        ctx.beginPath();
-        ctx.roundRect(barX, curY, barW, barH, barH / 2);
-        ctx.fill();
-        // Fortschritt
-        const totalProgress = (deinIchStep * 100 + deinIchProgress) / 3;
-        const fillW = barW * Math.min(totalProgress / 100, 1);
-        if (fillW > 0) {
-          ctx.fillStyle = '#25a2a2';
-          ctx.beginPath();
-          ctx.roundRect(barX, curY, Math.max(fillW, barH), barH, barH / 2);
-          ctx.fill();
-        }
-        // Prozent-Text
-        ctx.fillStyle = 'rgba(250, 230, 230, 0.6)';
-        ctx.font = `400 ${rowFont * 0.7}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
-        ctx.fillText(Math.round(totalProgress) + '%', cx, curY + barH + rowFont * 0.5);
-
-        ctx.textAlign = 'start';
-        curY += barH + rowFont * 0.8;
-      }
     } else if (diHasDone) {
       // Custom-Modell vorhanden: Aktiv / Neu / Löschen
       const diRow = drawSettingsRow(diLabel, [t('deinIchAktiv'), t('deinIchNeu'), t('deinIchLoeschen')], 0, curY, '#25a2a2', 'deinIch');
       menuButtons.deinIch = diRow.btns.map((btn, i) => ({ ...btn, action: ['active', 'new', 'delete'][i] }));
       curY = diRow.bottomY;
-    } else if (deinIchStatus === 'error') {
-      // Fehler: Erneut versuchen
-      const diRow = drawSettingsRow(diLabel, [t('deinIchFoto')], -1, curY, null, 'deinIch');
-      menuButtons.deinIch = diRow.btns.map(btn => ({ ...btn, action: 'upload' }));
-      curY = diRow.bottomY;
-      if (menuExpanded.deinIch) {
-        const errY = curY + rowFont * 0.4;
-        ctx.textAlign = 'center';
-        ctx.font = `400 ${rowFont * 0.8}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
-        ctx.fillStyle = 'rgba(237, 112, 112, 0.9)';
-        const errMsg = deinIchError || t('deinIchFehler');
-        ctx.fillText(errMsg.length > 40 ? errMsg.substring(0, 37) + '...' : errMsg, cx, errY);
-        ctx.textAlign = 'start';
-        curY = errY + rowFont * 0.4;
-      }
     } else {
       // Idle: Foto hochladen Button
       const diRow = drawSettingsRow(diLabel, [t('deinIchFoto')], -1, curY, null, 'deinIch');
@@ -6715,7 +6637,53 @@ function cancelDeinIch() {
   deinIchPreviewImg = null;
   deinIchTaskId = null;
   deinIchGeminiBase64 = null;
+  updateDeinIchOverlay();
 }
+
+function updateDeinIchOverlay() {
+  const overlay = document.getElementById('deinIchOverlay');
+  if (!overlay) return;
+  const isActive = deinIchStatus !== 'idle' && deinIchStatus !== 'done';
+  overlay.style.display = isActive ? 'flex' : 'none';
+  if (!isActive) return;
+
+  document.getElementById('deiOverlayTitle').textContent = t('deinIch');
+  const isProg = deinIchStatus !== 'preview' && deinIchStatus !== 'error';
+  document.getElementById('deiProgress').style.display = isProg ? 'block' : 'none';
+  document.getElementById('deiPreviewSection').style.display = deinIchStatus === 'preview' ? 'block' : 'none';
+  document.getElementById('deiErrorSection').style.display = deinIchStatus === 'error' ? 'block' : 'none';
+
+  if (isProg) {
+    const stepLabels = [t('deinIchStep1'), t('deinIchStep2'), t('deinIchStep3'), t('deinIchStep3')];
+    const stepNum = Math.min(deinIchStep, 2);
+    document.getElementById('deiStepLabel').textContent = (stepNum + 1) + '/3: ' + stepLabels[stepNum];
+    const totalProgress = Math.round((deinIchStep * 100 + deinIchProgress) / 3);
+    document.getElementById('deiProgressBar').style.width = totalProgress + '%';
+    document.getElementById('deiPercent').textContent = totalProgress + '%';
+    document.getElementById('deiAbbrechen').textContent = t('abbrechen');
+  }
+  if (deinIchStatus === 'preview' && deinIchPreviewImg) {
+    document.getElementById('deiPreviewImg').src = deinIchPreviewImg.src;
+    document.getElementById('deiWeiter').textContent = t('deinIchWeiter');
+    document.getElementById('deiNochmal').textContent = t('deinIchNochmal');
+  }
+  if (deinIchStatus === 'error') {
+    document.getElementById('deiErrorMsg').textContent = deinIchError || t('deinIchFehler');
+    document.getElementById('deiRetry').textContent = t('deinIchFoto');
+  }
+}
+
+document.getElementById('deiAbbrechen').addEventListener('click', () => { cancelDeinIch(); });
+document.getElementById('deiWeiter').addEventListener('click', () => { confirmDeinIchPreview(); });
+document.getElementById('deiNochmal').addEventListener('click', () => {
+  cancelDeinIch();
+  document.getElementById('deinIchInput').click();
+});
+document.getElementById('deiRetry').addEventListener('click', () => {
+  cancelDeinIch();
+  document.getElementById('deinIchInput').click();
+});
+document.getElementById('deiClose').addEventListener('click', () => { cancelDeinIch(); });
 
 function startDeinIch(photoDataUrls) {
   cancelDeinIch();
@@ -6723,12 +6691,14 @@ function startDeinIch(photoDataUrls) {
   deinIchStep = 0;
   deinIchProgress = 10;
   menuExpanded.deinIch = true;
+  updateDeinIchOverlay();
 
   // Fotos resizen
   Promise.all(photoDataUrls.map(url => resizePhoto(url, 512)))
     .then(resizedPhotos => {
       deinIchStatus = 'gemini';
       deinIchProgress = 30;
+      updateDeinIchOverlay();
       return fetch(DEIN_ICH_API + '/generate-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -6746,6 +6716,7 @@ function startDeinIch(photoDataUrls) {
           deinIchPreviewImg = img;
           deinIchStatus = 'preview';
           deinIchProgress = 100;
+          updateDeinIchOverlay();
           resolve();
         };
         img.onerror = () => reject(new Error('Preview image failed to load'));
@@ -6755,6 +6726,7 @@ function startDeinIch(photoDataUrls) {
     .catch(err => {
       deinIchStatus = 'error';
       deinIchError = err.message || t('deinIchFehler');
+      updateDeinIchOverlay();
     });
 }
 
@@ -6762,6 +6734,7 @@ function confirmDeinIchPreview() {
   deinIchStatus = 'meshy3d';
   deinIchStep = 1;
   deinIchProgress = 0;
+  updateDeinIchOverlay();
 
   fetch(DEIN_ICH_API + '/generate-3d', {
     method: 'POST',
@@ -6779,6 +6752,7 @@ function confirmDeinIchPreview() {
     .catch(err => {
       deinIchStatus = 'error';
       deinIchError = err.message || t('deinIchFehler');
+      updateDeinIchOverlay();
     });
 }
 
@@ -6792,6 +6766,7 @@ function pollDeinIch3D() {
         clearInterval(deinIchPollTimer);
         deinIchPollTimer = null;
         deinIchProgress = 100;
+        updateDeinIchOverlay();
         // Starte Remesh
         startDeinIchRemesh(deinIchTaskId);
       } else if (data.status === 'FAILED' || data.status === 'failed') {
@@ -6799,6 +6774,7 @@ function pollDeinIch3D() {
       } else {
         // Progress aktualisieren
         deinIchProgress = Math.min(90, deinIchProgress + 5);
+        updateDeinIchOverlay();
       }
     })
     .catch(err => {
@@ -6806,6 +6782,7 @@ function pollDeinIch3D() {
       deinIchPollTimer = null;
       deinIchStatus = 'error';
       deinIchError = err.message || t('deinIchFehler');
+      updateDeinIchOverlay();
     });
 }
 
@@ -6813,6 +6790,7 @@ function startDeinIchRemesh(taskId) {
   deinIchStatus = 'remesh';
   deinIchStep = 2;
   deinIchProgress = 0;
+  updateDeinIchOverlay();
 
   fetch(DEIN_ICH_API + '/remesh', {
     method: 'POST',
@@ -6824,11 +6802,13 @@ function startDeinIchRemesh(taskId) {
       if (data.error) throw new Error(data.error);
       deinIchTaskId = data.task_id || data.result;
       deinIchProgress = 20;
+      updateDeinIchOverlay();
       deinIchPollTimer = setInterval(pollDeinIchRemesh, 5000);
     })
     .catch(err => {
       deinIchStatus = 'error';
       deinIchError = err.message || t('deinIchFehler');
+      updateDeinIchOverlay();
     });
 }
 
@@ -6842,6 +6822,7 @@ function pollDeinIchRemesh() {
         clearInterval(deinIchPollTimer);
         deinIchPollTimer = null;
         deinIchProgress = 100;
+        updateDeinIchOverlay();
         // GLB herunterladen
         const glbUrl = data.model_urls?.glb || data.glb_url;
         if (!glbUrl) throw new Error('No GLB URL in response');
@@ -6850,6 +6831,7 @@ function pollDeinIchRemesh() {
         throw new Error('Remesh failed');
       } else {
         deinIchProgress = Math.min(90, deinIchProgress + 5);
+        updateDeinIchOverlay();
       }
     })
     .catch(err => {
@@ -6864,6 +6846,7 @@ function downloadDeinIchModel(glbUrl) {
   deinIchStatus = 'downloading';
   deinIchStep = 3;
   deinIchProgress = 50;
+  updateDeinIchOverlay();
 
   fetch(glbUrl)
     .then(res => {
@@ -6872,6 +6855,7 @@ function downloadDeinIchModel(glbUrl) {
     })
     .then(blob => {
       deinIchProgress = 80;
+      updateDeinIchOverlay();
       return saveCustomModel(blob).then(() => blob);
     })
     .then(blob => {
@@ -6884,6 +6868,7 @@ function downloadDeinIchModel(glbUrl) {
       deinIchStatus = 'done';
       deinIchGeminiBase64 = null;
       deinIchPreviewImg = null;
+      updateDeinIchOverlay();
       // Modell direkt laden
       loadModel(0, { key: 'custom', file: customModelUrl, label: 'Dein Ich' });
       // Thumbnail generieren
@@ -6894,6 +6879,7 @@ function downloadDeinIchModel(glbUrl) {
     .catch(err => {
       deinIchStatus = 'error';
       deinIchError = err.message || t('deinIchFehler');
+      updateDeinIchOverlay();
     });
 }
 
