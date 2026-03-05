@@ -2785,7 +2785,7 @@ function drawMenu() {
   if (isMobilePortrait) {
     ctx.font = `900 ${titleSize}px -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif`;
     ctx.letterSpacing = `${-titleSize * 0.02}px`;
-    const measuredW = ctx.measureText('J-SPHERE').width;
+    const measuredW = ctx.measureText('M-SPHERE').width;
     ctx.letterSpacing = '0px';
     if (measuredW > 0) titleSize *= menuContentW / measuredW;
   }
@@ -2849,8 +2849,8 @@ function drawMenu() {
 
 
 
-  // --- Titel: J-SPHERE mit ZPMA-Glow ---
-  const titleText = 'J-SPHERE';
+  // --- Titel: M-SPHERE mit ZPMA-Glow ---
+  const titleText = 'M-SPHERE';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   ctx.font = `900 ${titleSize}px -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif`;
@@ -4235,7 +4235,7 @@ function drawLegalOverlay() {
     const totalH = titleH + items.length * itemH + (items.length - 1) * gap;
     const startY = (H - totalH) / 2;
 
-    // J-SPHERE Titel oben im Menü — heller, mehr Abstand
+    // M-SPHERE Titel oben im Menü — heller, mehr Abstand
     ctx.save();
     ctx.font = `300 ${titleFontSize}px ${sansFont}`;
     ctx.textAlign = 'center';
@@ -4244,7 +4244,7 @@ function drawLegalOverlay() {
     ctx.shadowColor = 'rgba(37, 162, 162, 0.3)';
     ctx.shadowBlur = 12;
     ctx.fillStyle = 'rgba(250, 230, 230, 0.7)';
-    ctx.fillText('J-SPHERE', W / 2, startY + titleFontSize * 0.9);
+    ctx.fillText('M-SPHERE', W / 2, startY + titleFontSize * 0.9);
     ctx.shadowBlur = 0;
     ctx.letterSpacing = '0px';
     // Dezente Trennlinie unter dem Titel
@@ -7940,7 +7940,7 @@ function frame() {
       ctx.fillRect(sx, sy, 1.5, 1.5);
     }
 
-    // --- Titel mit Teal-Glow (wie J-SPHERE Titel) ---
+    // --- Titel mit Teal-Glow (wie M-SPHERE Titel) ---
     const tFS = _sf(0.05, 0.026);
     ctx.font = `700 ${tFS}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
     ctx.textAlign = 'center';
