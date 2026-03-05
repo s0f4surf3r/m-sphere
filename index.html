@@ -4668,7 +4668,9 @@ function handleMenuClick(x, y) {
         delete modelThumbnails['custom'];
       }
       // 'active' = no-op
-      try { playTingsha(); } catch(err) {}
+      if (btn.action !== 'upload' && btn.action !== 'new') {
+        try { playTingsha(); } catch(err) {}
+      }
       return true;
     }
   }
