@@ -6743,7 +6743,10 @@ function confirmDeinIchPreview() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ image_url: deinIchGeminiBase64 })
   })
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok && res.status === 413) throw new Error('Bild zu groß (413)');
+      return res.json().catch(() => { throw new Error('HTTP ' + res.status); });
+    })
     .then(data => {
       if (data.error) throw new Error(data.error);
       deinIchTaskId = data.task_id || data.result;
