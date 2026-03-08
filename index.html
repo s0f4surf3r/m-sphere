@@ -2829,7 +2829,9 @@ function drawMenu() {
   const rowFont = unit * 0.02 * uiScale;
   const btnH = unit * 0.04 * uiScale;
   const btnGap = unit * 0.012 * uiScale;
-  const safeTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
+  const safeTop = (isMobilePortrait || window.__nativeApp)
+    ? parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0
+    : 0;
 
   // --- Zwei Gap-Systeme: sectionGap (eng, Settings) + layoutGap (weit, Struktur) ---
   let sectionGap, layoutGap, curY;
