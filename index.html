@@ -65,6 +65,7 @@ canvas {
   position: fixed;
   top: 0;
   left: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 input[type=number]::-webkit-outer-spin-button,
 input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -991,6 +992,24 @@ loadCustomModel().then(blob => {
     _genNextThumb();
   }
 });
+// Beim App-Start: laufenden Dein-Ich-Task resumieren (nach App-Kill)
+(function resumeDeinIchTask() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('msphere_dei_task') || 'null');
+    if (!saved || !saved.id || (Date.now() - saved.ts > 30 * 60 * 1000)) return; // >30 min → verworfen
+    deinIchTaskId = saved.id;
+    deinIchStatus = 'meshy3d';
+    deinIchStep = saved.step === 'remesh' ? 2 : 1;
+    deinIchProgress = 20;
+    updateDeinIchOverlay();
+    if (saved.step === 'remesh') {
+      deinIchPollTimer = setInterval(pollDeinIchRemesh, 5000);
+    } else {
+      deinIchPollTimer = setInterval(pollDeinIch3D, 5000);
+    }
+    console.log('Resuming Dein-Ich task:', saved.id, '(step:', saved.step + ')');
+  } catch(e) {}
+})();
 
 // Thumbnails für Choosing-Screen generieren (nutzt Haupt-Renderer, sequentiell)
 let _thumbQueue = [...MODEL_LIST];
@@ -4580,12 +4599,12 @@ function handleMenuClick(x, y) {
   for (const btn of menuButtons.deinIch || []) {
     if (hitBtn(btn)) {
       if (btn.action === 'upload' || btn.action === 'new') {
-        document.getElementById('deinIchInput').click();
+        openDeinIchPicker();
       } else if (btn.action === 'confirm') {
         confirmDeinIchPreview();
       } else if (btn.action === 'retry') {
         cancelDeinIch();
-        document.getElementById('deinIchInput').click();
+        openDeinIchPicker();
       } else if (btn.action === 'delete') {
         cancelDeinIch();
         deleteCustomModel();
@@ -6639,6 +6658,7 @@ function cancelDeinIch() {
   deinIchPreviewImg = null;
   deinIchTaskId = null;
   deinIchGeminiBase64 = null;
+  localStorage.removeItem('msphere_dei_task');
   updateDeinIchOverlay();
 }
 
@@ -6679,11 +6699,11 @@ document.getElementById('deiAbbrechen').addEventListener('click', () => { cancel
 document.getElementById('deiWeiter').addEventListener('click', () => { confirmDeinIchPreview(); });
 document.getElementById('deiNochmal').addEventListener('click', () => {
   cancelDeinIch();
-  document.getElementById('deinIchInput').click();
+  document.getElementById('deinIchInput').click(); // Consent schon akzeptiert
 });
 document.getElementById('deiRetry').addEventListener('click', () => {
   cancelDeinIch();
-  document.getElementById('deinIchInput').click();
+  document.getElementById('deinIchInput').click(); // Consent schon akzeptiert
 });
 document.getElementById('deiClose').addEventListener('click', () => { cancelDeinIch(); });
 
@@ -6750,6 +6770,7 @@ function confirmDeinIchPreview() {
     .then(data => {
       if (data.error) throw new Error(data.error);
       deinIchTaskId = data.task_id || data.result;
+      localStorage.setItem('msphere_dei_task', JSON.stringify({ id: deinIchTaskId, step: '3d', ts: Date.now() }));
       deinIchProgress = 20;
       // Starte Polling
       deinIchPollTimer = setInterval(pollDeinIch3D, 5000);
@@ -6806,6 +6827,7 @@ function startDeinIchRemesh(taskId) {
     .then(data => {
       if (data.error) throw new Error(data.error);
       deinIchTaskId = data.task_id || data.result;
+      localStorage.setItem('msphere_dei_task', JSON.stringify({ id: deinIchTaskId, step: 'remesh', ts: Date.now() }));
       deinIchProgress = 20;
       updateDeinIchOverlay();
       deinIchPollTimer = setInterval(pollDeinIchRemesh, 5000);
@@ -6853,7 +6875,7 @@ function downloadDeinIchModel(glbUrl) {
   deinIchProgress = 50;
   updateDeinIchOverlay();
 
-  fetch(glbUrl)
+  fetch(DEIN_ICH_API + '/download?url=' + encodeURIComponent(glbUrl))
     .then(res => {
       if (!res.ok) throw new Error('Download failed: ' + res.status);
       return res.blob();
@@ -6873,6 +6895,7 @@ function downloadDeinIchModel(glbUrl) {
       deinIchStatus = 'done';
       deinIchGeminiBase64 = null;
       deinIchPreviewImg = null;
+      localStorage.removeItem('msphere_dei_task');
       updateDeinIchOverlay();
       // Modell direkt laden
       loadModel(0, { key: 'custom', file: customModelUrl, label: 'Dein Ich' });
@@ -6889,6 +6912,7 @@ function downloadDeinIchModel(glbUrl) {
 }
 
 // DSGVO-Einwilligungs-Dialog für Dein Ich
+// Wird jetzt VOR dem File-Picker gezeigt (nicht mehr danach)
 let _consentCallback = null;
 function showDeinIchConsent(onAccept) {
   const overlay = document.getElementById('deinIchConsent');
@@ -6913,6 +6937,15 @@ document.getElementById('consentDecline').addEventListener('click', () => {
   hideDeinIchConsent();
 });
 
+// Öffnet File-Picker — zeigt Anweisungen/DSGVO zuerst wenn noch nicht akzeptiert
+function openDeinIchPicker() {
+  if (localStorage.getItem('msphere_deiních_consent') === 'true') {
+    document.getElementById('deinIchInput').click();
+  } else {
+    showDeinIchConsent(() => document.getElementById('deinIchInput').click());
+  }
+}
+
 // Dein-Ich File-Input Handler
 document.getElementById('deinIchInput').addEventListener('change', (e) => {
   const files = Array.from(e.target.files);
@@ -6922,13 +6955,8 @@ document.getElementById('deinIchInput').addEventListener('change', (e) => {
     reader.onload = (ev) => resolve(ev.target.result);
     reader.readAsDataURL(file);
   }));
-  Promise.all(photoPromises).then(dataUrls => {
-    if (localStorage.getItem('msphere_deiních_consent') === 'true') {
-      startDeinIch(dataUrls);
-    } else {
-      showDeinIchConsent(() => startDeinIch(dataUrls));
-    }
-  });
+  // Consent wurde schon vor dem Picker gezeigt — direkt starten
+  Promise.all(photoPromises).then(dataUrls => startDeinIch(dataUrls));
   e.target.value = '';
 });
 
