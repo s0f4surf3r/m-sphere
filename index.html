@@ -6748,6 +6748,7 @@ function startDeinIch(photoDataUrls) {
     .catch(err => {
       deinIchStatus = 'error';
       deinIchError = err.message || t('deinIchFehler');
+      localStorage.removeItem('msphere_dei_task');
       updateDeinIchOverlay();
     });
 }
@@ -6778,6 +6779,7 @@ function confirmDeinIchPreview() {
     .catch(err => {
       deinIchStatus = 'error';
       deinIchError = err.message || t('deinIchFehler');
+      localStorage.removeItem('msphere_dei_task');
       updateDeinIchOverlay();
     });
 }
@@ -6835,6 +6837,7 @@ function startDeinIchRemesh(taskId) {
     .catch(err => {
       deinIchStatus = 'error';
       deinIchError = err.message || t('deinIchFehler');
+      localStorage.removeItem('msphere_dei_task');
       updateDeinIchOverlay();
     });
 }
@@ -6866,6 +6869,8 @@ function pollDeinIchRemesh() {
       deinIchPollTimer = null;
       deinIchStatus = 'error';
       deinIchError = err.message || t('deinIchFehler');
+      localStorage.removeItem('msphere_dei_task');
+      updateDeinIchOverlay();
     });
 }
 
@@ -6907,6 +6912,7 @@ function downloadDeinIchModel(glbUrl) {
     .catch(err => {
       deinIchStatus = 'error';
       deinIchError = err.message || t('deinIchFehler');
+      localStorage.removeItem('msphere_dei_task');
       updateDeinIchOverlay();
     });
 }
