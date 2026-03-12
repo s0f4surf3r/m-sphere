@@ -2851,7 +2851,7 @@ function drawMenu() {
   const rowFont = unit * 0.02 * uiScale;
   const btnH = unit * 0.04 * uiScale;
   const btnGap = unit * 0.012 * uiScale;
-  const safeTop = needsSafeArea
+  const safeTop = (isMobilePortrait || window.__nativeApp)
     ? parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0
     : 0;
 
@@ -2892,7 +2892,9 @@ function drawMenu() {
     // Top→Titel(2.2) + Titel→Sub(0.3) + Sub→Dial(1.5) + Dial→Settings(0.8) + Settings→Start(0.8) + Start→Footer(1.5)
     const _outerWeight = 2.2 + 0.3 + 1.5 + 0.8 + 0.8 + 1.5;
     layoutGap = Math.max(unit * 0.005, (_availH - _fixedH) / _outerWeight);
-    curY = safeTopPad + layoutGap * 2.2;
+    // Safari-Browser: Adressleiste unten → innerHeight ~50px größer als Chrome → kleinerer Top-Faktor
+    const _topFactor = (isSafari && !needsSafeArea) ? 2.0 : 2.2;
+    curY = safeTopPad + layoutGap * _topFactor;
   } else {
     sectionGap = unit * 0.025 * 0.7 * vScale;
     layoutGap = sectionGap;
@@ -7447,7 +7449,7 @@ function frame() {
       const startBtn = menuButtons.start;
       let ty;
       if (toastMobile) {
-        const _safeT = needsSafeArea ? (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0) : 0;
+        const _safeT = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
         ty = _safeT + Math.min(cW, cH) * 0.14;
       } else if (!toastMobile && startBtn && lotusBtn) {
         // Desktop: zwischen Start-Button und Footer-Icons
@@ -8154,7 +8156,7 @@ function frame() {
 
   // --- Zurück-Button (✕) — immer sichtbar im Kugelmodus ---
   if (state !== 'idle' && state !== 'done') {
-    const safeT = needsSafeArea ? (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0) : 0;
+    const safeT = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
     const safeL = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sal')) || 0;
     const bSize = 44; // Apple HIG Minimum
     const bPad = 8;
