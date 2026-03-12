@@ -424,6 +424,9 @@ function t(key) { return TR[lang][key] || TR.de[key] || key; }
 
 // Safari-Erkennung: Canvas 2D ist deutlich langsamer (radialGradient, compositing)
 const isSafari = /AppleWebKit/i.test(navigator.userAgent) && !/Chrome/i.test(navigator.userAgent);
+// Safe-area-insets nur anwenden wenn Viewport wirklich oben beginnt:
+// WKWebView (app://localhost) oder PWA (Homescreen, kein Browser-Chrome)
+const needsSafeArea = window.__nativeApp || window.matchMedia('(display-mode: standalone)').matches;
 
 // --- Koordinaten-Konvertierung (robust für iOS Safari) ---
 function canvasCoords(clientX, clientY) {
@@ -2848,7 +2851,7 @@ function drawMenu() {
   const rowFont = unit * 0.02 * uiScale;
   const btnH = unit * 0.04 * uiScale;
   const btnGap = unit * 0.012 * uiScale;
-  const safeTop = (isMobilePortrait || window.__nativeApp)
+  const safeTop = needsSafeArea
     ? parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0
     : 0;
 
@@ -7444,7 +7447,7 @@ function frame() {
       const startBtn = menuButtons.start;
       let ty;
       if (toastMobile) {
-        const _safeT = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
+        const _safeT = needsSafeArea ? (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0) : 0;
         ty = _safeT + Math.min(cW, cH) * 0.14;
       } else if (!toastMobile && startBtn && lotusBtn) {
         // Desktop: zwischen Start-Button und Footer-Icons
@@ -8151,7 +8154,7 @@ function frame() {
 
   // --- Zurück-Button (✕) — immer sichtbar im Kugelmodus ---
   if (state !== 'idle' && state !== 'done') {
-    const safeT = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
+    const safeT = needsSafeArea ? (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0) : 0;
     const safeL = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sal')) || 0;
     const bSize = 44; // Apple HIG Minimum
     const bPad = 8;
