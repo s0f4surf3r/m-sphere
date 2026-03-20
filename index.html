@@ -97,8 +97,6 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 <div id="landscapeBlock"><span>↻</span><p>Bitte drehe dein Gerät ins Hochformat</p></div>
 <canvas id="c" style="-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none;-webkit-user-drag:none"></canvas>
 <div id="menuSpacer" style="width:1px;height:0;pointer-events:none"></div>
-<input type="file" id="faceInput" accept="image/*" capture="user" style="display:none">
-<input type="file" id="faceLoadInput" accept="image/png,image/jpeg,image/webp,image/heic" style="display:none">
 <input type="file" id="deinIchInput" accept="image/*" multiple style="display:none">
 <div id="deinIchConsent" style="display:none;position:fixed;inset:0;z-index:9999;
   background:rgba(10,22,40,0.92);align-items:center;justify-content:center;
@@ -110,32 +108,6 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
       border:1px solid rgba(37,162,162,0.5);color:rgba(37,162,162,0.95);border-radius:8px;font-size:15px;cursor:pointer;
       font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
     <button id="consentDecline" style="display:block;width:100%;padding:8px 0;background:none;
-      border:1px solid rgba(250,230,230,0.3);color:#fae6e6;border-radius:8px;font-size:14px;cursor:pointer;
-      font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
-  </div>
-</div>
-<div id="paypalOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,22,40,0.92);
-  align-items:center;justify-content:center;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">
-  <div style="background:#1e3232;border-radius:16px;padding:28px 24px;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
-    <div id="paypalTitle" style="color:#fae6e6;font-size:18px;font-weight:700;margin-bottom:8px"></div>
-    <div id="paypalSubtitle" style="color:#8aa;font-size:14px;margin-bottom:12px"></div>
-    <div id="paypalHinweis" style="color:rgba(250,230,230,0.55);font-size:12px;line-height:1.5;margin-bottom:16px;text-align:left;white-space:pre-line"></div>
-    <div id="paypal-button-container" style="min-height:50px"></div>
-    <button id="paypalCancel" onclick="hidePayPalOverlay()" style="margin-top:14px;background:none;border:1px solid rgba(250,230,230,0.3);
-      color:#fae6e6;padding:8px 24px;border-radius:8px;font-size:14px;cursor:pointer"></button>
-  </div>
-</div>
-<div id="cameraOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,22,40,0.92);
-  align-items:center;justify-content:center;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">
-  <div style="background:#1e3232;border-radius:16px;padding:28px 24px;max-width:360px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
-    <div id="cameraTipp" style="color:rgba(250,230,230,0.6);font-size:13px;margin-bottom:16px"></div>
-    <div style="width:200px;height:200px;margin:0 auto 18px;border-radius:50%;overflow:hidden;border:2px solid rgba(37,162,162,0.5);position:relative">
-      <video id="cameraPreviewVideo" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1)"></video>
-    </div>
-    <button id="cameraSnapBtn" style="display:block;width:100%;padding:10px 0;margin-bottom:10px;background:rgba(37,162,162,0.15);
-      border:1px solid rgba(37,162,162,0.5);color:rgba(37,162,162,0.95);border-radius:8px;font-size:15px;cursor:pointer;
-      font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
-    <button id="cameraCancelBtn" style="display:block;width:100%;padding:8px 0;background:none;
       border:1px solid rgba(250,230,230,0.3);color:#fae6e6;border-radius:8px;font-size:14px;cursor:pointer;
       font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
   </div>
@@ -243,7 +215,6 @@ const TR = {
     meditationsSound: 'SOUNDS',
     gedankenmodus: 'GEDANKENMODUS',
     gedankenfluss: 'GEDANKENFLUSS',
-    deinGesicht: 'DEIN GESICHT',
     deinIch: 'DEIN ICH',
     deinIchFoto: 'Foto hochladen',
     deinIchHint: '1-2 Fotos • Dauer ~5 Min',
@@ -283,21 +254,7 @@ const TR = {
     youAreWater: 'Du bist das Wasser',
     tapRestart: 'Zurück ins Menü',
     clickRestart: 'Zurück ins Menü',
-    fotoAufnehmen: 'Foto aufnehmen',
-    kameraTipp: 'Tipp: Brille & Kopfbedeckung ablegen, gutes Licht',
-    kameraStartet: 'Kamera wird gestartet...',
-    sendeBild: 'Sende Bild',
-    faceSwapLaeuft: 'Face Swap läuft',
-    gesichtAktiv: '✓ Eigenes Gesicht aktiv',
-    faceSwapFehler: 'Fehler beim Face Swap',
-    faceSwapLimit: 'Face Swap: 1× pro Tag möglich. Morgen wieder!',
-    faceSwapFertig: 'Face Swap fertig!',
-    faceSwapKaufen: 'Face Swap: 0,50 €',
-    faceSwapTagesLimit: 'Nettes Gimmick: Dein Gesicht auf dem Mönch!',
-    faceSwapHinweis: 'Dein Bild wird nur lokal im Browser gespeichert — bei Cache-Leerung ist es weg. Du kannst es aber über „Speichern" sichern und später über „Laden" wieder einfügen.\n\nAlso bitte ned bös sei, wenn die 50 Cent zum Fenschder naus gschmissa sind — so sind mir Schwoba halt. 😄 (Und ja, mir isch bewussd, dass davon ca. 39 Cent an Elon & Friends gehed. Aber solang mer no drüber lacha ka, isch alles gut. Sonschd hämmer ja nix meh.)\n\nAch ja, no ebbes: Wenn du des Ding bloß ufm Handy nutza duasch, dann lass es lieber — sieht mer eh ned gscheid, gell.',
-    paypalFehler: 'Zahlung fehlgeschlagen. Bitte erneut versuchen.',
     abbrechen: 'Abbrechen',
-    speichern: '💾 Speichern',
     weiter: 'Weiter',
     ueberMSphere: 'Die Geschichte dahinter',
     literatur: 'Literaturempfehlungen',
@@ -320,10 +277,6 @@ const TR = {
     schwebenMitSog: 'Schweben mit Sog',
     sinken: 'Sinken',
     reflektieren: 'Reflektieren',
-    foto: 'Foto',
-    webcam: 'Webcam',
-    laden: 'Laden',
-    ladenHint: 'Bitte nur ein zuvor gespeichertes Face-Swap-Bild verwenden',
     mediathek: 'Mediathek',
     kamera: 'Kamera',
   },
@@ -336,7 +289,6 @@ const TR = {
     meditationsSound: 'SOUNDS',
     gedankenmodus: 'THOUGHT MODE',
     gedankenfluss: 'THOUGHT FLOW',
-    deinGesicht: 'YOUR FACE',
     deinIch: 'YOUR SELF',
     deinIchFoto: 'Upload photo',
     deinIchHint: '1-2 photos • ~5 min',
@@ -376,21 +328,7 @@ const TR = {
     youAreWater: 'You are the water',
     tapRestart: 'Back to menu',
     clickRestart: 'Back to menu',
-    fotoAufnehmen: 'Take photo',
-    kameraTipp: 'Tip: Remove glasses & headwear, good lighting',
-    kameraStartet: 'Starting camera...',
-    sendeBild: 'Uploading image',
-    faceSwapLaeuft: 'Face Swap processing',
-    gesichtAktiv: '✓ Custom face active',
-    faceSwapFehler: 'Face Swap error',
-    faceSwapLimit: 'Face Swap: 1× per day. Try again tomorrow!',
-    faceSwapFertig: 'Face Swap done!',
-    faceSwapKaufen: 'Face Swap: €0.50',
-    faceSwapTagesLimit: 'Fun gimmick: Your face on the monk!',
-    faceSwapHinweis: 'Your image is stored locally in your browser only — clearing cache will remove it. You can save it via "Save" and reload it later via "Load".\n\nSo please don\'t be mad if the 50 cents feel a bit... generous for a browser gimmick. We\'re Swabian — we know the value of money. 😄 (And yes, roughly 39 cents of that go straight to Elon & friends. But hey — as long as we can still laugh about it, right? What else do we have left?)\n\nOh, one more thing: if you\'re only using this on your phone, don\'t bother — you can barely see it anyway, right.',
-    paypalFehler: 'Payment failed. Please try again.',
     abbrechen: 'Cancel',
-    speichern: '💾 Save',
     weiter: 'Continue',
     ueberMSphere: 'The Story Behind',
     literatur: 'Book Recommendations',
@@ -412,10 +350,6 @@ const TR = {
     schwebenMitSog: 'Float with Pull',
     sinken: 'Sink',
     reflektieren: 'Reflect',
-    foto: 'Photo',
-    webcam: 'Webcam',
-    laden: 'Load',
-    ladenHint: 'Please only use a previously saved face-swap image',
     mediathek: 'Library',
     kamera: 'Camera',
   }
@@ -588,17 +522,6 @@ let distractionModeIdx = parseInt(localStorage.getItem('msphere_distraction')) |
 let toastMsg = '';
 let toastStart = 0;
 
-// Face Swap
-const FACE_MODES = ['Aus', 'Foto', 'Webcam', 'Laden'];
-let faceModeIdx = 0;
-let faceSwapImg = null;
-let faceSwapStatus = 'idle';  // 'idle'|'uploading'|'processing'|'done'|'error'
-let faceSwapError = null;
-let faceSwapPollTimer = null;
-let faceSwapPredictionId = null;
-let faceSwapShowSave = false; // Speichern-Overlay anzeigen
-let faceSwapMask = null; // Transparenz-Maske (Canvas) zum Hintergrund-Entfernen
-
 // --- Dein Ich ---
 let deinIchStatus = 'idle'; // 'idle'|'uploading'|'gemini'|'preview'|'meshy3d'|'remesh'|'downloading'|'done'|'error'
 let deinIchProgress = 0;
@@ -608,23 +531,6 @@ let deinIchPreviewImg = null;
 let deinIchPollTimer = null;
 let deinIchTaskId = null;
 let deinIchGeminiBase64 = null; // Gemini-Bild als base64 für 3D-API
-
-let webcamStream = null;
-let webcamReady = false;
-
-// Face Swap aus localStorage wiederherstellen
-try {
-  const savedFace = localStorage.getItem('msphere_faceswap');
-  if (savedFace) {
-    const img = new Image();
-    img.onload = () => {
-      faceSwapImg = img;
-      faceSwapStatus = 'done';
-      faceModeIdx = 1;
-    };
-    img.src = savedFace;
-  }
-} catch(e) {}
 
 // Hit-Bereiche für die Menu-Buttons
 let menuButtons = {};
@@ -644,7 +550,7 @@ let menuScrollRowAreas = {};  // Key = collapseKey, Value = {x, y, w, h, maxOffs
 // --- Legal Overlay (Impressum/Datenschutz/About/Menu) ---
 let legalOverlay = null; // 'menu' | 'about' | 'impressum' | 'datenschutz' | null
 // Ausklappbare Menü-Sektionen (true = offen)
-const menuExpanded = { breathing: true, meditation: false, thoughtMode: false, flowLevel: false, deinIch: false, face: false };
+const menuExpanded = { breathing: true, meditation: false, thoughtMode: false, flowLevel: false, deinIch: false };
 let menuToggleAreas = {}; // Hit-Areas für Sektions-Header
 let legalScrollY = 0;
 let legalCloseBtn = null;
@@ -685,30 +591,20 @@ kontakt@jochenhornung.de
 Diese Webapp wird über GitHub Pages (GitHub Inc., USA) bereitgestellt. Beim Aufruf werden Server-Logdaten (IP-Adresse, Zugriffszeit, Browser) erfasst. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.
 
 2. LOKALE DATENSPEICHERUNG
-M-Sphere speichert Einstellungen und das Face-Swap-Ergebnis im localStorage deines Browsers. Diese Daten verlassen dein Gerät nicht und können jederzeit über die Browsereinstellungen gelöscht werden.
+M-Sphere speichert Einstellungen und personalisierte 3D-Modelle lokal auf deinem Gerät (localStorage / IndexedDB). Diese Daten verlassen dein Gerät nicht und können jederzeit über die Browsereinstellungen gelöscht werden.
 
 3. EXTERNE INHALTE (CDN)
-Für die 3D-Darstellung werden JavaScript-Bibliotheken (Three.js) über das CDN von jsDelivr (Prospect One, Polen) geladen. Dabei kann deine IP-Adresse an jsDelivr übermittelt werden. Für die Zahlungsabwicklung wird das PayPal SDK von paypal.com geladen. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.
+Für die 3D-Darstellung werden JavaScript-Bibliotheken (Three.js) über das CDN von jsDelivr (Prospect One, Polen) geladen. Dabei kann deine IP-Adresse an jsDelivr übermittelt werden. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.
 
-4. FACE SWAP (GESICHTSTAUSCH)
-Wenn du die Face-Swap-Funktion nutzt, wird dein Selfie zusammen mit einem gerenderten 3D-Modell an folgende Dienste übermittelt:
-- Vercel Inc. (USA): API-Proxy (keine dauerhafte Speicherung)
-- Replicate Inc. (USA): KI-Bildverarbeitung (temporäre Speicherung während der Verarbeitung)
-Die Übermittlung erfolgt verschlüsselt (HTTPS). Rechtsgrundlage: Art. 6 Abs. 1 lit. a DSGVO (Einwilligung durch aktive Nutzung der Funktion). Die Bilder werden nicht dauerhaft auf den Servern gespeichert.
+4. COOKIES
+M-Sphere selbst verwendet keine Cookies und keine Tracking- oder Analyse-Tools.
 
-5. ZAHLUNG (PAYPAL)
-Für die Face-Swap-Funktion wird PayPal als Zahlungsdienstleister genutzt (Autorisierung, 0,50 €). Dabei werden Daten an PayPal (Europe) S.à r.l. et Cie, S.C.A. übermittelt. Es gelten die Datenschutzbestimmungen von PayPal. Die Zahlungsabwicklung erfolgt über einen API-Proxy bei Vercel Inc. (USA). Der Spenden-Button leitet ebenfalls zu PayPal weiter.
-Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung).
-
-6. COOKIES
-M-Sphere selbst verwendet keine Cookies und keine Tracking- oder Analyse-Tools. Das PayPal SDK, das bei Nutzung der Face-Swap-Bezahlfunktion geladen wird, kann eigene Cookies setzen. Details hierzu findest du in der Datenschutzerklärung von PayPal.
-
-7. DEINE RECHTE
+5. DEINE RECHTE
 Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch. Beschwerden kannst du an die zuständige Aufsichtsbehörde richten:
 Berliner Beauftragte für Datenschutz und Informationsfreiheit
 Telefon: 030 13889-0
 
-8. SSL-VERSCHLÜSSELUNG
+6. SSL-VERSCHLÜSSELUNG
 Die Übertragung erfolgt per HTTPS/SSL.
 
 Stand: Februar 2026`;
@@ -1110,46 +1006,6 @@ function captureMonkMask() {
     }
   }
   // Horizontale Lücken füllen (Konvexe Hülle pro Zeile → keine Einbuchtungen an Lotussockel/Hüfte)
-  for (let my = 0; my < sz; my++) {
-    let left = -1, right = -1;
-    for (let mx = 0; mx < sz; mx++) {
-      if (monkMask[my * sz + mx]) { if (left < 0) left = mx; right = mx; }
-    }
-    if (left >= 0 && right > left + 1) {
-      for (let mx = left; mx <= right; mx++) {
-        if (!monkMask[my * sz + mx]) { monkMask[my * sz + mx] = 1; solid++; }
-      }
-    }
-  }
-  monkMaskSolid = solid;
-  monkMaskAge = 0;
-}
-
-// Face-Swap-Variante: Maske vom Bild lesen (Brightness statt WebGL Alpha)
-let _maskTempCanvas = null;
-function captureMonkMaskFromImage(img) {
-  const sz = MONK_MASK_SIZE;
-  if (!monkMask) monkMask = new Uint8Array(sz * sz);
-  if (!_maskTempCanvas) {
-    _maskTempCanvas = document.createElement('canvas');
-    _maskTempCanvas.width = sz;
-    _maskTempCanvas.height = sz;
-  }
-  const tctx = _maskTempCanvas.getContext('2d');
-  tctx.clearRect(0, 0, sz, sz);
-  tctx.drawImage(img, 0, 0, sz, sz);
-  const data = tctx.getImageData(0, 0, sz, sz).data;
-
-  let solid = 0;
-  for (let my = 0; my < sz; my++) {
-    for (let mx = 0; mx < sz; mx++) {
-      const idx = (my * sz + mx) * 4;
-      const brightness = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-      monkMask[my * sz + mx] = brightness > 25 ? 1 : 0;
-      solid += monkMask[my * sz + mx];
-    }
-  }
-  // Horizontale Lücken füllen (gleich wie bei WebGL-Variante)
   for (let my = 0; my < sz; my++) {
     let left = -1, right = -1;
     for (let mx = 0; mx < sz; mx++) {
@@ -2833,7 +2689,7 @@ function drawMenu() {
   const _prevLotus = menuButtons.lotus; // Hit-Area beibehalten falls Rendering fehlschlägt
   const _prevGk = menuButtons.gkLink;
   const _prevLink = menuButtons.link;
-  menuButtons = { timer: [], breathing: [], timerToggle: null, customTime: null, shake: [], meditation: [], start: null, deinIch: [], faceSwap: [], faceSave: null, lotus: _prevLotus, lotusHint: null, gkLink: _prevGk, link: _prevLink };
+  menuButtons = { timer: [], breathing: [], timerToggle: null, customTime: null, shake: [], meditation: [], start: null, deinIch: [], lotus: _prevLotus, lotusHint: null, gkLink: _prevGk, link: _prevLink };
 
   // Vertikales Layout berechnen — dynamisch an Fensterhöhe angepasst
   const vScale = isMobilePortrait ? 1.0 : Math.max(0.7, Math.min(1.4, H / 800));
@@ -3374,10 +3230,6 @@ function drawMenu() {
       }
     }
   }
-  // --- DEIN GESICHT (ausgeblendet) ---
-  // Face-Swap-Sektion wird nicht mehr gerendert, Code bleibt für spätere Reaktivierung erhalten
-  menuButtons.faceSwap = [];
-
   // Start-Button: struktureller Abstand zur Settings-Gruppe
   curY += isMobilePortrait ? layoutGap * 0.8 : sectionGap * 2;
 
@@ -4025,68 +3877,6 @@ function drawMenu() {
   ctx.textAlign = 'start';
   ctx.textBaseline = 'alphabetic';
 
-  // --- Speichern-Overlay ---
-  if (faceSwapShowSave && faceSwapImg) {
-    // Dunkler Backdrop
-    ctx.fillStyle = 'rgba(5, 11, 20, 0.88)';
-    ctx.fillRect(0, 0, W, H);
-
-    const oCx = W / 2;
-    const oCy = H * 0.40;
-    const oFont = unit * 0.022 * uiScale;
-
-    // Titel
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = `700 ${oFont * 1.3}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
-    ctx.fillStyle = '#25a2a2';
-    ctx.fillText(t('faceSwapFertig'), oCx, oCy - unit * 0.18 * uiScale);
-
-    // Kreisvorschau
-    const pR = unit * (isMobilePortrait ? 0.2 : 0.1);
-    const pCy = oCy;
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(oCx, pCy, pR, 0, Math.PI * 2);
-    ctx.clip();
-    const iA = faceSwapImg.width / faceSwapImg.height;
-    const dW = pR * 2 * Math.max(1, iA);
-    const dH = pR * 2 * Math.max(1, 1 / iA);
-    ctx.drawImage(faceSwapImg, oCx - dW / 2, pCy - dH / 2, dW, dH);
-    ctx.restore();
-    // Kreis-Rand
-    ctx.strokeStyle = 'rgba(37, 162, 162, 0.5)';
-    ctx.lineWidth = isMobilePortrait ? 3 : 2;
-    ctx.beginPath();
-    ctx.arc(oCx, pCy, pR, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Buttons: Speichern + Weiter (zentriert als Paar)
-    ctx.font = `${oFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
-    const ovBtnY = pCy + pR + oFont * 2;
-    const ovBH = btnH;
-    const gap = oFont * 1.5;
-
-    const sLabel = t('speichern');
-    const sW = ctx.measureText(sLabel).width + oFont * 2;
-    const sX = oCx - sW / 2;
-
-    // Speichern (einziger Button — User muss Bild speichern)
-    ctx.beginPath();
-    ctx.roundRect(sX, ovBtnY, sW, ovBH, ovBH * 0.2);
-    ctx.fillStyle = btnSelFill;
-    ctx.fill();
-    ctx.strokeStyle = btnSelStroke;
-    ctx.lineWidth = isMobilePortrait ? 2 : 1.5;
-    ctx.stroke();
-    ctx.fillStyle = '#25a2a2';
-    ctx.fillText(sLabel, sX + sW / 2, ovBtnY + ovBH / 2);
-    menuButtons.faceSave = { x: sX, y: ovBtnY, w: sW, h: ovBH };
-    menuButtons.faceDismiss = null;
-  } else {
-    menuButtons.faceSave = null;
-    menuButtons.faceDismiss = null;
-  }
 }
 
 function wrapLegalText(ctx, text, maxWidth) {
@@ -4485,19 +4275,6 @@ function handleMenuClick(x, y) {
     // Klick in Text-Overlay tut nichts (Scrolling via Drag/Wheel)
     return true;
   }
-  // Speichern-Overlay hat Vorrang (blockiert alle anderen Klicks)
-  if (faceSwapShowSave) {
-    const sv = menuButtons.faceSave;
-    if (sv && x >= sv.x && x <= sv.x + sv.w && y >= sv.y && y <= sv.y + sv.h) {
-      saveFaceSwapImage();
-      faceSwapShowSave = false;
-      menuExpanded.face = false;
-      if (!Object.values(menuExpanded).some(v => v)) menuExpanded.breathing = true;
-      return true;
-    }
-    return true; // Klicks außerhalb ignorieren (Overlay bleibt, User muss speichern)
-  }
-
   // ☰ Burger-Icon (Screen-Space, VOR Scroll-Offset-Berechnung)
   if (burgerBtnArea) {
     const b = burgerBtnArea;
@@ -4622,55 +4399,6 @@ function handleMenuClick(x, y) {
       return true;
     }
   }
-  // Face Swap
-  for (const btn of menuButtons.faceSwap || []) {
-    if (hitBtn(btn)) {
-      const prevMode = faceModeIdx;
-      faceModeIdx = btn.idx;
-      if (faceModeIdx === 0) {
-        faceSwapImg = null;
-        faceSwapStatus = 'idle';
-        faceSwapError = null;
-        if (faceSwapPollTimer) { clearInterval(faceSwapPollTimer); faceSwapPollTimer = null; }
-        faceSwapPredictionId = null;
-        stopWebcam();
-        localStorage.removeItem('msphere_faceswap');
-        localStorage.removeItem('msphere_facemode');
-      } else if (faceModeIdx === 1) {
-        stopWebcam();
-        if (faceSwapStatus === 'idle') {
-          const fi = document.getElementById('faceInput');
-          fi.removeAttribute('capture');
-          fi.click();
-        }
-      } else if (faceModeIdx === 2) {
-        if (cW < 600 && cH > cW) {
-          stopWebcam();
-          if (faceSwapStatus === 'idle') {
-            const fi = document.getElementById('faceInput');
-            fi.setAttribute('capture', 'user');
-            fi.click();
-          }
-        } else if (prevMode !== 2) {
-          faceSwapStatus = 'idle';
-          faceSwapError = null;
-          startWebcam();
-        }
-      } else if (faceModeIdx === 3) {
-        stopWebcam();
-        toastMsg = t('ladenHint');
-        toastStart = Date.now();
-        document.getElementById('faceLoadInput').click();
-      }
-      centerCarouselOnButton('face', btn);
-      // Menü nur zuklappen wenn "Aus" gewählt (sonst offen für Fortschritt)
-      if (faceModeIdx === 0) {
-        menuExpanded.face = false;
-        if (!Object.values(menuExpanded).some(v => v)) menuExpanded.breathing = true;
-      }
-      return true;
-    }
-  }
   // Timer-Toggle
   const tt = menuButtons.timerToggle;
   if (tt && x >= tt.x && x <= tt.x + tt.w && sy >= tt.y && sy <= tt.y + tt.h) {
@@ -4733,8 +4461,6 @@ function returnToMenu() {
   }
   mouseDown = false;
   // selectedDurationIdx bleibt erhalten → Start-Button sofort wieder verfügbar
-  if (faceSwapPollTimer) { clearInterval(faceSwapPollTimer); faceSwapPollTimer = null; }
-  stopWebcam();
   releaseWakeLock();
   enableMenuScroll();
   window.scrollTo(0, 0);
@@ -4746,7 +4472,6 @@ let backBtnArea = null;
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (document.getElementById('customTimeOverlay').style.display !== 'none') { hideCustomTimeOverlay(); return; }
-    if (document.getElementById('cameraOverlay').style.display !== 'none') { hideCameraOverlay(); faceModeIdx = 0; return; }
     if (legalOverlay) { legalOverlay = null; legalScrollY = 0; legalScrollVel = 0; return; }
     if (state !== 'idle') returnToMenu();
   }
@@ -6213,441 +5938,9 @@ function drawStatue(cx, cy, r) {
   ctx.restore();
 }
 
-// --- Face Swap ---
-const FACESWAP_API = 'https://mspherevyfiykwu-msphere-api.functions.fnc.fr-par.scw.cloud/api/faceswap';
+// --- Dein Ich ---
 const DEIN_ICH_API = 'https://mspherevyfiykwu-msphere-api.functions.fnc.fr-par.scw.cloud/api/model';
-const PAYPAL_API = 'https://mspherevyfiykwu-msphere-api.functions.fnc.fr-par.scw.cloud/api/paypal';
-const PAYPAL_CLIENT_ID = 'AbePmS6sEIkimiUFTrpQWHkFDAQmYzfK4RiBKYjZ0YnP-gwwQrXoHw8H8NORAX49K4tVDHsuUBdWFCtZ';
-const ZOE_SECRET = 'zoe-loves-papa-2024';
-let pendingSelfie = null; // Zwischengespeichertes Selfie für PayPal-Flow
-let paypalSDKLoaded = false;
 
-function applyFaceSwapMask(img) {
-  // Face-Swap-Ergebnis mit Transparenz-Maske kombinieren → transparenter Hintergrund
-  const c = document.createElement('canvas');
-  c.width = img.width;
-  c.height = img.height;
-  const tCtx = c.getContext('2d');
-  // Face-Swap-Ergebnis zeichnen
-  tCtx.drawImage(img, 0, 0, c.width, c.height);
-  // Maske anwenden: nur dort sichtbar wo die Maske opak ist
-  if (faceSwapMask) {
-    tCtx.globalCompositeOperation = 'destination-in';
-    tCtx.drawImage(faceSwapMask, 0, 0, c.width, c.height);
-  }
-  return c;
-}
-
-function renderMonkForFaceSwap() {
-  // Gleiche Kamera wie Gameplay, aber höhere Auflösung + Licht-Boost für Face-Detection
-  const origIntensities = {
-    key: keyLight.intensity, fill: fillLight.intensity, aura: auraLight.intensity,
-    hemi: hemiLight.intensity, ambient: ambientLight.intensity
-  };
-  const origRotY = model3D ? model3D.rotation.y : 0;
-
-  // Solider Hintergrund — nötig für Face-Detection
-  const origBg = scene.background;
-  scene.background = new THREE.Color(0x1a1a2e);
-
-  // Licht boosten für bessere Face-Detection
-  keyLight.intensity = 4.5;
-  fillLight.intensity = 3.0;
-  auraLight.intensity = 1.5;
-  hemiLight.intensity = 2.0;
-  ambientLight.intensity = 1.5;
-  const frontLight = new THREE.DirectionalLight(0xffffff, 2.5);
-  frontLight.position.set(0, 1.5, 4);
-  scene.add(frontLight);
-
-  // Modell gerade ausrichten
-  if (model3D) model3D.rotation.y = 0;
-
-  // Höhere Auflösung für bessere Face-Detection (Kamera bleibt unverändert)
-  const origSize = renderer.getSize(new THREE.Vector2());
-  renderer.setSize(1024, 1024);
-  renderer.setPixelRatio(1);
-
-  renderer.render(scene, camera);
-  const dataUrl = threeCanvas.toDataURL('image/jpeg', 0.92);
-
-  // Transparenten Render als Maske speichern (gleiche Kamera/Licht, ohne Hintergrund)
-  scene.background = null;
-  renderer.render(scene, camera);
-  const maskCanvas = document.createElement('canvas');
-  maskCanvas.width = 1024;
-  maskCanvas.height = 1024;
-  maskCanvas.getContext('2d').drawImage(threeCanvas, 0, 0);
-  faceSwapMask = maskCanvas;
-
-  // Alles wiederherstellen
-  if (model3D) model3D.rotation.y = origRotY;
-  scene.background = origBg;
-  scene.remove(frontLight);
-  frontLight.dispose();
-
-  keyLight.intensity = origIntensities.key;
-  fillLight.intensity = origIntensities.fill;
-  auraLight.intensity = origIntensities.aura;
-  hemiLight.intensity = origIntensities.hemi;
-  ambientLight.intensity = origIntensities.ambient;
-
-  renderer.setSize(origSize.x, origSize.y);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-  return dataUrl;
-}
-
-function checkFaceSwapLimit() {
-  try {
-    const last = localStorage.getItem('msphere_faceswap_last');
-    if (last) {
-      const lastDate = new Date(parseInt(last));
-      const now = new Date();
-      if (lastDate.toDateString() === now.toDateString()) return false; // schon heute benutzt
-    }
-    return true;
-  } catch(e) { return true; }
-}
-function markFaceSwapUsed() {
-  try { localStorage.setItem('msphere_faceswap_last', Date.now().toString()); } catch(e) {}
-}
-
-function startFaceSwap(selfieDataUrl) {
-  if (!modelLoaded || !model3D) {
-    faceSwapStatus = 'error';
-    faceSwapError = 'Mönch-Modell noch nicht geladen';
-    return;
-  }
-
-  // Zoe-Modus: immer kostenlos
-  if (easterEggVoice === 'zoe' || easterEggVoice === 'jochen') {
-    executeFaceSwap(selfieDataUrl, easterEggVoice);
-    return;
-  }
-
-  // Alle anderen: PayPal-Zahlung erforderlich
-  pendingSelfie = selfieDataUrl;
-  showPayPalOverlay();
-}
-
-// Payment-State für AUTHORIZE → CAPTURE Flow
-let pendingAuthorizationID = null;
-let pendingPaymentToken = null;
-
-function executeFaceSwap(selfieDataUrl, mode, token) {
-  faceSwapStatus = 'uploading';
-  faceSwapError = null;
-
-  const monkDataUrl = renderMonkForFaceSwap();
-
-  const headers = { 'Content-Type': 'application/json' };
-  if (mode === 'zoe') {
-    headers['X-Zoe-Secret'] = ZOE_SECRET;
-  }
-
-  const body = {
-    swap_image: selfieDataUrl,
-    input_image: monkDataUrl,
-    mode: mode || 'paid'
-  };
-  if (token) body.token = token;
-
-  fetch(FACESWAP_API, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body)
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.error) {
-      faceSwapStatus = 'error';
-      faceSwapError = data.error;
-      // Bei Fehler VOR dem Swap: Autorisierung voiden
-      voidPayment();
-      return;
-    }
-    faceSwapPredictionId = data.id;
-    faceSwapStatus = 'processing';
-    faceSwapPollTimer = setInterval(pollFaceSwap, 3000);
-  })
-  .catch(err => {
-    faceSwapStatus = 'error';
-    faceSwapError = err.message;
-    voidPayment();
-  });
-}
-
-function capturePayment() {
-  if (!pendingAuthorizationID || !pendingPaymentToken) return;
-  fetch(PAYPAL_API + '/capture-payment', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      authorizationID: pendingAuthorizationID,
-      token: pendingPaymentToken
-    })
-  }).then(() => {
-    pendingAuthorizationID = null;
-    pendingPaymentToken = null;
-  }).catch(() => {});
-}
-
-function voidPayment() {
-  if (!pendingAuthorizationID || !pendingPaymentToken) return;
-  fetch(PAYPAL_API + '/void-payment', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      authorizationID: pendingAuthorizationID,
-      token: pendingPaymentToken
-    })
-  }).then(() => {
-    pendingAuthorizationID = null;
-    pendingPaymentToken = null;
-  }).catch(() => {});
-}
-
-function loadPayPalSDK() {
-  return new Promise((resolve, reject) => {
-    if (paypalSDKLoaded && window.paypal) { resolve(); return; }
-    const script = document.createElement('script');
-    script.src = 'https://www.paypal.com/sdk/js?client-id=' + PAYPAL_CLIENT_ID + '&currency=EUR&intent=authorize&disable-funding=sepa,card,credit,bancontact,blik,eps,giropay,ideal,mybank,p24,sofort,venmo';
-    script.onload = () => { paypalSDKLoaded = true; resolve(); };
-    script.onerror = () => reject(new Error('PayPal SDK failed to load'));
-    document.head.appendChild(script);
-  });
-}
-
-function showPayPalOverlay() {
-  const overlay = document.getElementById('paypalOverlay');
-  document.getElementById('paypalTitle').textContent = t('faceSwapKaufen');
-  document.getElementById('paypalSubtitle').textContent = t('faceSwapTagesLimit');
-  document.getElementById('paypalHinweis').textContent = t('faceSwapHinweis');
-  document.getElementById('paypalCancel').textContent = t('abbrechen');
-  overlay.style.display = 'flex';
-
-  const container = document.getElementById('paypal-button-container');
-  container.innerHTML = '';
-
-  loadPayPalSDK().then(() => {
-    console.log('[PayPal] SDK geladen, rendere Buttons...');
-    window.paypal.Buttons({
-      style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay', height: 40 },
-      createOrder: () => {
-        console.log('[PayPal] createOrder aufgerufen...');
-        return fetch(PAYPAL_API + '/create-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        })
-        .then(res => res.json())
-        .then(data => {
-          console.log('[PayPal] createOrder Antwort:', data);
-          if (data.error) throw new Error(data.error);
-          return data.orderID;
-        })
-        .catch(err => {
-          console.error('[PayPal] createOrder Fehler:', err);
-          throw err;
-        });
-      },
-      onApprove: (data, actions) => {
-        console.log('[PayPal] onApprove, orderID:', data.orderID);
-        return actions.order.authorize().then(authorization => {
-          console.log('[PayPal] Autorisierung:', authorization);
-          const authDetail = authorization.purchase_units[0].payments.authorizations[0];
-          const authorizationID = authDetail.id;
-          // Token vom Server holen für sicheren Capture/Void
-          return fetch(PAYPAL_API + '/authorize-order', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderID: data.orderID })
-          })
-          .then(res => res.json())
-          .then(authData => {
-            console.log('[PayPal] Server-Token:', authData);
-            if (authData.error) throw new Error(authData.error);
-            pendingAuthorizationID = authData.authorizationID;
-            pendingPaymentToken = authData.token;
-            const selfie = pendingSelfie;
-            // Overlay schließen OHNE voidPayment (Zahlung ist gültig!)
-            document.getElementById('paypalOverlay').style.display = 'none';
-            pendingSelfie = null;
-            // Menü aufklappen damit User den Fortschritt sieht
-            menuExpanded.face = true;
-            if (selfie) {
-              executeFaceSwap(selfie, 'paid', authData.token);
-            }
-          });
-        })
-        .catch(err => {
-          console.error('[PayPal] onApprove Fehler:', err);
-          hidePayPalOverlay();
-          faceSwapStatus = 'error';
-          faceSwapError = t('paypalFehler');
-        });
-      },
-      onCancel: () => {
-        console.log('[PayPal] Abgebrochen');
-        hidePayPalOverlay();
-      },
-      onError: (err) => {
-        console.error('[PayPal] onError:', err);
-        hidePayPalOverlay();
-        faceSwapStatus = 'error';
-        faceSwapError = t('paypalFehler');
-      }
-    }).render('#paypal-button-container');
-  }).catch(err => {
-    console.error('[PayPal] SDK-Fehler:', err);
-    hidePayPalOverlay();
-    faceSwapStatus = 'error';
-    faceSwapError = t('paypalFehler');
-  });
-}
-
-// Global für onclick im HTML
-window.hidePayPalOverlay = function() {
-  document.getElementById('paypalOverlay').style.display = 'none';
-  pendingSelfie = null;
-  // Falls schon autorisiert und User bricht ab → Geld freigeben
-  if (pendingAuthorizationID && faceSwapStatus !== 'processing') {
-    voidPayment();
-  }
-  // Status zurücksetzen damit User erneut starten kann
-  if (faceSwapStatus !== 'uploading' && faceSwapStatus !== 'processing') {
-    faceSwapStatus = 'idle';
-    faceSwapError = null;
-  }
-  // Webcam stoppen falls noch aktiv
-  if (webcamStream) stopWebcam();
-  if (faceSwapStatus === 'idle') faceModeIdx = 0;
-};
-
-function pollFaceSwap() {
-  if (!faceSwapPredictionId) return;
-
-  fetch(FACESWAP_API + '?id=' + faceSwapPredictionId)
-  .then(res => res.json())
-  .then(data => {
-    if (data.status === 'succeeded' && data.output) {
-      // Erfolg — Geld einziehen + Bild laden
-      clearInterval(faceSwapPollTimer);
-      faceSwapPollTimer = null;
-      capturePayment(); // Jetzt erst wird bezahlt!
-      const outputUrl = typeof data.output === 'string' ? data.output : data.output[0];
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        const masked = applyFaceSwapMask(img);
-        faceSwapImg = masked;
-        faceSwapStatus = 'done';
-        faceSwapShowSave = true;
-        markFaceSwapUsed();
-        try {
-          localStorage.setItem('msphere_faceswap', masked.toDataURL('image/png'));
-          localStorage.setItem('msphere_facemode', '1');
-        } catch(e) {}
-      };
-      img.onerror = () => {
-        faceSwapStatus = 'error';
-        faceSwapError = 'Bild konnte nicht geladen werden';
-      };
-      img.src = outputUrl;
-    } else if (data.status === 'succeeded' && !data.output) {
-      clearInterval(faceSwapPollTimer);
-      faceSwapPollTimer = null;
-      faceSwapStatus = 'error';
-      faceSwapError = 'Kein Gesicht erkannt';
-      voidPayment(); // Kein Ergebnis → Geld zurück
-    } else if (data.status === 'failed' || data.status === 'canceled') {
-      clearInterval(faceSwapPollTimer);
-      faceSwapPollTimer = null;
-      faceSwapStatus = 'error';
-      faceSwapError = data.error || 'Face Swap fehlgeschlagen';
-      voidPayment(); // Fehlgeschlagen → Geld zurück
-    }
-    // 'starting' / 'processing' → weiter pollen
-  })
-  .catch(err => {
-    clearInterval(faceSwapPollTimer);
-    faceSwapPollTimer = null;
-    faceSwapStatus = 'error';
-    faceSwapError = err.message;
-    voidPayment(); // Netzwerk-Fehler → Geld zurück
-  });
-}
-
-// File-Input Handler
-document.getElementById('faceInput').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    startFaceSwap(ev.target.result);
-  };
-  reader.readAsDataURL(file);
-  // Input zurücksetzen damit gleiche Datei erneut gewählt werden kann
-  e.target.value = '';
-});
-
-// Laden-Handler: gespeichertes Face-Swap-Bild direkt laden (ohne API)
-document.getElementById('faceLoadInput').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const img = new Image();
-    img.onload = () => {
-      faceSwapImg = img;
-      faceSwapStatus = 'done';
-      faceModeIdx = 3; // Laden-Modus aktiv
-      // Auch in localStorage cachen
-      try {
-        localStorage.setItem('msphere_faceswap', ev.target.result);
-        localStorage.setItem('msphere_facemode', '1');
-      } catch(e) {}
-    };
-    img.src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
-  e.target.value = '';
-});
-
-// Face-Swap-Bild speichern (mit Share Sheet auf iOS/iPad für Speicherort-Wahl)
-function saveFaceSwapImage() {
-  if (!faceSwapImg) return;
-  const c = document.createElement('canvas');
-  c.width = faceSwapImg.width;
-  c.height = faceSwapImg.height;
-  c.getContext('2d').drawImage(faceSwapImg, 0, 0);
-  const filename = 'msphere-monk-' + Date.now() + '.png';
-  // Nur auf Touch-Geräten (iOS/iPad) Share Sheet nutzen — Desktop bekommt normalen Download
-  const isTouchDevice = 'ontouchstart' in window && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  if (isTouchDevice && navigator.canShare && navigator.share) {
-    c.toBlob((blob) => {
-      if (!blob) { _faceDownloadFallback(c, filename); return; }
-      const file = new File([blob], filename, { type: 'image/png' });
-      try {
-        if (navigator.canShare({ files: [file] })) {
-          navigator.share({ files: [file] }).catch(() => {});
-          return;
-        }
-      } catch(e) {}
-      _faceDownloadFallback(c, filename);
-    }, 'image/png');
-    return;
-  }
-  _faceDownloadFallback(c, filename);
-}
-function _faceDownloadFallback(canvas, filename) {
-  const a = document.createElement('a');
-  a.href = canvas.toDataURL('image/png');
-  a.download = filename;
-  a.click();
-}
-
-// --- Dein Ich: Pipeline-Funktionen ---
 function resizePhoto(dataUrl, maxSize = 512) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -7006,70 +6299,6 @@ document.getElementById('customTimeInput').addEventListener('keydown', e => {
 });
 
 
-// Camera-Overlay Funktionen
-function showCameraOverlay() {
-  const overlay = document.getElementById('cameraOverlay');
-  document.getElementById('cameraTipp').textContent = t('kameraTipp');
-  document.getElementById('cameraSnapBtn').textContent = t('fotoAufnehmen');
-  document.getElementById('cameraCancelBtn').textContent = t('abbrechen');
-  overlay.style.display = 'flex';
-}
-function hideCameraOverlay() {
-  document.getElementById('cameraOverlay').style.display = 'none';
-  stopWebcam();
-}
-document.getElementById('cameraSnapBtn').addEventListener('click', () => {
-  captureWebcamSnapshot();
-});
-document.getElementById('cameraCancelBtn').addEventListener('click', () => {
-  hideCameraOverlay();
-  faceModeIdx = 0;
-});
-
-// Webcam-Funktionen
-function startWebcam() {
-  webcamReady = false;
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    faceSwapStatus = 'error';
-    faceSwapError = 'Kamera benötigt HTTPS';
-    return;
-  }
-  const video = document.getElementById('cameraPreviewVideo');
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 512, height: 512 } })
-  .then(stream => {
-    webcamStream = stream;
-    video.srcObject = stream;
-    video.onloadedmetadata = () => { webcamReady = true; showCameraOverlay(); };
-  })
-  .catch(err => {
-    faceSwapStatus = 'error';
-    faceSwapError = 'Kamera: ' + err.message;
-  });
-}
-
-function stopWebcam() {
-  if (webcamStream) {
-    webcamStream.getTracks().forEach(t => t.stop());
-    webcamStream = null;
-  }
-  webcamReady = false;
-  const video = document.getElementById('cameraPreviewVideo');
-  video.srcObject = null;
-  document.getElementById('cameraOverlay').style.display = 'none';
-}
-
-function captureWebcamSnapshot() {
-  const video = document.getElementById('cameraPreviewVideo');
-  if (!video.videoWidth) return;
-  const c = document.createElement('canvas');
-  c.width = video.videoWidth;
-  c.height = video.videoHeight;
-  c.getContext('2d').drawImage(video, 0, 0);
-  const dataUrl = c.toDataURL('image/png');
-  stopWebcam();
-  startFaceSwap(dataUrl);
-}
-
 function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
   scale = scale || 1;
   if (!modelLoaded) {
@@ -7087,53 +6316,36 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
     return;
   }
 
-  // Bildquelle bestimmen: Face-Swap-Bild oder Live-3D-Render
-  let imgSource;
-  let imgSize;
+  // Lighting an Rost-Wert anpassen (warm → kalt/dunkel)
+  const warmth = 1 - rustAmount;
+  keyLight.intensity = 3.5 * warmth + 1.0 * (1 - warmth);
+  fillLight.intensity = 1.5 * warmth + 0.5 * (1 - warmth);
+  auraLight.intensity = 1.0 * warmth + 0.2 * (1 - warmth);
+  hemiLight.intensity = 1.2 * warmth + 0.4 * (1 - warmth);
+  ambientLight.intensity = 0.8 * warmth + 0.3 * (1 - warmth);
 
-  const useFaceSwap = faceModeIdx >= 1 && faceSwapImg;
-
-  if (useFaceSwap) {
-    // Face-Swap-Bild (gleiche Kamera wie Gameplay, nur höhere Auflösung)
-    imgSource = faceSwapImg;
-    imgSize = threeCanvas.width / (Math.min(window.devicePixelRatio, 2));
-    // Kollisionsmaske: Direkt vom Face-Swap-Bild lesen (Brightness statt WebGL Alpha)
-    // → Silhouette stimmt mit dem tatsächlich angezeigten Bild überein
-    if ((!monkMask || monkMaskAge >= 29) && (thoughtModeIdx === 1 || thoughtModeIdx === 2 || thoughtModeIdx === 3 || thoughtModeIdx === 6)) {
-      captureMonkMaskFromImage(faceSwapImg);
-    }
-  } else {
-    // Lighting an Rost-Wert anpassen (warm → kalt/dunkel)
-    const warmth = 1 - rustAmount;
-    keyLight.intensity = 3.5 * warmth + 1.0 * (1 - warmth);
-    fillLight.intensity = 1.5 * warmth + 0.5 * (1 - warmth);
-    auraLight.intensity = 1.0 * warmth + 0.2 * (1 - warmth);
-    hemiLight.intensity = 1.2 * warmth + 0.4 * (1 - warmth);
-    ambientLight.intensity = 0.8 * warmth + 0.3 * (1 - warmth);
-
-    // Modell rotieren — immer 360°-Drehung (~63s pro Umdrehung)
-    if (model3D) {
-      model3D.rotation.y = Date.now() * 0.0001;
-    }
-
-    // Three.js rendern (Mobile: jeden 3. Frame, Safari Desktop: jeden 2. Frame — threeCanvas behält letztes Bild)
-    const isMob3D = cW < 600 && cH > cW;
-    const threeSkip = isMob3D ? 3 : (isSafari ? 2 : 1);
-    if (threeSkip <= 1 || !drawModel3D._fc || ++drawModel3D._fc >= threeSkip) {
-      renderer.render(scene, camera);
-      // Kollisionsmaske SOFORT nach render lesen (Safari gibt gl.readPixels nur jetzt korrekte Daten)
-      if ((!monkMask || monkMaskAge >= 29) && (thoughtModeIdx === 1 || thoughtModeIdx === 2 || thoughtModeIdx === 3 || thoughtModeIdx === 6)) {
-        captureMonkMask();
-      }
-      drawModel3D._fc = 0;
-    }
-    imgSource = threeCanvas;
-    imgSize = threeCanvas.width / (Math.min(window.devicePixelRatio, 2));
+  // Modell rotieren — immer 360°-Drehung (~63s pro Umdrehung)
+  if (model3D) {
+    model3D.rotation.y = Date.now() * 0.0001;
   }
+
+  // Three.js rendern (Mobile: jeden 3. Frame, Safari Desktop: jeden 2. Frame — threeCanvas behält letztes Bild)
+  const isMob3D = cW < 600 && cH > cW;
+  const threeSkip = isMob3D ? 3 : (isSafari ? 2 : 1);
+  if (threeSkip <= 1 || !drawModel3D._fc || ++drawModel3D._fc >= threeSkip) {
+    renderer.render(scene, camera);
+    // Kollisionsmaske SOFORT nach render lesen (Safari gibt gl.readPixels nur jetzt korrekte Daten)
+    if ((!monkMask || monkMaskAge >= 29) && (thoughtModeIdx === 1 || thoughtModeIdx === 2 || thoughtModeIdx === 3 || thoughtModeIdx === 6)) {
+      captureMonkMask();
+    }
+    drawModel3D._fc = 0;
+  }
+  const imgSource = threeCanvas;
+  const imgSize = threeCanvas.width / (Math.min(window.devicePixelRatio, 2));
 
   // Auf Haupt-Canvas zeichnen (mit optionalem Schrumpf-Faktor)
   const isMobDisplay = cW < 600 && cH > cW;
-  const fullSize = isMobDisplay && !useFaceSwap ? imgSize * 1.4 : imgSize;
+  const fullSize = isMobDisplay ? imgSize * 1.4 : imgSize;
   const drawSize = fullSize * scale;
   const drawX = cx - drawSize / 2 + (glitchOffset || 0);
   // Unterseite bleibt fix (Mönch schrumpft an Ort und Stelle, schwebt nicht)
@@ -7148,13 +6360,6 @@ function drawModel3D(cx, cy, r, alpha, glitchOffset, rustAmount, scale) {
 
   ctx.save();
   ctx.globalAlpha = alpha;
-
-  // Face-Swap-Bild zur Kugel clippen (versteckt Hintergrund-Rechteck)
-  if (useFaceSwap) {
-    ctx.beginPath();
-    ctx.arc(cx, cy, r * 0.92, 0, Math.PI * 2);
-    ctx.clip();
-  }
 
   // Glitch: horizontaler Versatz
   if (glitchOffset && Math.random() < 0.3) {
