@@ -56,20 +56,13 @@ Single-File-Webapp, 2D Canvas + Three.js Hybrid.
 ### Easter Eggs
 
 - **Levi**: Swipe-Links auf Titel → Voice `dubistdaswasser_kind.m4a` (ist auch DE-Default)
-- **Zoe**: 3× Tap auf Titel ODER Keyboard „ZOE" → eigenes Modell (`meshy_zoe_compressed.glb`), Voice `dubistdaswasserzoe.m4a`, Face Swap gratis
-- **Jochen**: 4× Tap ODER Keyboard „JOCHEN" → eigenes Modell (`meshy_jochen_compressed.glb`), Face Swap gratis
+- **Zoe**: 3× Tap auf Titel ODER Keyboard „ZOE" → eigenes Modell (`meshy_zoe_compressed.glb`), Voice `dubistdaswasserzoe.m4a`
+- **Jochen**: 4× Tap ODER Keyboard „JOCHEN" → eigenes Modell (`meshy_jochen_compressed.glb`)
 - 3×/4× Tap: 3. Tap wartet 400ms auf möglichen 4. Tap
-
-### Face Swap
-
-- **API**: Replicate via Vercel Proxy (`mspherevyfiykwu-msphere-api.functions.fnc.fr-par.scw.cloud/api/faceswap`)
-- **PayPal**: 0,50€ per Authorize/Capture-Flow, Proxy `mspherevyfiykwu-msphere-api.functions.fnc.fr-par.scw.cloud/api/paypal`
-- **Rate-Limiting**: 1×/Tag/IP (Server) + localStorage (Client)
-- **Kollisionsmaske (Face Swap)**: `captureMonkMaskFromImage()` — Brightness statt WebGL-Alpha (weil Face-Swap-Bild kein WebGL hat)
 
 ### Persistenz (localStorage)
 
-Keys: `msphere_lang`, `msphere_breathing`, `msphere_medsound`, `msphere_thought`, `msphere_flow`, `msphere_timer`, `msphere_distraction`, `msphere_faceswap`, `msphere_facemode`, `msphere_faceswap_last`, `msphere_model`, `msphere_rotate`, `msphere_dei_task`
+Keys: `msphere_lang`, `msphere_breathing`, `msphere_medsound`, `msphere_thought`, `msphere_flow`, `msphere_timer`, `msphere_distraction`, `msphere_model`, `msphere_rotate`, `msphere_dei_task`
 
 **NICHT gespeichert**: Meditationszeit, Easter-Egg-Modus
 
@@ -176,13 +169,11 @@ Scaleway Serverless Function (Paris, DSGVO-konform) — ein Router-Handler für 
 - **Domain**: `mspherevyfiykwu-msphere-api.functions.fnc.fr-par.scw.cloud`
 - **Deploy**: `scw function deploy namespace-id=9f2c95cb-80d5-47b9-83bd-708f6d804a93 name=msphere-api runtime=node22 zip-file=<zip> region=fr-par`
 - **Lokaler Dev**: `npm run dev` (Port 3002)
-- **Secrets**: Env-Vars auf Scaleway Function (12 Stück, via `scw function function update`)
+- **Secrets**: Env-Vars auf Scaleway Function (6 Stück: MESHY_API_KEY, GEMINI_API_KEY, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET, S3_REGION)
 - **Object Storage**: Bucket `msphere-tmp` (S3-kompatibel, public-read, für temporäre Meshy-Uploads)
 
 | Endpoint | Funktion |
 |----------|----------|
-| `api/faceswap` | Replicate Face Swap |
-| `api/paypal/*` | Authorize/Capture-Flow (0,50€) |
 | `api/model/generate-image` | Fotos → Gemini → Meditationsbild |
 | `api/model/generate-3d` | image_url → Meshy → task_id |
 | `api/model/status` | Meshy Task-Status (Polling) |
