@@ -11,15 +11,21 @@
 – [x] MSphereNative — SceneKit + Metal Grundstruktur
 – [x] Keyboard & Gamepad Input (InputManager)
 
-## 🚀 Phase 1 — App Store (WKWebView)
+## ✅ Phase 1 — App Store Ready
 
 – [x] App-Name: M-Sphere
 – [x] App Icon 1024×1024
 – [x] Externe Links → SFSafariViewController
 – [x] AudioContext „interrupted" Bug (WebKit #263627) — Workaround via suspend→delay→resume
 – [x] Backend: Vercel → Scaleway Functions (Paris, DSGVO-konform)
-– [x] @vercel/blob → Scaleway Object Storage (temporäre Bild-Uploads)
-– [ ] Submit
+– [x] @vercel/blob → Scaleway Object Storage (S3, zero dependencies)
+– [x] 10 Vercel Functions → 1 Router-Handler (handler.js, CommonJS)
+– [x] Alle API-Secrets auf Scaleway migriert (12 Env-Vars)
+– [x] Frontend-URLs umgestellt + Live deployed
+– [x] API-Repo auf GitHub gepusht (privat)
+– [ ] Vercel stilllegen (wenn Scaleway sich bewährt hat)
+– [ ] End-to-End-Tests über Scaleway (Face Swap, PayPal, Dein Ich)
+– [ ] App Store Submit
 
 ## 🔧 Phase 2 — Polishing
 
