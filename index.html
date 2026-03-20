@@ -5283,6 +5283,15 @@ function initSound() {
       audioCtx.resume().catch(() => {});
     }
   };
+  // iOS WKWebView: AudioContext bleibt nach Background im "interrupted"-Zombie-State hängen
+  // (WebKit Bug #263627, seit 2019 offen). Fix: erst suspend(), dann mit Delay resume().
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && audioCtx && audioCtx.state !== 'running') {
+      audioCtx.suspend().then(() => {
+        setTimeout(() => audioCtx.resume().catch(() => {}), 200);
+      }).catch(() => {});
+    }
+  });
 
   // === SHAKE-SOUNDS ===
 
@@ -6205,9 +6214,9 @@ function drawStatue(cx, cy, r) {
 }
 
 // --- Face Swap ---
-const FACESWAP_API = 'https://m-sphere-api.vercel.app/api/faceswap';
-const DEIN_ICH_API = 'https://m-sphere-api.vercel.app/api/model';
-const PAYPAL_API = 'https://m-sphere-api.vercel.app/api/paypal';
+const FACESWAP_API = 'https://mspherevyfiykwu-msphere-api.functions.fnc.fr-par.scw.cloud/api/faceswap';
+const DEIN_ICH_API = 'https://mspherevyfiykwu-msphere-api.functions.fnc.fr-par.scw.cloud/api/model';
+const PAYPAL_API = 'https://mspherevyfiykwu-msphere-api.functions.fnc.fr-par.scw.cloud/api/paypal';
 const PAYPAL_CLIENT_ID = 'AbePmS6sEIkimiUFTrpQWHkFDAQmYzfK4RiBKYjZ0YnP-gwwQrXoHw8H8NORAX49K4tVDHsuUBdWFCtZ';
 const ZOE_SECRET = 'zoe-loves-papa-2024';
 let pendingSelfie = null; // Zwischengespeichertes Selfie für PayPal-Flow
