@@ -11,35 +11,33 @@
 – [x] MSphereNative — SceneKit + Metal Grundstruktur
 – [x] Keyboard & Gamepad Input (InputManager)
 
-## ✅ Phase 1 — App Store Ready
+## ✅ Phase 1 — Backend & Cleanup
 
-– [x] App-Name: M-Sphere
-– [x] App Icon 1024×1024
-– [x] Externe Links → SFSafariViewController
-– [x] AudioContext „interrupted" Bug (WebKit #263627) — Workaround via suspend→delay→resume
 – [x] Backend: Vercel → Scaleway Functions (Paris, DSGVO-konform)
 – [x] @vercel/blob → Scaleway Object Storage (S3, zero dependencies)
-– [x] 10 Vercel Functions → 1 Router-Handler (handler.js, CommonJS)
-– [x] Alle API-Secrets auf Scaleway migriert (12 Env-Vars)
-– [x] Frontend-URLs umgestellt + Live deployed
-– [x] API-Repo auf GitHub gepusht (privat)
-– [ ] Vercel stilllegen (wenn Scaleway sich bewährt hat)
-– [ ] End-to-End-Tests über Scaleway (Face Swap, PayPal, Dein Ich)
-– [ ] App Store Submit
+– [x] Face Swap + PayPal Code entfernt (~800 Zeilen)
+– [x] API auf 5 Endpoints reduziert (nur model/*)
+– [x] End-to-End-Test: "Dein Ich" über Scaleway funktioniert
+– [ ] Vercel stilllegen
 
-## 🔧 Phase 2 — Polishing
+## 🛒 Phase 2 — StoreKit + "Dein Ich" verbessern
+
+– [ ] StoreKit 2 IAP in WKWebView-App (JS↔Swift Bridge)
+– [ ] Produkt in App Store Connect anlegen ("Dein Ich" als Non-Consumable oder Consumable)
+– [ ] Transaction-Verifizierung (on-device, StoreKit 2)
+– [ ] Restore Purchases
+– [ ] "Dein Ich" verbessern: 3 Gemini-Varianten zur Auswahl
+– [ ] Minimum 2 Fotos erzwingen (frontal + seitlich)
+– [ ] Kostenloser Retry wenn 3D-Modell nicht gefällt
+– [ ] App Store Submit (Screenshots, Beschreibung, Review)
+
+## 🔧 Phase 3 — Polishing
 
 – [ ] Haptic Feedback (UIFeedbackGenerator)
 – [ ] iPad-Optimierung (Landscape-Layout)
-– [ ] Push-Notifications (APNs + UNUserNotificationCenter)
 – [ ] Audio-Dateiname prüfen: `dubistdaswasser_zoe.m4a` vs `dubistdaswasserzoe.m4a`
 – [ ] Gemini Free Tier klären (oder Fallback einbauen)
 – [ ] Mehrere Custom-Modelle pro User — oder nur eins?
-
-## 💰 Phase 3 — Monetisierung
-
-– [ ] StoreKit IAP (JS↔Swift-Bridge, StoreKit 2)
-– [ ] Was soll kaufbar sein? (Dein Ich? Premium-Sounds? Face Swap Upgrade?)
 
 ## 💡 Someday
 
