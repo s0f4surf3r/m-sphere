@@ -828,6 +828,9 @@ function loadModel(idx, override) {
     if (progress.total > 0) modelLoadProgress = progress.loaded / progress.total;
   }, (error) => {
     console.warn('Model load error:', error);
+    // Visueller Fehler-Hinweis (Toast)
+    toastMsg = 'Model load error: ' + (error?.message || error);
+    toastStart = Date.now();
   });
 }
 loadModel(currentModelIdx);
