@@ -216,8 +216,9 @@ const TR = {
     gedankenmodus: 'GEDANKENMODUS',
     gedankenfluss: 'GEDANKENFLUSS',
     deinIch: 'DEIN ICH',
-    deinIchFoto: 'Foto hochladen',
-    deinIchHint: '1-2 Fotos • Dauer ~5 Min',
+    deinIchFoto: 'Fotos hochladen',
+    deinIchHint: '2 Fotos (frontal + seitlich) • ~5 Min',
+    deinIchMinFotos: 'Bitte wähle 2 Fotos (frontal + seitlich)',
     deinIchStep1: 'Bild wird erstellt',
     deinIchStep2: '3D-Modell wird gebaut',
     deinIchStep3: 'Modell wird optimiert',
@@ -236,7 +237,7 @@ const TR = {
     deinIchWiederhergestellt: 'Kauf wiederhergestellt!',
     deinIchNichtGefunden: 'Kein Kauf gefunden',
     dsgvoTitel: 'DEIN ICH',
-    dsgvoText: 'FÜR BESTE ERGEBNISSE\n\n• 1–2 Fotos von dir, frontal\n• Gutes Licht, ganzes Gesicht sichtbar\n• Neutraler Hintergrund wenn möglich\n• Kein starkes Gegenlicht\n\nDATENSCHUTZ\n\nDeine Fotos werden zur Erstellung eines personalisierten 3D-Modells an folgende Dienste übermittelt:\n\n• Google Gemini (USA) — Bilderzeugung\n• Meshy AI (USA) — 3D-Modellierung\n\nDie Fotos werden nur für die Verarbeitung genutzt und danach gelöscht. Das fertige Modell wird ausschließlich lokal auf deinem Gerät gespeichert.',
+    dsgvoText: 'FÜR BESTE ERGEBNISSE\n\n• 2 Fotos: 1× frontal, 1× seitlich\n• Gutes Licht, ganzes Gesicht sichtbar\n• Neutraler Hintergrund wenn möglich\n• Kein starkes Gegenlicht\n\nDATENSCHUTZ\n\nDeine Fotos werden zur Erstellung eines personalisierten 3D-Modells an folgende Dienste übermittelt:\n\n• Google Gemini (USA) — Bilderzeugung\n• Meshy AI (USA) — 3D-Modellierung\n\nDie Fotos werden nur für die Verarbeitung genutzt und danach gelöscht. Das fertige Modell wird ausschließlich lokal auf deinem Gerät gespeichert.',
     dsgvoAccept: 'Zustimmen & fortfahren',
     dsgvoDecline: 'Abbrechen',
     timerAn: '⏱ An',
@@ -297,8 +298,9 @@ const TR = {
     gedankenmodus: 'THOUGHT MODE',
     gedankenfluss: 'THOUGHT FLOW',
     deinIch: 'YOUR SELF',
-    deinIchFoto: 'Upload photo',
-    deinIchHint: '1-2 photos • ~5 min',
+    deinIchFoto: 'Upload photos',
+    deinIchHint: '2 photos (front + side) • ~5 min',
+    deinIchMinFotos: 'Please select 2 photos (front + side)',
     deinIchStep1: 'Creating image',
     deinIchStep2: 'Building 3D model',
     deinIchStep3: 'Optimizing model',
@@ -317,7 +319,7 @@ const TR = {
     deinIchWiederhergestellt: 'Purchase restored!',
     deinIchNichtGefunden: 'No purchase found',
     dsgvoTitel: 'YOUR SELF',
-    dsgvoText: 'FOR BEST RESULTS\n\n• 1–2 photos of yourself, facing forward\n• Good lighting, full face visible\n• Neutral background if possible\n• No strong backlight\n\nPRIVACY\n\nYour photos will be sent to the following services to create a personalized 3D model:\n\n• Google Gemini (USA) — Image generation\n• Meshy AI (USA) — 3D modeling\n\nPhotos are only used for processing and deleted afterwards. The finished model is stored exclusively on your device.',
+    dsgvoText: 'FOR BEST RESULTS\n\n• 2 photos: 1× front, 1× side profile\n• Good lighting, full face visible\n• Neutral background if possible\n• No strong backlight\n\nPRIVACY\n\nYour photos will be sent to the following services to create a personalized 3D model:\n\n• Google Gemini (USA) — Image generation\n• Meshy AI (USA) — 3D modeling\n\nPhotos are only used for processing and deleted afterwards. The finished model is stored exclusively on your device.',
     dsgvoAccept: 'Agree & continue',
     dsgvoDecline: 'Cancel',
     timerAn: '⏱ On',
@@ -6023,18 +6025,22 @@ document.getElementById('deiAbbrechen').addEventListener('click', () => { cancel
 document.getElementById('deiWeiter').addEventListener('click', () => { confirmDeinIchPreview(); });
 document.getElementById('deiNochmal').addEventListener('click', () => {
   cancelDeinIch();
-  document.getElementById('deinIchInput').click(); // Consent schon akzeptiert
+  _deinIchRetry = true; // Kein neuer Credit bei Retry
+  document.getElementById('deinIchInput').click();
 });
 document.getElementById('deiRetry').addEventListener('click', () => {
   cancelDeinIch();
-  document.getElementById('deinIchInput').click(); // Consent schon akzeptiert
+  _deinIchRetry = true; // Kein neuer Credit bei Retry
+  document.getElementById('deinIchInput').click();
 });
 document.getElementById('deiClose').addEventListener('click', () => { cancelDeinIch(); });
 
+let _deinIchRetry = false;
 function startDeinIch(photoDataUrls) {
   cancelDeinIch();
-  // Credit abziehen (native App)
-  if (window.__nativeApp) postToNative('useCredit');
+  // Credit abziehen (native App) — aber nicht bei Retry
+  if (window.__nativeApp && !_deinIchRetry) postToNative('useCredit');
+  _deinIchRetry = false;
   deinIchStatus = 'uploading';
   deinIchStep = 0;
   deinIchProgress = 10;
@@ -6383,12 +6389,19 @@ function openDeinIchPicker() {
 document.getElementById('deinIchInput').addEventListener('change', (e) => {
   const files = Array.from(e.target.files);
   if (files.length === 0) return;
+  if (files.length < 2) {
+    // Mindestens 2 Fotos nötig
+    deinIchStatus = 'error';
+    deinIchError = t('deinIchMinFotos');
+    updateDeinIchOverlay();
+    e.target.value = '';
+    return;
+  }
   const photoPromises = files.slice(0, 2).map(file => new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = (ev) => resolve(ev.target.result);
     reader.readAsDataURL(file);
   }));
-  // Consent wurde schon vor dem Picker gezeigt — direkt starten
   Promise.all(photoPromises).then(dataUrls => startDeinIch(dataUrls));
   e.target.value = '';
 });

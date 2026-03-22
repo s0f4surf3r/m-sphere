@@ -22,10 +22,11 @@
 
 ## 🛒 Phase 2 — StoreKit + "Dein Ich" verbessern
 
-– [ ] StoreKit 2 IAP in WKWebView-App (JS↔Swift Bridge)
-– [ ] Produkt in App Store Connect anlegen ("Dein Ich" als Non-Consumable oder Consumable)
-– [ ] Transaction-Verifizierung (on-device, StoreKit 2)
-– [ ] Restore Purchases
+– [x] StoreKit 2 IAP in WKWebView-App (JS↔Swift Bridge)
+– [x] Produkt in App Store Connect angelegt (Consumable, 2×Credits, 2,99€)
+– [x] Transaction-Verifizierung (on-device, StoreKit 2)
+– [x] Restore Purchases
+– [x] Credit-System (UserDefaults + Transaction.all)
 – [ ] "Dein Ich" verbessern: 3 Gemini-Varianten zur Auswahl
 – [ ] Minimum 2 Fotos erzwingen (frontal + seitlich)
 – [ ] Kostenloser Retry wenn 3D-Modell nicht gefällt
