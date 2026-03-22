@@ -27,9 +27,9 @@
 – [x] Transaction-Verifizierung (on-device, StoreKit 2)
 – [x] Restore Purchases
 – [x] Credit-System (UserDefaults + Transaction.all)
-– [ ] "Dein Ich" verbessern: 3 Gemini-Varianten zur Auswahl
-– [ ] Minimum 2 Fotos erzwingen (frontal + seitlich)
-– [ ] Kostenloser Retry wenn 3D-Modell nicht gefällt
+– [x] "Dein Ich" verbessern: 3 Gemini-Varianten zur Auswahl
+– [x] Minimum 2 Fotos erzwingen (frontal + seitlich)
+– [x] Kostenloser Retry wenn 3D-Modell nicht gefällt
 – [ ] App Store Submit (Screenshots, Beschreibung, Review)
 
 ## 🔧 Phase 3 — Polishing

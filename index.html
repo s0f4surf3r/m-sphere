@@ -146,11 +146,16 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
         font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
     </div>
     <div id="deiPreviewSection" style="display:none">
-      <img id="deiPreviewImg" style="width:100%;border-radius:10px;border:1px solid rgba(37,162,162,0.4);margin-bottom:16px;display:block">
+      <div id="deiPreviewHint" style="color:rgba(250,230,230,0.5);font-size:12px;margin-bottom:12px"></div>
+      <div id="deiPreviewGrid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
+        <img class="dei-variant" data-idx="0" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:2px solid transparent;cursor:pointer;display:block">
+        <img class="dei-variant" data-idx="1" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:2px solid transparent;cursor:pointer;display:block">
+        <img class="dei-variant" data-idx="2" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:2px solid transparent;cursor:pointer;display:block">
+      </div>
       <div style="display:flex;gap:10px">
         <button id="deiWeiter" style="flex:1;padding:11px;background:rgba(37,162,162,0.15);border:1.5px solid #25a2a2;
           color:#25a2a2;border-radius:8px;font-size:15px;cursor:pointer;
-          font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
+          font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif" disabled></button>
         <button id="deiNochmal" style="flex:1;padding:11px;background:none;border:1px solid rgba(250,230,230,0.3);
           color:rgba(250,230,230,0.8);border-radius:8px;font-size:14px;cursor:pointer;
           font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
@@ -222,8 +227,9 @@ const TR = {
     deinIchStep1: 'Bild wird erstellt',
     deinIchStep2: '3D-Modell wird gebaut',
     deinIchStep3: 'Modell wird optimiert',
+    deinIchWaehle: 'Wähle dein Lieblingsbild',
     deinIchWeiter: 'Weiter',
-    deinIchNochmal: 'Nochmal',
+    deinIchNochmal: 'Alle neu',
     deinIchAktiv: 'Aktiv',
     deinIchNeu: 'Neu',
     deinIchLoeschen: 'Löschen',
@@ -304,8 +310,9 @@ const TR = {
     deinIchStep1: 'Creating image',
     deinIchStep2: 'Building 3D model',
     deinIchStep3: 'Optimizing model',
+    deinIchWaehle: 'Choose your favorite',
     deinIchWeiter: 'Continue',
-    deinIchNochmal: 'Retry',
+    deinIchNochmal: 'Regenerate all',
     deinIchAktiv: 'Active',
     deinIchNeu: 'New',
     deinIchLoeschen: 'Delete',
@@ -547,6 +554,8 @@ let deinIchPreviewImg = null;
 let deinIchPollTimer = null;
 let deinIchTaskId = null;
 let deinIchGeminiBase64 = null; // Gemini-Bild als base64 für 3D-API
+let deinIchVariants = []; // 3 Gemini-Varianten
+let deinIchSelectedVariant = -1;
 
 // Hit-Bereiche für die Menu-Buttons
 let menuButtons = {};
@@ -6010,9 +6019,24 @@ function updateDeinIchOverlay() {
     document.getElementById('deiPercent').textContent = totalProgress + '%';
     document.getElementById('deiAbbrechen').textContent = t('abbrechen');
   }
-  if (deinIchStatus === 'preview' && deinIchPreviewImg) {
-    document.getElementById('deiPreviewImg').src = deinIchPreviewImg.src;
+  if (deinIchStatus === 'preview') {
+    document.getElementById('deiPreviewHint').textContent = t('deinIchWaehle');
+    const imgs = document.querySelectorAll('.dei-variant');
+    imgs.forEach((img, i) => {
+      if (i < deinIchVariants.length) {
+        img.src = deinIchVariants[i];
+        img.style.display = 'block';
+        img.style.borderColor = i === deinIchSelectedVariant ? '#25a2a2' : 'transparent';
+        img.style.opacity = deinIchSelectedVariant >= 0 && i !== deinIchSelectedVariant ? '0.5' : '1';
+      } else {
+        img.style.display = 'none';
+      }
+    });
+    // Grid-Spalten an Anzahl anpassen
+    const grid = document.getElementById('deiPreviewGrid');
+    grid.style.gridTemplateColumns = `repeat(${Math.min(deinIchVariants.length, 3)}, 1fr)`;
     document.getElementById('deiWeiter').textContent = t('deinIchWeiter');
+    document.getElementById('deiWeiter').disabled = deinIchSelectedVariant < 0;
     document.getElementById('deiNochmal').textContent = t('deinIchNochmal');
   }
   if (deinIchStatus === 'error') {
@@ -6022,7 +6046,19 @@ function updateDeinIchOverlay() {
 }
 
 document.getElementById('deiAbbrechen').addEventListener('click', () => { cancelDeinIch(); });
-document.getElementById('deiWeiter').addEventListener('click', () => { confirmDeinIchPreview(); });
+// Varianten-Auswahl per Klick
+document.querySelectorAll('.dei-variant').forEach(img => {
+  img.addEventListener('click', () => {
+    deinIchSelectedVariant = parseInt(img.dataset.idx);
+    deinIchGeminiBase64 = deinIchVariants[deinIchSelectedVariant];
+    updateDeinIchOverlay();
+  });
+});
+document.getElementById('deiWeiter').addEventListener('click', () => {
+  if (deinIchSelectedVariant < 0) return;
+  deinIchGeminiBase64 = deinIchVariants[deinIchSelectedVariant];
+  confirmDeinIchPreview();
+});
 document.getElementById('deiNochmal').addEventListener('click', () => {
   cancelDeinIch();
   _deinIchRetry = true; // Kein neuer Credit bei Retry
@@ -6051,31 +6087,33 @@ function startDeinIch(photoDataUrls) {
   Promise.all(photoDataUrls.map(url => resizePhoto(url, 512)))
     .then(resizedPhotos => {
       deinIchStatus = 'gemini';
-      deinIchProgress = 30;
+      deinIchProgress = 10;
       updateDeinIchOverlay();
-      return fetch(DEIN_ICH_API + '/generate-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ photos: resizedPhotos })
-      });
+      // 3 parallele Gemini-Calls für Varianten
+      const calls = [0, 1, 2].map(() =>
+        fetch(DEIN_ICH_API + '/generate-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ photos: resizedPhotos })
+        }).then(r => r.json())
+      );
+      return Promise.allSettled(calls);
     })
-    .then(res => res.json())
-    .then(data => {
-      if (data.error) throw new Error(data.error);
-      // Gemini-Bild als Preview anzeigen
-      deinIchGeminiBase64 = data.image; // full data URI: data:image/png;base64,...
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-          deinIchPreviewImg = img;
-          deinIchStatus = 'preview';
-          deinIchProgress = 100;
-          updateDeinIchOverlay();
-          resolve();
-        };
-        img.onerror = () => reject(new Error('Preview image failed to load'));
-        img.src = data.image; // bereits vollständiges data URI — kein doppelter Prefix
-      });
+    .then(results => {
+      deinIchVariants = [];
+      deinIchSelectedVariant = -1;
+      let firstError = null;
+      for (const r of results) {
+        if (r.status === 'fulfilled' && r.value.image && !r.value.error) {
+          deinIchVariants.push(r.value.image);
+        } else {
+          if (!firstError) firstError = r.status === 'rejected' ? r.reason?.message : r.value?.error;
+        }
+      }
+      if (deinIchVariants.length === 0) throw new Error(firstError || t('deinIchFehler'));
+      deinIchStatus = 'preview';
+      deinIchProgress = 100;
+      updateDeinIchOverlay();
     })
     .catch(err => {
       deinIchStatus = 'error';
