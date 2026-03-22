@@ -1,0 +1,40 @@
+{
+  "identifier" : "E3B0C442",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "2.99",
+      "familyShareable" : false,
+      "internalID" : "DEINICH001",
+      "localizations" : [
+        {
+          "description" : "2 Generierungen für dein persönliches 3D-Meditationsmodell",
+          "displayName" : "Dein Ich – 2 Generierungen",
+          "locale" : "de"
+        },
+        {
+          "description" : "2 generations for your personal 3D meditation model",
+          "displayName" : "Your Self – 2 Generations",
+          "locale" : "en"
+        }
+      ],
+      "productID" : "de.jochenhornung.msphere.deinich.2x",
+      "referenceName" : "Dein Ich",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "MSphere",
+    "_developerTeamID" : "VA8S75SSYF",
+    "_lastSynchronizedDate" : "2026-03-21T12:00:00Z"
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

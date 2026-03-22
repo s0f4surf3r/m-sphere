@@ -228,6 +228,13 @@ const TR = {
     deinIchLoeschen: 'Löschen',
     deinIchLaden: 'Dein Modell wird geladen',
     deinIchFehler: 'Fehler beim Erstellen',
+    deinIchKaufen: '2 Generierungen (2,99 €)',
+    deinIchKaufenDesc: 'Erstelle dein persönliches 3D-Meditationsmodell aus deinen Fotos.',
+    deinIchCredits: 'Noch {n} Generierung(en)',
+    deinIchKeineCredits: 'Keine Generierungen mehr übrig',
+    deinIchWiederherstellen: 'Bereits gekauft? Wiederherstellen',
+    deinIchWiederhergestellt: 'Kauf wiederhergestellt!',
+    deinIchNichtGefunden: 'Kein Kauf gefunden',
     dsgvoTitel: 'DEIN ICH',
     dsgvoText: 'FÜR BESTE ERGEBNISSE\n\n• 1–2 Fotos von dir, frontal\n• Gutes Licht, ganzes Gesicht sichtbar\n• Neutraler Hintergrund wenn möglich\n• Kein starkes Gegenlicht\n\nDATENSCHUTZ\n\nDeine Fotos werden zur Erstellung eines personalisierten 3D-Modells an folgende Dienste übermittelt:\n\n• Google Gemini (USA) — Bilderzeugung\n• Meshy AI (USA) — 3D-Modellierung\n\nDie Fotos werden nur für die Verarbeitung genutzt und danach gelöscht. Das fertige Modell wird ausschließlich lokal auf deinem Gerät gespeichert.',
     dsgvoAccept: 'Zustimmen & fortfahren',
@@ -302,6 +309,13 @@ const TR = {
     deinIchLoeschen: 'Delete',
     deinIchLaden: 'Loading your model',
     deinIchFehler: 'Error creating model',
+    deinIchKaufen: '2 Generations ($2.99)',
+    deinIchKaufenDesc: 'Create your personal 3D meditation model from your photos.',
+    deinIchCredits: '{n} generation(s) remaining',
+    deinIchKeineCredits: 'No generations remaining',
+    deinIchWiederherstellen: 'Already purchased? Restore',
+    deinIchWiederhergestellt: 'Purchase restored!',
+    deinIchNichtGefunden: 'No purchase found',
     dsgvoTitel: 'YOUR SELF',
     dsgvoText: 'FOR BEST RESULTS\n\n• 1–2 photos of yourself, facing forward\n• Good lighting, full face visible\n• Neutral background if possible\n• No strong backlight\n\nPRIVACY\n\nYour photos will be sent to the following services to create a personalized 3D model:\n\n• Google Gemini (USA) — Image generation\n• Meshy AI (USA) — 3D modeling\n\nPhotos are only used for processing and deleted afterwards. The finished model is stored exclusively on your device.',
     dsgvoAccept: 'Agree & continue',
@@ -6019,6 +6033,8 @@ document.getElementById('deiClose').addEventListener('click', () => { cancelDein
 
 function startDeinIch(photoDataUrls) {
   cancelDeinIch();
+  // Credit abziehen (native App)
+  if (window.__nativeApp) postToNative('useCredit');
   deinIchStatus = 'uploading';
   deinIchStep = 0;
   deinIchProgress = 10;
@@ -6253,13 +6269,114 @@ document.getElementById('consentDecline').addEventListener('click', () => {
   hideDeinIchConsent();
 });
 
-// Öffnet File-Picker — zeigt Anweisungen/DSGVO zuerst wenn noch nicht akzeptiert
-function openDeinIchPicker() {
+// --- StoreKit IAP Bridge (nur native App, Consumable mit Credits) ---
+function hasDeinIchCredits() {
+  if (!window.__nativeApp) return true; // Web: kein Payment Gate
+  return (window.__deinIchCredits || 0) > 0;
+}
+
+function postToNative(action) {
+  if (window.webkit?.messageHandlers?.msphere) {
+    window.webkit.messageHandlers.msphere.postMessage({ action });
+  }
+}
+
+// Swift→JS Callbacks
+let _purchaseResolve = null;
+window.__handlePurchaseResult = function(success, credits) {
+  if (success) window.__deinIchCredits = credits;
+  if (_purchaseResolve) { _purchaseResolve(success); _purchaseResolve = null; }
+};
+
+window.__handleRestoreResult = function(credits) {
+  window.__deinIchCredits = credits;
+  const restored = credits > 0;
+  const overlay = document.getElementById('deinIchPurchaseOverlay');
+  if (overlay) {
+    const msgEl = overlay.querySelector('.purchase-restore-msg');
+    if (msgEl) {
+      msgEl.textContent = restored ? t('deinIchWiederhergestellt') : t('deinIchNichtGefunden');
+      msgEl.style.color = restored ? '#25a2a2' : '#ed7070';
+      msgEl.style.display = 'block';
+      if (restored) setTimeout(() => { hideDeinIchPurchase(); _openPickerAfterGate(); }, 1200);
+    }
+  }
+};
+
+function _creditsText(n) {
+  if (n <= 0) return t('deinIchKeineCredits');
+  return t('deinIchCredits').replace('{n}', n);
+}
+
+function showDeinIchPurchase() {
+  let overlay = document.getElementById('deinIchPurchaseOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'deinIchPurchaseOverlay';
+    overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,22,40,0.92);align-items:center;justify-content:center;font-family:-apple-system,"SF Pro Display","Helvetica Neue",sans-serif';
+    overlay.innerHTML = `
+      <div style="background:#1e3232;border-radius:16px;padding:28px 24px;max-width:380px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+        <div style="color:rgba(250,230,230,0.4);font-size:11px;letter-spacing:3px;font-family:'Courier New',monospace;margin-bottom:14px">DEIN ICH</div>
+        <p class="purchase-desc" style="color:#c2cee8;font-size:15px;line-height:1.6;margin:0 0 12px 0"></p>
+        <p class="purchase-credits" style="color:#edd457;font-size:13px;margin:0 0 20px 0"></p>
+        <button class="purchase-buy-btn" style="width:100%;padding:14px 24px;border-radius:10px;border:none;background:#25a2a2;color:#fff;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:12px"></button>
+        <div class="purchase-restore-msg" style="display:none;font-size:13px;margin-bottom:10px"></div>
+        <button class="purchase-restore-btn" style="background:none;border:none;color:rgba(250,230,230,0.5);font-size:13px;cursor:pointer;font-family:inherit;text-decoration:underline;margin-bottom:6px"></button>
+        <br>
+        <button class="purchase-cancel-btn" style="background:none;border:none;color:rgba(250,230,230,0.35);font-size:14px;cursor:pointer;font-family:inherit;margin-top:8px"></button>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('.purchase-buy-btn').addEventListener('click', () => {
+      overlay.querySelector('.purchase-buy-btn').disabled = true;
+      overlay.querySelector('.purchase-buy-btn').textContent = '...';
+      postToNative('purchase');
+      _purchaseResolve = (success) => {
+        overlay.querySelector('.purchase-buy-btn').disabled = false;
+        overlay.querySelector('.purchase-buy-btn').textContent = t('deinIchKaufen');
+        if (success) { hideDeinIchPurchase(); _openPickerAfterGate(); }
+      };
+    });
+    overlay.querySelector('.purchase-restore-btn').addEventListener('click', () => {
+      overlay.querySelector('.purchase-restore-msg').style.display = 'none';
+      postToNative('restorePurchases');
+    });
+    overlay.querySelector('.purchase-cancel-btn').addEventListener('click', () => {
+      hideDeinIchPurchase();
+    });
+  }
+  const credits = window.__deinIchCredits || 0;
+  overlay.querySelector('.purchase-desc').textContent = t('deinIchKaufenDesc');
+  overlay.querySelector('.purchase-credits').textContent = _creditsText(credits);
+  overlay.querySelector('.purchase-credits').style.color = credits > 0 ? '#25a2a2' : '#ed7070';
+  overlay.querySelector('.purchase-buy-btn').textContent = t('deinIchKaufen');
+  overlay.querySelector('.purchase-buy-btn').disabled = false;
+  overlay.querySelector('.purchase-restore-btn').textContent = t('deinIchWiederherstellen');
+  overlay.querySelector('.purchase-restore-msg').style.display = 'none';
+  overlay.querySelector('.purchase-cancel-btn').textContent = t('dsgvoDecline');
+  overlay.style.display = 'flex';
+}
+
+function hideDeinIchPurchase() {
+  const overlay = document.getElementById('deinIchPurchaseOverlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function _openPickerAfterGate() {
   if (localStorage.getItem('msphere_deiních_consent') === 'true') {
     document.getElementById('deinIchInput').click();
   } else {
     showDeinIchConsent(() => document.getElementById('deinIchInput').click());
   }
+}
+
+// Öffnet File-Picker — Credit Gate (native) → Consent → Picker
+function openDeinIchPicker() {
+  if (!hasDeinIchCredits()) {
+    showDeinIchPurchase();
+    return;
+  }
+  _openPickerAfterGate();
 }
 
 // Dein-Ich File-Input Handler

@@ -1,0 +1,148 @@
+name: MSphere
+
+fileGroups:
+  - MSphere.storekit
+
+options:
+  bundleIdPrefix: de.jochenhornung
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "16.3"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "13"
+
+packages:
+  GLTFKit2:
+    url: https://github.com/warrenm/GLTFKit2.git
+    from: "0.5.15"
+
+targets:
+  # Original WKWebView wrapper (keep parallel)
+  MSphere:
+    type: application
+    platform: iOS
+    sources:
+      - path: MSphere
+        excludes:
+          - Info.plist
+    postCompileScripts:
+      - script: |
+          set -e
+          WEB_DST="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Web"
+          rm -rf "${WEB_DST}"
+          mkdir -p "${WEB_DST}"
+          cp -RL "${PROJECT_DIR}/Web/" "${WEB_DST}/"
+        name: "Copy Web Assets"
+        basedOnDependencyAnalysis: false
+    info:
+      path: MSphere/Info.plist
+      properties:
+        CFBundleDisplayName: M-Sphere
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        "UISupportedInterfaceOrientations~ipad":
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIStatusBarHidden: true
+        UIViewControllerBasedStatusBarAppearance: false
+        NSCameraUsageDescription: "Für Face Swap und personalisierte 3D-Modelle"
+        NSPhotoLibraryUsageDescription: "Für Face Swap und personalisierte 3D-Modelle"
+        ITSAppUsesNonExemptEncryption: false
+    entitlements:
+      path: MSphere/MSphere.entitlements
+    scheme:
+      testPlans: []
+      storeKitConfiguration: MSphere.storekit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.jochenhornung.msphere
+        INFOPLIST_FILE: MSphere/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SWIFT_EMIT_LOC_STRINGS: "YES"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: "YES"
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: VA8S75SSYF
+        ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+
+  # Native SceneKit + Metal app
+  MSphereNative:
+    type: application
+    platform: iOS
+    sources:
+      - path: MSphereNative
+        excludes:
+          - Info.plist
+          - Resources
+      - path: Shaders
+        buildPhase: sources
+        compilerFlags: []
+    resources:
+      - path: MSphereNative/Assets.xcassets
+        buildPhase: resources
+    dependencies:
+      - package: GLTFKit2
+      - sdk: GameController.framework
+    postCompileScripts:
+      - script: |
+          set -e
+          APP_DST="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}"
+          mkdir -p "${APP_DST}/Models"
+          mkdir -p "${APP_DST}/Audio"
+          # Copy GLB models (non-DRACO versions for GLTFKit2)
+          for f in model_male_compressed_nodraco.glb model_female_compressed_nodraco.glb meshy_zoe_compressed_nodraco.glb meshy_jochen_compressed_nodraco.glb; do
+            if [ -f "${PROJECT_DIR}/../${f}" ]; then
+              cp "${PROJECT_DIR}/../${f}" "${APP_DST}/Models/"
+            fi
+          done
+          # Copy M4A audio files
+          for f in dubistdaswasser_kind.m4a dubistdaswasser.m4a dubistdaswassereng.m4a dubistdaswasserzoe.m4a; do
+            if [ -f "${PROJECT_DIR}/../${f}" ]; then
+              cp "${PROJECT_DIR}/../${f}" "${APP_DST}/Audio/"
+            fi
+          done
+        name: "Copy Native Resources"
+        basedOnDependencyAnalysis: false
+    info:
+      path: MSphereNative/Info.plist
+      properties:
+        CFBundleDisplayName: M-Sphere
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        "UISupportedInterfaceOrientations~ipad":
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIStatusBarHidden: true
+        UIViewControllerBasedStatusBarAppearance: false
+        NSCameraUsageDescription: "Für Face Swap und personalisierte 3D-Modelle"
+        NSMotionUsageDescription: "Zum Erkennen von Schüttelbewegungen für die Meditation"
+        NSPhotoLibraryUsageDescription: "Für Face Swap und personalisierte 3D-Modelle"
+        ITSAppUsesNonExemptEncryption: false
+        CFBundleURLTypes:
+          - CFBundleURLSchemes:
+              - msphere
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.jochenhornung.msphere.native
+        INFOPLIST_FILE: MSphereNative/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SWIFT_EMIT_LOC_STRINGS: "YES"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: "YES"
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: VA8S75SSYF
+        ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+        SWIFT_VERSION: "5.9"
+        MTL_HEADER_SEARCH_PATHS: "$(PROJECT_DIR)/Shaders"
+        METAL_HEADER_SEARCH_PATHS: "$(PROJECT_DIR)/Shaders"
+        SWIFT_OBJC_BRIDGING_HEADER: "MSphereNative/MSphereNative-Bridging-Header.h"
