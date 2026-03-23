@@ -233,6 +233,9 @@ const TR = {
     deinIchAktiv: 'Aktiv',
     deinIchNeu: 'Neu',
     deinIchLoeschen: 'Löschen',
+    deinIchLoeschenFrage: 'Dein Modell wird unwiderruflich gelöscht. Bist du sicher?',
+    deinIchLoeschenJa: 'Ja, löschen',
+    deinIchCreditHinweis: 'Die Erstellung dauert ca. 5 Minuten und verbraucht 1 Generierung.',
     deinIchLaden: 'Dein Modell wird geladen',
     deinIchFehler: 'Fehler beim Erstellen',
     deinIchKaufen: '2 Generierungen (2,99 €)',
@@ -316,6 +319,9 @@ const TR = {
     deinIchAktiv: 'Active',
     deinIchNeu: 'New',
     deinIchLoeschen: 'Delete',
+    deinIchLoeschenFrage: 'Your model will be permanently deleted. Are you sure?',
+    deinIchLoeschenJa: 'Yes, delete',
+    deinIchCreditHinweis: 'Generation takes about 5 minutes and uses 1 credit.',
     deinIchLaden: 'Loading your model',
     deinIchFehler: 'Error creating model',
     deinIchKaufen: '2 Generations ($2.99)',
@@ -4416,9 +4422,11 @@ function handleMenuClick(x, y) {
         cancelDeinIch();
         openDeinIchPicker();
       } else if (btn.action === 'delete') {
-        cancelDeinIch();
-        deleteCustomModel();
-        delete modelThumbnails['custom'];
+        showDeinIchConfirm(t('deinIchLoeschenFrage'), t('deinIchLoeschenJa'), t('dsgvoDecline'), () => {
+          cancelDeinIch();
+          deleteCustomModel();
+          delete modelThumbnails['custom'];
+        });
       }
       // 'active' = no-op
       if (btn.action !== 'upload' && btn.action !== 'new') {
@@ -6408,13 +6416,63 @@ function hideDeinIchPurchase() {
 
 function _openPickerAfterGate() {
   if (localStorage.getItem('msphere_deiních_consent') === 'true') {
-    document.getElementById('deinIchInput').click();
+    _showCreditHintThenPicker();
   } else {
-    showDeinIchConsent(() => document.getElementById('deinIchInput').click());
+    showDeinIchConsent(() => _showCreditHintThenPicker());
   }
 }
 
-// Öffnet File-Picker — Credit Gate (native) → Consent → Picker
+function _showCreditHintThenPicker() {
+  // Bei Retry keinen Hinweis zeigen
+  if (_deinIchRetry) {
+    document.getElementById('deinIchInput').click();
+    return;
+  }
+  // Credit-Hinweis nur in nativer App (Web hat kein Credit-System)
+  if (window.__nativeApp) {
+    const credits = window.__deinIchCredits || 0;
+    const hint = t('deinIchCreditHinweis') + '\n\n' + _creditsText(credits);
+    showDeinIchConfirm(hint, t('deinIchFoto'), t('dsgvoDecline'), () => {
+      document.getElementById('deinIchInput').click();
+    });
+  } else {
+    document.getElementById('deinIchInput').click();
+  }
+}
+
+// Universeller Confirm-Dialog (wiederverwendbar)
+function showDeinIchConfirm(message, okText, cancelText, onOk) {
+  let overlay = document.getElementById('deinIchConfirmOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'deinIchConfirmOverlay';
+    overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:10000;background:rgba(10,22,40,0.92);align-items:center;justify-content:center;font-family:-apple-system,"SF Pro Display","Helvetica Neue",sans-serif';
+    overlay.innerHTML = `
+      <div style="background:#1e3232;border-radius:16px;padding:28px 24px;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+        <p class="confirm-msg" style="color:#c2cee8;font-size:15px;line-height:1.6;margin:0 0 22px 0;white-space:pre-line"></p>
+        <div style="display:flex;gap:10px">
+          <button class="confirm-ok" style="flex:1;padding:12px;border-radius:8px;border:none;background:#25a2a2;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit"></button>
+          <button class="confirm-cancel" style="flex:1;padding:12px;border-radius:8px;border:1px solid rgba(250,230,230,0.3);background:none;color:rgba(250,230,230,0.7);font-size:14px;cursor:pointer;font-family:inherit"></button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+  overlay.querySelector('.confirm-msg').textContent = message;
+  overlay.querySelector('.confirm-ok').textContent = okText;
+  overlay.querySelector('.confirm-cancel').textContent = cancelText;
+  // Clone+Replace to remove old listeners
+  const okBtn = overlay.querySelector('.confirm-ok');
+  const newOk = okBtn.cloneNode(true);
+  okBtn.parentNode.replaceChild(newOk, okBtn);
+  const cancelBtn = overlay.querySelector('.confirm-cancel');
+  const newCancel = cancelBtn.cloneNode(true);
+  cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+  newOk.addEventListener('click', () => { overlay.style.display = 'none'; onOk(); });
+  newCancel.addEventListener('click', () => { overlay.style.display = 'none'; });
+  overlay.style.display = 'flex';
+}
+
+// Öffnet File-Picker — Credit Gate (native) → Consent → Credit-Hinweis → Picker
 function openDeinIchPicker() {
   if (!hasDeinIchCredits()) {
     showDeinIchPurchase();
