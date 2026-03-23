@@ -1,24 +1,36 @@
 import StoreKit
 
-/// Manages StoreKit 2 In-App Purchases for M-Sphere "Dein Ich"
-/// Consumable: Each purchase grants 2 generation credits
+/// Manages StoreKit 2 In-App Purchases for M-Sphere
+/// - Auto-Renewable Subscription: unlocks unlimited meditation timer
+/// - Non-Consumable "Dein Ich": unlocks personalized 3D model generation (max 5)
 @MainActor
 final class StoreManager: ObservableObject {
 
-    static let deinIchProductID = "de.jochenhornung.msphere.deinich.2x"
-    static let creditsPerPurchase = 2
+    // Product IDs
+    static let subscriptionID = "de.jochenhornung.msphere.standard"
+    static let deinIchID = "de.jochenhornung.msphere.deinich"
 
-    private static let usedCreditsKey = "msphere_deinich_used"
+    // Dein Ich generation limit
+    static let deinIchMaxGenerations = 5
+    private static let deinIchUsedKey = "msphere_deinich_generations_used"
 
-    @Published private(set) var credits: Int = 0
+    @Published private(set) var isSubscribed = false
+    @Published private(set) var deinIchUnlocked = false
+    @Published private(set) var deinIchGenerationsUsed: Int = 0
     @Published private(set) var products: [Product] = []
+
+    var deinIchGenerationsRemaining: Int {
+        guard deinIchUnlocked else { return 0 }
+        return max(0, Self.deinIchMaxGenerations - deinIchGenerationsUsed)
+    }
 
     private var transactionListener: Task<Void, Error>?
 
     init() {
+        deinIchGenerationsUsed = UserDefaults.standard.integer(forKey: Self.deinIchUsedKey)
         transactionListener = listenForTransactions()
         Task { await loadProducts() }
-        Task { await recalculateCredits() }
+        Task { await updateEntitlements() }
     }
 
     deinit {
@@ -29,7 +41,7 @@ final class StoreManager: ObservableObject {
 
     func loadProducts() async {
         do {
-            products = try await Product.products(for: [Self.deinIchProductID])
+            products = try await Product.products(for: [Self.subscriptionID, Self.deinIchID])
             NSLog("[StoreManager] Loaded \(products.count) products: \(products.map { $0.id })")
         } catch {
             NSLog("[StoreManager] Failed to load products: \(error)")
@@ -38,17 +50,15 @@ final class StoreManager: ObservableObject {
 
     // MARK: - Purchase
 
-    func purchaseDeinIch() async -> Bool {
-        guard let product = products.first(where: { $0.id == Self.deinIchProductID }) else {
+    func purchase(_ productID: String) async -> Bool {
+        guard let product = products.first(where: { $0.id == productID }) else {
             #if DEBUG
-            // Debug: StoreKit Testing-Config nicht geladen → Credits direkt vergeben
-            NSLog("[StoreManager] DEBUG: Product not found, granting \(Self.creditsPerPurchase) free credits")
-            let used = UserDefaults.standard.integer(forKey: Self.usedCreditsKey)
-            let fakeTotal = (used + credits) / Self.creditsPerPurchase + 1
-            credits = fakeTotal * Self.creditsPerPurchase - used
+            NSLog("[StoreManager] DEBUG: Product \(productID) not found, granting for free")
+            if productID == Self.subscriptionID { isSubscribed = true }
+            if productID == Self.deinIchID { deinIchUnlocked = true }
             return true
             #else
-            NSLog("[StoreManager] Product not found")
+            NSLog("[StoreManager] Product not found: \(productID)")
             return false
             #endif
         }
@@ -58,7 +68,7 @@ final class StoreManager: ObservableObject {
             case .success(let verification):
                 let transaction = try Self.checkVerified(verification)
                 await transaction.finish()
-                await recalculateCredits()
+                await updateEntitlements()
                 return true
             case .userCancelled:
                 return false
@@ -73,38 +83,43 @@ final class StoreManager: ObservableObject {
         }
     }
 
-    // MARK: - Use Credit
+    // MARK: - Dein Ich Generation Counter
 
-    func useCredit() {
-        let used = UserDefaults.standard.integer(forKey: Self.usedCreditsKey)
-        UserDefaults.standard.set(used + 1, forKey: Self.usedCreditsKey)
-        credits = max(0, credits - 1)
+    func useDeinIchGeneration() {
+        deinIchGenerationsUsed += 1
+        UserDefaults.standard.set(deinIchGenerationsUsed, forKey: Self.deinIchUsedKey)
     }
 
     // MARK: - Restore
 
     func restorePurchases() async {
         try? await AppStore.sync()
-        await recalculateCredits()
+        await updateEntitlements()
     }
 
-    // MARK: - Credit Calculation
+    // MARK: - Entitlements
 
-    /// Credits = (total purchases × creditsPerPurchase) - used generations
-    /// Purchases are counted from Transaction.all (survives reinstall)
-    /// Used generations are in UserDefaults (reset on reinstall = user gets credits back)
-    func recalculateCredits() async {
-        var totalPurchased = 0
-        for await result in Transaction.all {
-            if let transaction = try? Self.checkVerified(result),
-               transaction.productID == Self.deinIchProductID {
-                totalPurchased += 1
+    func updateEntitlements() async {
+        var subscribed = false
+        var deinIch = false
+
+        for await result in Transaction.currentEntitlements {
+            if let transaction = try? Self.checkVerified(result) {
+                switch transaction.productID {
+                case Self.subscriptionID:
+                    subscribed = true
+                case Self.deinIchID:
+                    deinIch = true
+                default:
+                    break
+                }
             }
         }
-        let totalCredits = totalPurchased * Self.creditsPerPurchase
-        let used = UserDefaults.standard.integer(forKey: Self.usedCreditsKey)
-        credits = max(0, totalCredits - used)
-        NSLog("[StoreManager] Credits: \(credits) (purchased: \(totalPurchased)×\(Self.creditsPerPurchase)=\(totalCredits), used: \(used))")
+
+        isSubscribed = subscribed
+        deinIchUnlocked = deinIch
+        deinIchGenerationsUsed = UserDefaults.standard.integer(forKey: Self.deinIchUsedKey)
+        NSLog("[StoreManager] Entitlements: subscribed=\(subscribed), deinIch=\(deinIch), generations=\(deinIchGenerationsUsed)/\(Self.deinIchMaxGenerations)")
     }
 
     // MARK: - Transaction Listener
@@ -114,7 +129,7 @@ final class StoreManager: ObservableObject {
             for await result in Transaction.updates {
                 let transaction = try? Self.checkVerified(result)
                 if let transaction {
-                    await self?.recalculateCredits()
+                    await self?.updateEntitlements()
                     await transaction.finish()
                 }
             }

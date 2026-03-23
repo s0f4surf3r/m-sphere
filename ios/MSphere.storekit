@@ -10,28 +10,80 @@
       "internalID" : "DEINICH001",
       "localizations" : [
         {
-          "description" : "2 Generierungen für dein persönliches 3D-Meditationsmodell",
-          "displayName" : "Dein Ich – 2 Generierungen",
+          "description" : "Erstelle dein persönliches 3D-Meditationsmodell (max 5)",
+          "displayName" : "Dein Ich",
           "locale" : "de"
         },
         {
-          "description" : "2 generations for your personal 3D meditation model",
-          "displayName" : "Your Self – 2 Generations",
+          "description" : "Create your personal 3D meditation model (max 5)",
+          "displayName" : "Your Self",
           "locale" : "en"
         }
       ],
-      "productID" : "de.jochenhornung.msphere.deinich.2x",
+      "productID" : "de.jochenhornung.msphere.deinich",
       "referenceName" : "Dein Ich",
-      "type" : "Consumable"
+      "type" : "NonConsumable"
     }
   ],
   "settings" : {
     "_applicationInternalID" : "MSphere",
     "_developerTeamID" : "VA8S75SSYF",
-    "_lastSynchronizedDate" : "2026-03-21T12:00:00Z"
+    "_lastSynchronizedDate" : "2026-03-23T10:00:00Z"
   },
   "subscriptionGroups" : [
+    {
+      "id" : "MSPHERE_SUB",
+      "localizations" : [
+        {
+          "description" : "Unbegrenzte Meditationszeit",
+          "displayName" : "M-Sphere Standard",
+          "locale" : "de",
+          "state" : "approved"
+        },
+        {
+          "description" : "Unlimited meditation time",
+          "displayName" : "M-Sphere Standard",
+          "locale" : "en",
+          "state" : "approved"
+        }
+      ],
+      "name" : "M-Sphere Standard",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
 
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "2.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "STANDARD001",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Unbegrenzte Meditationszeit + alle Sounds",
+              "displayName" : "M-Sphere Standard (Monatlich)",
+              "locale" : "de"
+            },
+            {
+              "description" : "Unlimited meditation time + all sounds",
+              "displayName" : "M-Sphere Standard (Monthly)",
+              "locale" : "en"
+            }
+          ],
+          "productID" : "de.jochenhornung.msphere.standard",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Standard Monthly",
+          "subscriptionGroupID" : "MSPHERE_SUB",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    }
   ],
   "version" : {
     "major" : 4,
