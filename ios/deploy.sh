@@ -77,7 +77,7 @@ print(f'{unsigned}.{signature}')
 
 # App-ID finden
 echo "🔍 Suche App..."
-APP_RESPONSE=$(curl -s -H "Authorization: Bearer $JWT" \
+APP_RESPONSE=$(curl -s --globoff -H "Authorization: Bearer $JWT" \
   "https://api.appstoreconnect.apple.com/v1/apps?filter[bundleId]=$BUNDLE_ID")
 APP_ID=$(echo "$APP_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['data'][0]['id'])" 2>/dev/null)
 
@@ -90,7 +90,7 @@ fi
 echo "🔍 Suche Build $NEXT..."
 BUILD_ID=""
 for i in 1 2 3 4 5 6; do
-  BUILD_RESPONSE=$(curl -s -H "Authorization: Bearer $JWT" \
+  BUILD_RESPONSE=$(curl -s --globoff -H "Authorization: Bearer $JWT" \
     "https://api.appstoreconnect.apple.com/v1/builds?filter[app]=$APP_ID&filter[version]=$NEXT&sort=-uploadedDate&limit=1")
   BUILD_ID=$(echo "$BUILD_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin)['data']; print(d[0]['id'] if d else '')" 2>/dev/null)
   if [ -n "$BUILD_ID" ]; then break; fi
@@ -104,7 +104,7 @@ if [ -z "$BUILD_ID" ]; then
 fi
 
 # Testgruppen finden
-GROUPS_RESPONSE=$(curl -s -H "Authorization: Bearer $JWT" \
+GROUPS_RESPONSE=$(curl -s --globoff -H "Authorization: Bearer $JWT" \
   "https://api.appstoreconnect.apple.com/v1/apps/$APP_ID/betaGroups")
 GROUP_IDS=$(echo "$GROUPS_RESPONSE" | python3 -c "
 import sys,json
@@ -115,7 +115,7 @@ for g in groups:
 
 # Build allen Gruppen zuweisen
 for GID in $GROUP_IDS; do
-  curl -s -X POST -H "Authorization: Bearer $JWT" -H "Content-Type: application/json" \
+  curl -s --globoff -X POST -H "Authorization: Bearer $JWT" -H "Content-Type: application/json" \
     "https://api.appstoreconnect.apple.com/v1/betaGroups/$GID/relationships/builds" \
     -d "{\"data\":[{\"type\":\"builds\",\"id\":\"$BUILD_ID\"}]}" > /dev/null
 done
