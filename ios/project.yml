@@ -42,7 +42,8 @@ targets:
       path: MSphere/Info.plist
       properties:
         CFBundleDisplayName: M-Sphere
-        UILaunchScreen: {}
+        UILaunchScreen:
+          UIColorName: ""
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         "UISupportedInterfaceOrientations~ipad":
@@ -52,8 +53,9 @@ targets:
           - UIInterfaceOrientationLandscapeRight
         UIStatusBarHidden: true
         UIViewControllerBasedStatusBarAppearance: false
-        NSCameraUsageDescription: "Für Face Swap und personalisierte 3D-Modelle"
-        NSPhotoLibraryUsageDescription: "Für Face Swap und personalisierte 3D-Modelle"
+        NSCameraUsageDescription: "Zum Aufnehmen von Fotos für dein personalisiertes 3D-Meditationsmodell"
+        NSPhotoLibraryUsageDescription: "Zum Auswählen von Fotos für dein personalisiertes 3D-Meditationsmodell"
+        NSMotionUsageDescription: "Zum Erkennen von Schüttelbewegungen für die interaktive Meditation"
         ITSAppUsesNonExemptEncryption: false
     entitlements:
       path: MSphere/MSphere.entitlements
@@ -114,7 +116,8 @@ targets:
       path: MSphereNative/Info.plist
       properties:
         CFBundleDisplayName: M-Sphere
-        UILaunchScreen: {}
+        UILaunchScreen:
+          UIColorName: ""
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         "UISupportedInterfaceOrientations~ipad":

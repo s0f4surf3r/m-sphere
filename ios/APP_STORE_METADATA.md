@@ -61,17 +61,21 @@ EN: Shake the globe, find the stillness. Now with personalized 3D meditation mod
 
 M-Sphere is a meditation app with an interactive snow globe metaphor.
 
-IN-APP PURCHASE:
-- "Dein Ich" (Your Self) is a Consumable IAP ($2.99) that grants 2 credits for generating personalized 3D meditation models.
-- The user uploads 2 photos (front + side profile), and AI services (Google Gemini for image generation, Meshy AI for 3D modeling) create a meditating figure.
-- Credits are tracked locally via UserDefaults + Transaction.all for reinstall recovery.
+SUBSCRIPTION (Auto-Renewable):
+- "M-Sphere Standard" ($2.99/month) unlocks unlimited meditation timer.
+- Free version limits meditation to 10 minutes. All other features are available for free.
+- When the user selects a timer >10 min, an upgrade prompt appears.
+
+IN-APP PURCHASE (Non-Consumable):
+- "Dein Ich" / "Your Self" ($2.99 one-time) unlocks personalized 3D meditation model generation.
+- The user uploads 2 photos (front + side profile), and AI services create a meditating figure.
+- Up to 5 model generations are included. The generation counter is stored locally.
 - The IAP is optional — the app is fully functional without it (2 default models included).
 
-TO TEST THE IAP:
-- Navigate to the main menu → "YOUR SELF" → "Upload photos"
-- The purchase overlay will appear
-- Use a Sandbox account to complete the purchase
-- After purchase, upload 2 photos and the generation process takes ~5 minutes
+TO TEST:
+1. Timer limit: Set timer to 15+ min → upgrade prompt for Standard subscription
+2. Dein Ich: Menu → "YOUR SELF" → "Upload photos" → purchase prompt
+3. Use a Sandbox account to complete purchases
 
 DEMO ACCOUNT: Not required. The app has no login.
 

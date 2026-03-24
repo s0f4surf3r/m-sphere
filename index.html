@@ -7,17 +7,17 @@
 <meta name="description" content="Schüttle die Schneekugel. Lass los. Finde Stille. Eine interaktive Meditations-Erfahrung im Browser.">
 <meta property="og:title" content="M-Sphere — Interactive Meditation">
 <meta property="og:description" content="Schüttle die Schneekugel. Lass los. Finde Stille. Eine interaktive Meditations-Erfahrung im Browser.">
-<meta property="og:image" content="https://jsphere.jochenhornung.de/android-chrome-512x512.png">
-<meta property="og:url" content="https://jsphere.jochenhornung.de/">
+<meta property="og:image" content="https://msphere.jochenhornung.de/android-chrome-512x512.png">
+<meta property="og:url" content="https://msphere.jochenhornung.de/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="M-Sphere — Interactive Meditation">
 <meta name="twitter:description" content="Schüttle die Schneekugel. Lass los. Finde Stille.">
-<meta name="twitter:image" content="https://jsphere.jochenhornung.de/android-chrome-512x512.png">
-<link rel="canonical" href="https://jsphere.jochenhornung.de/">
-<link rel="alternate" hreflang="de" href="https://jsphere.jochenhornung.de/">
-<link rel="alternate" hreflang="en" href="https://jsphere.jochenhornung.de/">
-<link rel="alternate" hreflang="x-default" href="https://jsphere.jochenhornung.de/">
+<meta name="twitter:image" content="https://msphere.jochenhornung.de/android-chrome-512x512.png">
+<link rel="canonical" href="https://msphere.jochenhornung.de/">
+<link rel="alternate" hreflang="de" href="https://msphere.jochenhornung.de/">
+<link rel="alternate" hreflang="en" href="https://msphere.jochenhornung.de/">
+<link rel="alternate" hreflang="x-default" href="https://msphere.jochenhornung.de/">
 <meta name="theme-color" content="#0a0a1e">
 <meta name="keywords" content="meditation, interactive, mindfulness, snow globe, schneekugel, achtsamkeit, browser, webapp, M-Sphere">
 <meta name="author" content="Jochen Hornung">
@@ -28,7 +28,7 @@
   "@type": "WebApplication",
   "name": "M-Sphere",
   "alternateName": "J-Sphäre",
-  "url": "https://jsphere.jochenhornung.de/",
+  "url": "https://msphere.jochenhornung.de/",
   "description": "Schüttle die Schneekugel. Lass los. Finde Stille. Eine interaktive Meditations-Erfahrung im Browser.",
   "applicationCategory": "HealthApplication",
   "operatingSystem": "Any",
@@ -43,7 +43,7 @@
     "price": "0",
     "priceCurrency": "EUR"
   },
-  "image": "https://jsphere.jochenhornung.de/hero_msphere.png",
+  "image": "https://msphere.jochenhornung.de/hero_msphere.png",
   "inLanguage": ["de", "en"]
 }
 </script>
@@ -87,8 +87,8 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 <script type="importmap">
 {
   "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    "three": "./lib/three.module.js",
+    "three/addons/": "./lib/"
   }
 }
 </script>
@@ -245,8 +245,9 @@ const TR = {
     deinIchWiederherstellen: 'Bereits gekauft? Wiederherstellen',
     deinIchWiederhergestellt: 'Kauf wiederhergestellt!',
     deinIchNichtGefunden: 'Kein Kauf gefunden',
-    aboUpgradeDesc: 'Für Meditationen über 10 Minuten brauchst du M-Sphere Standard.',
-    aboUpgradeBtn: 'Standard abonnieren (2,99 €/Monat)',
+    aboUpgradeDesc: 'Für Meditationen über 10 Minuten brauchst du M-Sphere Standard.\n\n2,99 €/Monat. Verlängert sich automatisch. Jederzeit kündbar in den iPhone-Einstellungen unter Abonnements.',
+    aboUpgradeBtn: 'Standard abonnieren',
+    aboLinks: 'Nutzungsbedingungen · Datenschutz',
     dsgvoTitel: 'DEIN ICH',
     dsgvoText: 'FÜR BESTE ERGEBNISSE\n\n• 2 Fotos: 1× frontal, 1× seitlich\n• Gutes Licht, ganzes Gesicht sichtbar\n• Neutraler Hintergrund wenn möglich\n• Kein starkes Gegenlicht\n\nDATENSCHUTZ\n\nDeine Fotos werden zur Erstellung eines personalisierten 3D-Modells an folgende Dienste übermittelt:\n\n• Google Gemini (USA) — Bilderzeugung\n• Meshy AI (USA) — 3D-Modellierung\n\nDie Fotos werden nur für die Verarbeitung genutzt und danach gelöscht. Das fertige Modell wird ausschließlich lokal auf deinem Gerät gespeichert.',
     dsgvoAccept: 'Zustimmen & fortfahren',
@@ -333,8 +334,9 @@ const TR = {
     deinIchWiederherstellen: 'Already purchased? Restore',
     deinIchWiederhergestellt: 'Purchase restored!',
     deinIchNichtGefunden: 'No purchase found',
-    aboUpgradeDesc: 'Meditations over 10 minutes require M-Sphere Standard.',
-    aboUpgradeBtn: 'Subscribe to Standard ($2.99/month)',
+    aboUpgradeDesc: 'Meditations over 10 minutes require M-Sphere Standard.\n\n$2.99/month. Renews automatically. Cancel anytime in iPhone Settings under Subscriptions.',
+    aboUpgradeBtn: 'Subscribe to Standard',
+    aboLinks: 'Terms of Use · Privacy Policy',
     dsgvoTitel: 'YOUR SELF',
     dsgvoText: 'FOR BEST RESULTS\n\n• 2 photos: 1× front, 1× side profile\n• Good lighting, full face visible\n• Neutral background if possible\n• No strong backlight\n\nPRIVACY\n\nYour photos will be sent to the following services to create a personalized 3D model:\n\n• Google Gemini (USA) — Image generation\n• Meshy AI (USA) — 3D modeling\n\nPhotos are only used for processing and deleted afterwards. The finished model is stored exclusively on your device.',
     dsgvoAccept: 'Agree & continue',
@@ -825,7 +827,7 @@ let modelRotate = localStorage.getItem('msphere_rotate') === 'true'; // 360°-Dr
 const modelThumbnails = {}; // key → Image
 
 const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/libs/draco/');
+dracoLoader.setDecoderPath('./lib/libs/draco/');
 const loader = new GLTFLoader();
 loader.setDRACOLoader(dracoLoader);
 
@@ -4365,9 +4367,9 @@ function handleMenuClick(x, y) {
   // Footer-Buttons (Lotus, GK, Link) werden direkt in touchend/click behandelt,
   // nicht hier — verhindert Double-Firing-Probleme auf Touch-Geräten.
 
-  // Spenden-Link
+  // Spenden-Link (nicht in nativer App — Apple Guideline 3.1.1)
   const don = menuButtons.donate;
-  if (don && hitBtn(don)) {
+  if (don && hitBtn(don) && !window.__nativeApp) {
     window.open('https://www.paypal.com/donate/?hosted_button_id=9DZ3ENM66BEC8', '_blank');
     return true;
   }
@@ -4645,7 +4647,7 @@ canvas.addEventListener('click', (e) => {
     }
     handleMenuClick(cx, cy);
   } else if (state === 'done') {
-    if (donateHitArea) {
+    if (donateHitArea && !window.__nativeApp) {
       const d = donateHitArea;
       if (cx >= d.x && cx <= d.x + d.w && cy >= d.y && cy <= d.y + d.h) {
         window.open('https://www.paypal.com/donate/?hosted_button_id=9DZ3ENM66BEC8', '_blank');
@@ -4912,7 +4914,7 @@ canvas.addEventListener('touchend', (e) => {
       handleMenuClick(ftx, fty);
     }
   } else if (state === 'done') {
-    if (donateHitArea && e.changedTouches.length > 0) {
+    if (donateHitArea && !window.__nativeApp && e.changedTouches.length > 0) {
       const t = e.changedTouches[0];
       const [tx, ty] = canvasCoords(t.clientX, t.clientY);
       const d = donateHitArea;
@@ -6374,6 +6376,7 @@ function showUpgradeOverlay(title, desc, btnText, productId, onSuccess) {
         <button class="upgrade-restore-btn" style="background:none;border:none;color:rgba(250,230,230,0.5);font-size:13px;cursor:pointer;font-family:inherit;text-decoration:underline;margin-bottom:6px"></button>
         <br>
         <button class="upgrade-cancel-btn" style="background:none;border:none;color:rgba(250,230,230,0.35);font-size:14px;cursor:pointer;font-family:inherit;margin-top:8px"></button>
+        <div class="upgrade-links" style="margin-top:12px;font-size:11px"><a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" style="color:rgba(250,230,230,0.4)" target="_blank">Terms</a> · <a href="https://msphere.jochenhornung.de/privacy.html" style="color:rgba(250,230,230,0.4)" target="_blank">Privacy</a></div>
       </div>`;
     document.body.appendChild(overlay);
   }
@@ -7138,7 +7141,8 @@ function frame() {
         ctx.textBaseline = 'middle';
         ctx.fillText(backText, cx, backBtnY + backBtnH / 2);
         backToMenuHitArea = { x: backBtnX, y: backBtnY, w: backBtnW, h: backBtnH };
-        // Spenden-Button — so breit wie die Kugel, proportional groß
+        // Spenden-Button — nicht in nativer App (Apple Guideline 3.1.1)
+        if (!window.__nativeApp) {
         const donAlpha = Math.min(0.9, (elapsed - 45) / 4 * 0.9);
         const donFont = hintFont * 1.15;
         ctx.font = `600 ${donFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
@@ -7158,6 +7162,7 @@ function frame() {
         ctx.textBaseline = 'middle';
         ctx.fillText(donText, cx, donBtnY + donBtnH / 2);
         donateHitArea = { x: donBtnX, y: donBtnY, w: donBtnW, h: donBtnH };
+        }
       } else {
         // Desktop: "Zurück ins Menü" als Button ÜBER der Kugel, Spenden näher unter der Kugel
         // --- Zurück-Button oben ---
@@ -7180,7 +7185,8 @@ function frame() {
         ctx.textBaseline = 'middle';
         ctx.fillText(backText, cx, backBtnY + backBtnH / 2);
         backToMenuHitArea = { x: backBtnX, y: backBtnY, w: backBtnW, h: backBtnH };
-        // --- Spenden-Button unten (näher an Kugel) ---
+        // --- Spenden-Button unten — nicht in nativer App (Apple Guideline 3.1.1) ---
+        if (!window.__nativeApp) {
         const donAlpha = Math.min(0.9, (elapsed - 45) / 4 * 0.9);
         const donFont = hintFont;
         ctx.font = `${donFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
@@ -7201,6 +7207,7 @@ function frame() {
         ctx.textBaseline = 'middle';
         ctx.fillText(donText, cx, donBtnY + donBtnH / 2);
         donateHitArea = { x: donBtnX, y: donBtnY, w: donBtnW, h: donBtnH };
+        }
       }
       ctx.textAlign = 'start';
     } else {
