@@ -7809,7 +7809,7 @@ frame();
 if (new URLSearchParams(location.search).has('dev')) {
   window._devParticles = { count: 10, speed: 0.3, reach: 2.5, spread: 0.8, waber: 1.0, size: 1.0, alpha: 1.0 };
   const dp = document.createElement('div');
-  dp.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9999;background:rgba(0,0,0,0.9);padding:8px 16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;font:12px -apple-system,sans-serif;color:#8098b8;border-top:1px solid #1e3232';
+  dp.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:rgba(0,0,0,0.92);padding:10px 16px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;font:12px -apple-system,sans-serif;color:#8098b8;border-bottom:1px solid #1e3232;backdrop-filter:blur(10px)';
   const params = [
     { key: 'count', label: 'Anzahl', min: 1, max: 30, step: 1, val: 10 },
     { key: 'speed', label: 'Speed', min: 0.05, max: 2, step: 0.05, val: 0.3 },
