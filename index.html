@@ -2795,7 +2795,11 @@ function drawMenu() {
   } else {
     sectionGap = unit * 0.025 * 0.7 * vScale;
     layoutGap = sectionGap;
-    curY = Math.max(H * 0.04 * vScale, safeTop + unit * 0.02);
+    // Desktop: Content-Block vertikal zentrieren
+    // Geschätzte Höhe: Titel + Sub + Dial + 5 Settings-Rows + Start-Button ≈ 70% der Fensterhöhe
+    const _estContentH = titleSize * 1.3 + subtitleSize * 2 + btnH * 2.5 + (rowFont * 2) * 5 + sectionGap * 6 + rowFont * 1.3 * 2.2;
+    const _headerH = safeTop + unit * 0.06; // Platz für Lang-Toggle + Sound-Icon
+    curY = Math.max(_headerH, (H - _estContentH) / 2);
   }
 
   // Native Scrolling: Gesamten Menü-Inhalt um scrollY nach oben verschieben
