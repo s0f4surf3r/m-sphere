@@ -2795,7 +2795,7 @@ function drawMenu() {
   } else {
     sectionGap = unit * 0.025 * 0.7 * vScale;
     layoutGap = sectionGap;
-    curY = Math.max(H * 0.06 * vScale, safeTop + unit * 0.03);
+    curY = Math.max(H * 0.04 * vScale, safeTop + unit * 0.02);
   }
 
   // Native Scrolling: Gesamten Menü-Inhalt um scrollY nach oben verschieben
@@ -2872,42 +2872,32 @@ function drawMenu() {
   ctx.fillText(titlePost, _postX, curY);
   ctx.shadowOffsetY = 0;
 
-  // --- Glasskugel (Orb) — J-Thrust Style mit leuchtendem Gold-Rand ---
+  // --- Glasskugel (Orb) — transparent/gläsern mit J-Thrust Gold-Rand ---
   ctx.save();
   const _orbR = orbSize / 2;
   const _orbGlow = _glowMob;
 
-  // 1. Äußerer Glow (goldener Schein nach außen, wie J-Thrust)
-  const glowOuter = _orbR * 1.6;
-  const gg = ctx.createRadialGradient(orbCx, orbCy, _orbR * 0.5, orbCx, orbCy, glowOuter);
-  gg.addColorStop(0, `rgba(253,210,80,${0.35 * _orbGlow})`);
-  gg.addColorStop(0.4, `rgba(253,190,60,${0.2 * _orbGlow})`);
-  gg.addColorStop(0.7, `rgba(253,170,40,${0.08 * _orbGlow})`);
-  gg.addColorStop(1, 'rgba(253,170,40,0)');
-  ctx.beginPath(); ctx.arc(orbCx, orbCy, glowOuter, 0, Math.PI * 2);
-  ctx.fillStyle = gg; ctx.fill();
-
-  // 2. Ball-Body (3D-Gradient: dunkel innen oben-links → gold am Rand)
-  const ballG = ctx.createRadialGradient(orbCx - _orbR * 0.3, orbCy - _orbR * 0.3, _orbR * 0.1, orbCx, orbCy, _orbR);
-  ballG.addColorStop(0, 'rgba(80,56,16,0.5)');
-  ballG.addColorStop(0.5, 'rgba(140,100,30,0.4)');
-  ballG.addColorStop(0.8, 'rgba(200,160,50,0.5)');
-  ballG.addColorStop(1, `rgba(253,210,80,${0.4 + 0.3 * _orbGlow})`);
+  // 1. Gläserner Body (transparent, wie die echte M-Sphere Kugel)
+  const orbGrad = ctx.createRadialGradient(orbCx - _orbR * 0.3, orbCy - _orbR * 0.3, 0, orbCx, orbCy, _orbR);
+  orbGrad.addColorStop(0, 'rgba(255,255,255,0.15)');
+  orbGrad.addColorStop(0.3, 'rgba(93,232,232,0.06)');
+  orbGrad.addColorStop(0.6, 'rgba(37,162,162,0.04)');
+  orbGrad.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.beginPath(); ctx.arc(orbCx, orbCy, _orbR, 0, Math.PI * 2);
-  ctx.fillStyle = ballG; ctx.fill();
+  ctx.fillStyle = orbGrad; ctx.fill();
 
-  // 3. Leuchtender Rim-Ring (der Signature-Effekt aus J-Thrust)
-  ctx.shadowColor = `rgba(253,230,140,${0.6 * _orbGlow})`;
-  ctx.shadowBlur = 15 * _orbGlow;
-  ctx.strokeStyle = `rgba(253,230,140,${0.8 * _orbGlow})`;
+  // 2. Leuchtender Gold-Rand (J-Thrust Rim-Ring)
+  ctx.shadowColor = `rgba(253,230,140,${0.7 * _orbGlow})`;
+  ctx.shadowBlur = 18 * _orbGlow;
+  ctx.strokeStyle = `rgba(253,230,140,${0.85 * _orbGlow})`;
   ctx.lineWidth = 1.5 + _orbGlow;
-  ctx.beginPath(); ctx.arc(orbCx, orbCy, _orbR + 1, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(orbCx, orbCy, _orbR, 0, Math.PI * 2); ctx.stroke();
   ctx.shadowBlur = 0;
 
-  // 4. Specular Highlight (weißer Glanzpunkt oben-links)
+  // 3. Specular Highlight (weißer Glanzpunkt oben-links)
   ctx.beginPath();
-  ctx.ellipse(orbCx - _orbR * 0.25, orbCy - _orbR * 0.25, _orbR * 0.2, _orbR * 0.12, -0.3, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255,240,200,0.5)';
+  ctx.ellipse(orbCx - _orbR * 0.25, orbCy - _orbR * 0.25, _orbR * 0.18, _orbR * 0.1, -0.3, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
   ctx.fill();
   ctx.restore();
 
