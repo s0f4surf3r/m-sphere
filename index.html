@@ -5909,8 +5909,19 @@ function ensureSound() {
   if (!soundEnabled) return; // Sound-Toggle aus → nichts tun
   if (!soundInitialized) {
     initSound();
-  } else if (audioCtx && audioCtx.state !== 'running') {
+  }
+  // Aggressiver iOS-Unlock: bei JEDEM User-Gesture resume + stiller Buffer
+  // WebKit Bug #206695: AudioContext kann jederzeit in "interrupted" fallen
+  if (audioCtx && audioCtx.state !== 'running') {
     audioCtx.resume().catch(() => {});
+    // Stiller Buffer als zusätzlicher Unlock-Trick (manche iOS-Versionen brauchen das)
+    try {
+      const _ub = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
+      const _us = audioCtx.createBufferSource();
+      _us.buffer = _ub;
+      _us.connect(audioCtx.destination);
+      _us.start(0);
+    } catch(e) {}
   }
 }
 // Auf alle Interaktionen reagieren (Browser erlaubt resume() nur in User-Gesture-Callbacks)
