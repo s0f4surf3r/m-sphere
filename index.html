@@ -2824,10 +2824,10 @@ function drawMenu() {
   const totalW = preW + orbSpacing + orbSize + orbSpacing + postW;
   const _wmStartX = cx - totalW / 2;
   const orbCx = _wmStartX + preW + orbSpacing + orbSize / 2;
-  // Kugel vertikal exakt auf Caps-Mitte: actualBoundingBoxAscent = Oberkante der Großbuchstaben
-  const _capMetrics = ctx.measureText('M');
-  const _capAscent = _capMetrics.actualBoundingBoxAscent || titleSize * 0.72;
-  const orbCy = curY + _capAscent / 2;
+  // Kugel vertikal auf Caps-Mitte: textBaseline='top' → curY ist Oberkante der Ascender
+  // Capital-Height bei SF Pro 900 ≈ 70% der fontSize, Mitte davon = 35%
+  // Plus kleiner Offset weil textBaseline:'top' den Ascender-Raum einschließt (~10% padding)
+  const orbCy = curY + titleSize * 0.47;
 
   const _glowMob = isMobilePortrait ? 0.5 : 1.0;
   const _bloomI = 0.83; // Bloom-Intensität (Kalibrierung 2: 25/30)
