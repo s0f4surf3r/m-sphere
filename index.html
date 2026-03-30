@@ -2839,7 +2839,7 @@ function drawMenu() {
   const orbCy = curY + titleSize * 0.65;
 
   const _glowMob = isMobilePortrait ? 0.5 : 1.0;
-  const _bloomI = 0.83; // Bloom-Intensität (Kalibrierung 2: 25/30)
+  const _bloomI = (window._devParticles && window._devParticles.bloomI !== undefined) ? window._devParticles.bloomI : 0.83;
   const _creamRGB = '250,230,230';
 
   const _postX = _wmStartX + preW + orbSpacing * 2 + orbSize;
@@ -2893,17 +2893,15 @@ function drawMenu() {
   ctx.beginPath(); ctx.arc(orbCx, orbCy, _orbR, 0, Math.PI * 2);
   ctx.fillStyle = orbGrad; ctx.fill();
 
-  // 2. Leuchtender Gold-Rand (J-Thrust Rim-Ring — kräftig)
-  ctx.shadowColor = `rgba(253,220,100,${0.8 * _orbGlow})`;
-  ctx.shadowBlur = 22 * _orbGlow;
-  ctx.strokeStyle = `rgba(253,230,140,${0.9 * _orbGlow})`;
-  ctx.lineWidth = 2 + _orbGlow;
+  // 2. Leuchtender Gold-Rand — steuerbar via Dev-Panel
+  const _dOrbGlow = (_dp.orbGlow !== undefined ? _dp.orbGlow : 22);
+  const _dOrbWidth = (_dp.orbWidth !== undefined ? _dp.orbWidth : 2.0);
+  const _dOrbAlpha = (_dp.orbAlpha !== undefined ? _dp.orbAlpha : 0.9);
+  ctx.shadowColor = `rgba(253,220,100,${0.8 * _dOrbAlpha * _orbGlow})`;
+  ctx.shadowBlur = _dOrbGlow * _orbGlow;
+  ctx.strokeStyle = `rgba(253,230,140,${_dOrbAlpha * _orbGlow})`;
+  ctx.lineWidth = _dOrbWidth + _orbGlow;
   ctx.beginPath(); ctx.arc(orbCx, orbCy, _orbR, 0, Math.PI * 2); ctx.stroke();
-  // Zweiter dünnerer Ring für mehr Intensität
-  ctx.shadowBlur = 8 * _orbGlow;
-  ctx.strokeStyle = `rgba(255,240,180,${0.5 * _orbGlow})`;
-  ctx.lineWidth = 0.5;
-  ctx.beginPath(); ctx.arc(orbCx, orbCy, _orbR - 2, 0, Math.PI * 2); ctx.stroke();
   ctx.shadowBlur = 0;
   ctx.restore();
 
@@ -2919,20 +2917,24 @@ function drawMenu() {
   const _pAlpha = _dp.alpha || 1.0;
   for (let pi = 0; pi < _pCount; pi++) {
     const seed = pi * 137.508 + 42;
-    const baseAngle = -Math.PI / 2 + (seed * 2.39996 % 1 - 0.5) * Math.PI * _pSpread;
+    const _dirUp = _dp.dirUp || 1.0;
+    const baseAngle = -Math.PI / 2 * _dirUp + (seed * 2.39996 % 1 - 0.5) * Math.PI * _pSpread;
     const speed = _pSpeedBase + ((seed * 7.3) % 1) * _pSpeedBase * 1.3;
     const dist = ((_now * speed * 0.02 + seed * 13) % _wmMaxDist);
-    const waber = (Math.sin(_now * 0.0006 + seed * 3.7) * (4 + dist * 0.08)
-                + Math.sin(_now * 0.002 + seed * 1.1) * 2) * _pWaber;
+    const _wSpeed = _dp.waberSpeed || 1.0;
+    const waber = (Math.sin(_now * 0.0006 * _wSpeed + seed * 3.7) * (4 + dist * 0.08)
+                + Math.sin(_now * 0.002 * _wSpeed + seed * 1.1) * 2) * _pWaber;
     const perpA = baseAngle + Math.PI / 2;
     const px = orbCx + Math.cos(baseAngle) * dist + Math.cos(perpA) * waber;
     const py = orbCy + Math.sin(baseAngle) * dist + Math.sin(perpA) * waber;
-    const pLife = Math.pow(1 - dist / _wmMaxDist, 1.5);
+    const _fadeExp = _dp.fadeExp || 1.5;
+    const pLife = Math.pow(1 - dist / _wmMaxDist, _fadeExp);
     if (pLife <= 0.03) continue;
     const _neonColor = NEON_COLORS[Math.floor((seed * 3.1) % NEON_COLORS.length)];
     const sprite = particleSpriteMap.get(_neonColor);
+    const _glowSz = _dp.glowSize || 3.0;
     const ps = (1 + ((seed * 5.7) % 2)) * pLife * _pSize;
-    const glowR = ps * 3;
+    const glowR = ps * _glowSz;
     ctx.globalAlpha = pLife * pLife * 0.25 * _glowMob * _pAlpha;
     if (sprite) ctx.drawImage(sprite, px - glowR, py - glowR, glowR * 2, glowR * 2);
     const [_pr, _pg, _pb] = hexToRgb(_neonColor);
@@ -7807,40 +7809,75 @@ frame();
 <script>
 // Dev-Panel für Partikel-Tuning (nur mit ?dev=1 sichtbar)
 if (new URLSearchParams(location.search).has('dev')) {
-  window._devParticles = { count: 10, speed: 0.3, reach: 2.5, spread: 0.8, waber: 1.0, size: 1.0, alpha: 1.0 };
+  window._devParticles = { count: 10, speed: 0.3, reach: 2.5, spread: 0.8, waber: 1.0, waberSpeed: 1.0, size: 1.0, alpha: 1.0, glowSize: 3.0, fadeExp: 1.5, dirUp: 1.0, orbGlow: 22, orbWidth: 2.0, orbAlpha: 0.9, bloomI: 0.83 };
   const dp = document.createElement('div');
-  dp.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:rgba(0,0,0,0.92);padding:10px 16px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;font:12px -apple-system,sans-serif;color:#8098b8;border-bottom:1px solid #1e3232;backdrop-filter:blur(10px)';
-  const params = [
-    { key: 'count', label: 'Anzahl', min: 1, max: 30, step: 1, val: 10 },
-    { key: 'speed', label: 'Speed', min: 0.05, max: 2, step: 0.05, val: 0.3 },
-    { key: 'reach', label: 'Reichweite', min: 0.5, max: 5, step: 0.1, val: 2.5 },
-    { key: 'spread', label: 'Streuung', min: 0.1, max: 2, step: 0.05, val: 0.8 },
-    { key: 'waber', label: 'Wabern', min: 0, max: 4, step: 0.1, val: 1.0 },
-    { key: 'size', label: 'Größe', min: 0.2, max: 3, step: 0.1, val: 1.0 },
-    { key: 'alpha', label: 'Alpha', min: 0.1, max: 2, step: 0.1, val: 1.0 },
+  dp.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;font:13px -apple-system,sans-serif;color:#f4f6ff';
+  const inner = document.createElement('div');
+  inner.style.cssText = 'background:#0e1320;border:1px solid #1e3232;border-radius:12px;padding:2rem;width:480px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;gap:1rem';
+  inner.innerHTML = '<div style="font-size:1rem;font-weight:600;letter-spacing:2px;color:#25a2a2;text-transform:uppercase;margin-bottom:0.5rem">Partikel & Orb Tuning</div>';
+  const sections = [
+    { title: 'GEDANKEN-PARTIKEL', params: [
+      { key: 'count', label: 'Anzahl', min: 0, max: 40, step: 1, val: 10 },
+      { key: 'speed', label: 'Geschwindigkeit', min: 0.01, max: 3, step: 0.01, val: 0.3 },
+      { key: 'reach', label: 'Reichweite', min: 0.5, max: 8, step: 0.1, val: 2.5 },
+      { key: 'spread', label: 'Streuung (Winkel)', min: 0, max: 3, step: 0.05, val: 0.8 },
+      { key: 'dirUp', label: 'Richtung ↑ (1=oben, 0=alle)', min: 0, max: 1, step: 0.05, val: 1.0 },
+      { key: 'waber', label: 'Waber-Intensität', min: 0, max: 6, step: 0.1, val: 1.0 },
+      { key: 'waberSpeed', label: 'Waber-Tempo', min: 0.1, max: 5, step: 0.1, val: 1.0 },
+      { key: 'size', label: 'Partikel-Größe', min: 0.1, max: 5, step: 0.1, val: 1.0 },
+      { key: 'glowSize', label: 'Glow-Radius', min: 0.5, max: 8, step: 0.1, val: 3.0 },
+      { key: 'alpha', label: 'Helligkeit', min: 0.05, max: 3, step: 0.05, val: 1.0 },
+      { key: 'fadeExp', label: 'Auflösungs-Kurve', min: 0.3, max: 4, step: 0.1, val: 1.5 },
+    ]},
+    { title: 'ORB (KUGEL)', params: [
+      { key: 'orbGlow', label: 'Rand-Glow', min: 0, max: 50, step: 1, val: 22 },
+      { key: 'orbWidth', label: 'Rand-Dicke', min: 0.5, max: 6, step: 0.1, val: 2.0 },
+      { key: 'orbAlpha', label: 'Rand-Helligkeit', min: 0.1, max: 1, step: 0.05, val: 0.9 },
+    ]},
+    { title: 'BLOOM (TEXT)', params: [
+      { key: 'bloomI', label: 'Bloom-Intensität', min: 0, max: 2, step: 0.05, val: 0.83 },
+    ]},
   ];
-  params.forEach(p => {
-    const l = document.createElement('label');
-    l.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:11px;color:#8098b8;text-transform:uppercase;letter-spacing:1px';
-    l.textContent = p.label;
-    const inp = document.createElement('input');
-    inp.type = 'range'; inp.min = p.min; inp.max = p.max; inp.step = p.step; inp.value = p.val;
-    inp.style.cssText = 'width:70px;accent-color:#25a2a2';
-    const v = document.createElement('span');
-    v.style.cssText = 'color:#25a2a2;min-width:2.5em;font-variant-numeric:tabular-nums';
-    v.textContent = p.val;
-    inp.oninput = () => { window._devParticles[p.key] = +inp.value; v.textContent = inp.value; };
-    l.appendChild(inp); l.appendChild(v); dp.appendChild(l);
+  sections.forEach(sec => {
+    const secDiv = document.createElement('div');
+    secDiv.innerHTML = `<div style="font-size:0.7rem;color:#505c80;letter-spacing:2px;margin-bottom:0.5rem;border-bottom:1px solid #1e3232;padding-bottom:0.3rem">${sec.title}</div>`;
+    sec.params.forEach(p => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:0.8rem;margin-bottom:0.4rem';
+      const lbl = document.createElement('span');
+      lbl.style.cssText = 'font-size:0.75rem;color:#8098b8;width:140px;flex-shrink:0';
+      lbl.textContent = p.label;
+      const inp = document.createElement('input');
+      inp.type = 'range'; inp.min = p.min; inp.max = p.max; inp.step = p.step; inp.value = p.val;
+      inp.style.cssText = 'flex:1;accent-color:#25a2a2;height:4px';
+      const v = document.createElement('span');
+      v.style.cssText = 'color:#25a2a2;min-width:3em;text-align:right;font-size:0.75rem;font-variant-numeric:tabular-nums';
+      v.textContent = p.val;
+      inp.oninput = () => { window._devParticles[p.key] = +inp.value; v.textContent = inp.value; };
+      row.appendChild(lbl); row.appendChild(inp); row.appendChild(v);
+      secDiv.appendChild(row);
+    });
+    inner.appendChild(secDiv);
   });
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:0.8rem;margin-top:0.5rem';
   const copyBtn = document.createElement('button');
   copyBtn.textContent = 'CONFIG KOPIEREN';
-  copyBtn.style.cssText = 'background:#0e1320;border:1px solid #3e5080;color:#8098b8;border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;letter-spacing:1px';
+  copyBtn.style.cssText = 'flex:1;background:#25a2a2;border:none;color:#0a0e1a;border-radius:6px;padding:10px;font-size:0.8rem;font-weight:600;cursor:pointer;letter-spacing:1px';
   copyBtn.onclick = () => {
     const cfg = JSON.stringify(window._devParticles);
-    navigator.clipboard.writeText(cfg).then(() => { copyBtn.textContent = 'KOPIERT!'; setTimeout(() => copyBtn.textContent = 'CONFIG KOPIEREN', 2000); });
+    navigator.clipboard.writeText(cfg).then(() => { copyBtn.textContent = 'KOPIERT!'; copyBtn.style.background = '#edd457'; setTimeout(() => { copyBtn.textContent = 'CONFIG KOPIEREN'; copyBtn.style.background = '#25a2a2'; }, 2000); });
   };
-  dp.appendChild(copyBtn);
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'SCHLIESSEN';
+  closeBtn.style.cssText = 'background:none;border:1px solid #3e5080;color:#8098b8;border-radius:6px;padding:10px 20px;font-size:0.8rem;cursor:pointer;letter-spacing:1px';
+  closeBtn.onclick = () => { dp.style.display = 'none'; };
+  btnRow.appendChild(copyBtn); btnRow.appendChild(closeBtn);
+  inner.appendChild(btnRow);
+  dp.appendChild(inner);
   document.body.appendChild(dp);
+  // Wieder öffnen mit Taste D
+  document.addEventListener('keydown', e => { if (e.key === 'd' && !e.metaKey && !e.ctrlKey && e.target === document.body) dp.style.display = dp.style.display === 'none' ? 'flex' : 'none'; });
 }
 </script>
 <script data-goatcounter="https://msphere.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
