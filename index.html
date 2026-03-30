@@ -7821,9 +7821,9 @@ frame();
 if (new URLSearchParams(location.search).has('dev')) {
   window._devParticles = { count: 12, speed: 0.15, reach: 3.0, spread: 0.8, waber: 1.5, waberSpeed: 0.6, size: 1.2, alpha: 1.0, glowSize: 3.5, fadeExp: 2.0, dirUp: 0, orbGlow: 22, orbWidth: 2.0, orbAlpha: 0.9, bloomI: 0.83 };
   const dp = document.createElement('div');
-  dp.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;font:13px -apple-system,sans-serif;color:#f4f6ff';
+  dp.style.cssText = 'position:fixed;right:0;top:0;bottom:0;z-index:9999;width:320px;background:rgba(10,14,26,0.95);backdrop-filter:blur(12px);border-left:1px solid #1e3232;overflow-y:auto;font:13px -apple-system,sans-serif;color:#f4f6ff';
   const inner = document.createElement('div');
-  inner.style.cssText = 'background:#0e1320;border:1px solid #1e3232;border-radius:12px;padding:2rem;width:480px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;gap:1rem';
+  inner.style.cssText = 'padding:1.2rem;display:flex;flex-direction:column;gap:0.8rem';
   inner.innerHTML = '<div style="font-size:1rem;font-weight:600;letter-spacing:2px;color:#25a2a2;text-transform:uppercase;margin-bottom:0.5rem">Partikel & Orb Tuning</div>';
   const sections = [
     { title: 'GEDANKEN-PARTIKEL', params: [
