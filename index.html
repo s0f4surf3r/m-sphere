@@ -2807,65 +2807,192 @@ function drawMenu() {
 
 
 
-  // --- Titel: M-SPHERE mit ZPMA-Glow ---
-  const titleText = 'M-SPHERE';
-  ctx.textAlign = 'center';
+  // --- Titel: M-SPHERE Wordmark mit Bloom, Orb, Partikeln, Sternen ---
+  const titlePre = 'M';
+  const titlePost = 'SPHERE';
+  ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   ctx.font = `900 ${titleSize}px -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif`;
   ctx.letterSpacing = `${-titleSize * 0.02}px`;
 
-  // Glow Layer 1: breiter Teal-Schein (gedämpft auf Mobile)
+  // Messen für Zentrierung
+  const orbSize = titleSize * 0.45;
+  const orbSpacing = titleSize * 0.12;
+  const preW = ctx.measureText(titlePre).width;
+  const postW = ctx.measureText(titlePost).width;
+  const totalW = preW + orbSpacing + orbSize + orbSpacing + postW;
+  const _wmStartX = cx - totalW / 2;
+  const orbCx = _wmStartX + preW + orbSpacing + orbSize / 2;
+  const orbCy = curY + titleSize * 0.42; // visuelles Zentrum der Caps (nicht Font-Mitte)
+
   const _glowMob = isMobilePortrait ? 0.5 : 1.0;
-  ctx.shadowColor = `rgba(37, 162, 162, ${0.4 * _glowMob})`;
-  ctx.shadowBlur = 60 * _glowMob;
-  ctx.fillStyle = `rgba(37, 162, 162, ${0.2 * _glowMob})`;
-  ctx.fillText(titleText, cx, curY);
+  const _bloomI = 0.83; // Bloom-Intensität (Kalibrierung 2: 25/30)
+  const _creamRGB = '250,230,230';
 
-  // Glow Layer 2: mittlerer Teal-Schein
-  ctx.shadowColor = `rgba(37, 162, 162, ${0.6 * _glowMob})`;
-  ctx.shadowBlur = 25 * _glowMob;
-  ctx.fillStyle = `rgba(37, 162, 162, ${0.3 * _glowMob})`;
-  ctx.fillText(titleText, cx, curY);
+  const _postX = _wmStartX + preW + orbSpacing * 2 + orbSize;
 
-  // Layer 3: Haupttext (auf Mobile dezenter)
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+  // --- Bloom Layer 1: Teal-Ambient (weitester Schein) ---
+  ctx.shadowColor = `rgba(37,162,162,${0.06 * _bloomI * _glowMob})`;
+  ctx.shadowBlur = 80 * _glowMob;
+  ctx.fillStyle = `rgba(37,162,162,${0.06 * _bloomI * _glowMob})`;
+  ctx.fillText(titlePre, _wmStartX, curY);
+  ctx.fillText(titlePost, _postX, curY);
+
+  // --- Bloom Layer 2: Outer ---
+  ctx.shadowColor = `rgba(${_creamRGB},${0.12 * _bloomI * _glowMob})`;
+  ctx.shadowBlur = 50 * _glowMob;
+  ctx.fillStyle = `rgba(${_creamRGB},${0.12 * _bloomI * _glowMob})`;
+  ctx.fillText(titlePre, _wmStartX, curY);
+  ctx.fillText(titlePost, _postX, curY);
+
+  // --- Bloom Layer 3: Mid ---
+  ctx.shadowColor = `rgba(${_creamRGB},${0.3 * _bloomI * _glowMob})`;
+  ctx.shadowBlur = 18 * _glowMob;
+  ctx.fillStyle = `rgba(${_creamRGB},${0.3 * _bloomI * _glowMob})`;
+  ctx.fillText(titlePre, _wmStartX, curY);
+  ctx.fillText(titlePost, _postX, curY);
+
+  // --- Bloom Layer 4: Inner ---
+  ctx.shadowColor = `rgba(${_creamRGB},${0.5 * _bloomI * _glowMob})`;
+  ctx.shadowBlur = 6 * _glowMob;
+  ctx.fillStyle = `rgba(${_creamRGB},${0.5 * _bloomI * _glowMob})`;
+  ctx.fillText(titlePre, _wmStartX, curY);
+  ctx.fillText(titlePost, _postX, curY);
+
+  // --- Layer 5: Haupttext ---
+  ctx.shadowColor = 'rgba(0,0,0,0.4)';
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 2;
-  ctx.fillStyle = isMobilePortrait ? 'rgba(250, 230, 230, 0.75)' : '#fae6e6';
-  ctx.fillText(titleText, cx, curY);
+  ctx.fillStyle = isMobilePortrait ? 'rgba(250,230,230,0.75)' : '#fae6e6';
+  ctx.fillText(titlePre, _wmStartX, curY);
+  ctx.fillText(titlePost, _postX, curY);
   ctx.shadowOffsetY = 0;
+
+  // --- Glasskugel (Orb) als Bindestrich ---
+  ctx.save();
+  // Gold-Glow
+  ctx.shadowColor = `rgba(237,212,87,${0.3 * _glowMob})`;
+  ctx.shadowBlur = 20 * _glowMob;
+  // Glasskugel-Body
+  const orbGrad = ctx.createRadialGradient(orbCx - orbSize * 0.15, orbCy - orbSize * 0.15, 0, orbCx, orbCy, orbSize / 2);
+  orbGrad.addColorStop(0, 'rgba(255,255,255,0.25)');
+  orbGrad.addColorStop(0.2, 'rgba(237,212,87,0.10)');
+  orbGrad.addColorStop(0.4, 'rgba(93,232,232,0.08)');
+  orbGrad.addColorStop(0.7, 'rgba(37,162,162,0.05)');
+  orbGrad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(orbCx, orbCy, orbSize / 2, 0, Math.PI * 2);
+  ctx.fillStyle = orbGrad;
+  ctx.fill();
+  // Orb-Rand
+  ctx.strokeStyle = 'rgba(237,212,87,0.2)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
   ctx.shadowBlur = 0;
-  // Messen VOR letterSpacing-Reset (damit Breite zum gerenderten Titel passt)
-  const titleMetrics = ctx.measureText(titleText);
-  const titleW = titleMetrics.width;
+  // Highlight-Reflex
+  ctx.beginPath();
+  ctx.ellipse(orbCx - orbSize * 0.12, orbCy - orbSize * 0.12, orbSize * 0.15, orbSize * 0.10, -0.3, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.fill();
+  ctx.restore();
+
+  // --- Wabernde Partikel aus der Kugel ---
+  const _now = Date.now();
+  const _pCount = isMobilePortrait ? 12 : 20;
+  for (let pi = 0; pi < _pCount; pi++) {
+    const seed = pi * 137.508;
+    const angle = (pi / _pCount) * Math.PI * 2 + seed * 0.01;
+    const speed = 0.15 + (pi % 5) * 0.05;
+    const dist = ((_now * speed * 0.01 + seed * 10) % 100);
+    const wFreq = 0.8 + (pi % 4) * 0.4;
+    const waber = Math.sin(_now * 0.002 * wFreq + seed) * (5 + dist * 0.15);
+    const perpA = angle + Math.PI / 2;
+    const px = orbCx + Math.cos(angle) * dist + Math.cos(perpA) * waber;
+    const py = orbCy + Math.sin(angle) * dist + Math.sin(perpA) * waber;
+    const pLife = 1 - dist / 100;
+    if (pLife <= 0) continue;
+    const neonHues = [174, 48, 0, 190, 310, 140, 30];
+    const ph = neonHues[pi % 7] + (Math.sin(seed) * 10);
+    const pAlpha = pLife * 0.6 * _glowMob;
+    const pSize = (1.5 + (pi % 3)) * (0.5 + pLife * 0.5);
+    // Outer glow
+    ctx.beginPath(); ctx.arc(px, py, pSize * 3, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${ph},80%,55%,${pAlpha * 0.1})`; ctx.fill();
+    // Core
+    ctx.beginPath(); ctx.arc(px, py, pSize, 0, Math.PI * 2);
+    ctx.fillStyle = `hsla(${ph},80%,65%,${pAlpha})`; ctx.fill();
+  }
+
+  // --- Rotierende Sterne um den Titel ---
+  const _starColors = [[37,162,162],[237,212,87],[237,112,112],[200,180,255],[93,232,232],[250,230,230]];
+  const _starSizes = [2.5, 4, 3, 5, 2.5, 4.5, 3, 3.5];
+  for (let si = 0; si < 8; si++) {
+    const seed = si * 137.508;
+    const orbitSpeed = 0.00008 + (si % 4) * 0.00004;
+    const orbitRx = totalW * 0.4 + (si % 5) * 15;
+    const orbitRy = titleSize * 0.5 + (si % 4) * 10;
+    const sAngle = _now * orbitSpeed + seed;
+    const sx = cx + Math.cos(sAngle) * orbitRx + Math.sin(sAngle * 1.3 + seed) * 8;
+    const sy = orbCy + Math.sin(sAngle) * orbitRy + Math.cos(sAngle * 0.9 + seed) * 6;
+    const sAlpha = (0.3 + Math.sin(_now * 0.001 + seed) * 0.15) * _glowMob;
+    const sSize = _starSizes[si] + Math.sin(_now * 0.0008 + seed) * 1;
+    const sRot = _now * 0.0002 + si * 0.9;
+    const sc = _starColors[si % _starColors.length];
+    ctx.save();
+    ctx.globalAlpha = sAlpha;
+    ctx.fillStyle = `rgba(${sc[0]},${sc[1]},${sc[2]},${sAlpha})`;
+    ctx.shadowColor = `rgba(${sc[0]},${sc[1]},${sc[2]},${sAlpha * 0.5})`;
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    for (let z = 0; z < 10; z++) {
+      const a = sRot + z * Math.PI / 5;
+      const rr = z % 2 === 0 ? sSize : sSize * 0.4;
+      const spx = sx + Math.cos(a) * rr;
+      const spy = sy + Math.sin(a) * rr;
+      z === 0 ? ctx.moveTo(spx, spy) : ctx.lineTo(spx, spy);
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  // Titel-Metriken für Layout (kompatibel mit bestehendem Code)
+  ctx.textAlign = 'center';
+  ctx.font = `900 ${titleSize}px -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif`;
+  ctx.letterSpacing = `${-titleSize * 0.02}px`;
+  const titleMetrics = ctx.measureText('M-SPHERE');
+  const titleW = totalW;
   const titleLeftX = cx - titleW / 2;
   const titleRightX = cx + titleW / 2;
   ctx.letterSpacing = '0px';
   const actualTitleH = titleMetrics.actualBoundingBoxDescent || titleSize;
-  // Titel-Hit-Area für Easter Egg (Triple-Tap / Long-Press)
   menuButtons.title = { x: cx - titleW / 2, y: curY, w: titleW, h: actualTitleH };
 
-  // Easter Egg Badge-Position merken (Rendering am Ende, über allem)
   const eeTitleCurY = curY;
   const eeActualTitleH = actualTitleH;
 
   curY += actualTitleH + (isMobilePortrait ? layoutGap * 0.3 : unit * 0.015 * vScale);
 
-  // Untertitel — auf Mobile gleich breit wie Titel
-  ctx.fillStyle = isMobilePortrait ? 'rgba(37, 162, 162, 1.0)' : 'rgba(37, 162, 162, 0.55)';
+  // --- Untertitel mit Bloom ---
   let stSize = subtitleSize;
   const stSpacing = isMobilePortrait ? '3px' : '8px';
   if (isMobilePortrait) {
-    // Subtitle-Größe so skalieren, dass Breite ≈ titleW
     ctx.font = `400 ${stSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
     ctx.letterSpacing = stSpacing;
     const measuredW = ctx.measureText(t('subtitle')).width;
     if (measuredW > 0) stSize = stSize * (titleW / measuredW);
   }
+  ctx.textAlign = 'center';
   ctx.font = `400 ${stSize}px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif`;
-  ctx.shadowColor = 'rgba(37, 162, 162, 0.4)';
-  ctx.shadowBlur = 12;
   ctx.letterSpacing = stSpacing;
+  // Bloom auf Subtitle
+  ctx.shadowColor = `rgba(37,162,162,${0.3 * _glowMob})`;
+  ctx.shadowBlur = 25 * _glowMob;
+  ctx.fillStyle = `rgba(37,162,162,${0.15 * _glowMob})`;
+  ctx.fillText(t('subtitle'), cx, curY);
+  ctx.shadowColor = `rgba(37,162,162,${0.5 * _glowMob})`;
+  ctx.shadowBlur = 8 * _glowMob;
+  ctx.fillStyle = isMobilePortrait ? 'rgba(37,162,162,1.0)' : 'rgba(37,162,162,0.55)';
   ctx.fillText(t('subtitle'), cx, curY);
   ctx.letterSpacing = '0px';
   ctx.shadowBlur = 0;
