@@ -2795,13 +2795,16 @@ function drawMenu() {
   } else {
     sectionGap = unit * 0.025 * 0.7 * vScale;
     layoutGap = sectionGap;
-    // Desktop: Content vertikal zentrieren — Header-Höhe abziehen, Rest halbieren
-    const _headerH = unit * 0.08;
-    const _footerH = unit * 0.08;
-    const _availH = H - _headerH - _footerH;
-    // Content-Höhe: alles aufaddiert (collapsed settings)
-    const _contentH = titleSize + subtitleSize * 2.5 + btnH * 2.8 + rowFont * 2 * 5 + sectionGap * 4 + rowFont * 3;
-    curY = _headerH + Math.max(0, (_availH - _contentH) / 2);
+    // Desktop: Content vertikal zentrieren
+    // Header = Lang-Toggle + Sound-Icon, Footer = Spüra-Icon + Lotus
+    const _headerH = unit * 0.07;
+    const _footerH = unit * 0.1;
+    // Content: Titel + Sub + Gap + Dial + 5×Row + StartBtn (alles collapsed)
+    const _dialH = btnH * 2.5;
+    const _rowH = rowFont * 2.2;
+    const _startBtnH = rowFont * 1.3 * 2.5;
+    const _contentH = titleSize * 1.1 + subtitleSize * 1.8 + _dialH + _rowH * 5 + sectionGap * 8 + _startBtnH;
+    curY = _headerH + Math.max(0, (H - _headerH - _footerH - _contentH) * 0.45);
   }
 
   // Native Scrolling: Gesamten Menü-Inhalt um scrollY nach oben verschieben
