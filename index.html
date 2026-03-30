@@ -2881,70 +2881,61 @@ function drawMenu() {
   ctx.fillText(titlePost, _postX, curY);
   ctx.shadowOffsetY = 0;
 
-  // --- Glasskugel (Orb) — transparent/gläsern mit J-Thrust Gold-Rand ---
+  // --- Glasskugel (Orb) — durchsichtig mit leuchtendem Gold-Rand ---
   ctx.save();
   const _orbR = orbSize / 2;
   const _orbGlow = _glowMob;
 
-  // 1. Gläserner Body (transparent, wie die echte M-Sphere Kugel)
-  const orbGrad = ctx.createRadialGradient(orbCx - _orbR * 0.3, orbCy - _orbR * 0.3, 0, orbCx, orbCy, _orbR);
-  orbGrad.addColorStop(0, 'rgba(255,255,255,0.15)');
-  orbGrad.addColorStop(0.3, 'rgba(93,232,232,0.06)');
-  orbGrad.addColorStop(0.6, 'rgba(37,162,162,0.04)');
+  // 1. Nur ein hauchzarter Tint innen (fast unsichtbar)
+  const orbGrad = ctx.createRadialGradient(orbCx, orbCy, _orbR * 0.2, orbCx, orbCy, _orbR);
+  orbGrad.addColorStop(0, 'rgba(37,162,162,0.04)');
   orbGrad.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.beginPath(); ctx.arc(orbCx, orbCy, _orbR, 0, Math.PI * 2);
   ctx.fillStyle = orbGrad; ctx.fill();
 
-  // 2. Leuchtender Gold-Rand (J-Thrust Rim-Ring)
-  ctx.shadowColor = `rgba(253,230,140,${0.7 * _orbGlow})`;
-  ctx.shadowBlur = 18 * _orbGlow;
-  ctx.strokeStyle = `rgba(253,230,140,${0.85 * _orbGlow})`;
-  ctx.lineWidth = 1.5 + _orbGlow;
+  // 2. Leuchtender Gold-Rand (J-Thrust Rim-Ring — kräftig)
+  ctx.shadowColor = `rgba(253,220,100,${0.8 * _orbGlow})`;
+  ctx.shadowBlur = 22 * _orbGlow;
+  ctx.strokeStyle = `rgba(253,230,140,${0.9 * _orbGlow})`;
+  ctx.lineWidth = 2 + _orbGlow;
   ctx.beginPath(); ctx.arc(orbCx, orbCy, _orbR, 0, Math.PI * 2); ctx.stroke();
+  // Zweiter dünnerer Ring für mehr Intensität
+  ctx.shadowBlur = 8 * _orbGlow;
+  ctx.strokeStyle = `rgba(255,240,180,${0.5 * _orbGlow})`;
+  ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.arc(orbCx, orbCy, _orbR - 2, 0, Math.PI * 2); ctx.stroke();
   ctx.shadowBlur = 0;
-
-  // 3. Specular Highlight (weißer Glanzpunkt oben-links)
-  ctx.beginPath();
-  ctx.ellipse(orbCx - _orbR * 0.25, orbCy - _orbR * 0.25, _orbR * 0.18, _orbR * 0.1, -0.3, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255,255,255,0.35)';
-  ctx.fill();
   ctx.restore();
 
-  // --- Wabernde Gedanken-Partikel aus der Kugel (echte App-Farben + Sprites) ---
+  // --- Gedanken-Partikel aus der Kugel (chaotisch, wie echte App-Partikel) ---
   const _now = Date.now();
-  const _pCount = isMobilePortrait ? 10 : 18;
-  const _wmMaxDist = orbSize * 2.5;
+  const _pCount = isMobilePortrait ? 8 : 14;
+  const _wmMaxDist = orbSize * 2;
   for (let pi = 0; pi < _pCount; pi++) {
-    const seed = pi * 137.508;
-    const angle = (pi / _pCount) * Math.PI * 2 + seed * 0.01;
-    const speed = 0.12 + (pi % 5) * 0.04;
-    const dist = ((_now * speed * 0.008 + seed * 10) % _wmMaxDist);
-    const wFreq = 0.6 + (pi % 4) * 0.3;
-    const waber = Math.sin(_now * 0.0015 * wFreq + seed) * (3 + dist * 0.12);
-    const perpA = angle + Math.PI / 2;
-    const px = orbCx + Math.cos(angle) * dist + Math.cos(perpA) * waber;
-    const py = orbCy + Math.sin(angle) * dist + Math.sin(perpA) * waber;
-    const pLife = 1 - dist / _wmMaxDist;
-    if (pLife <= 0) continue;
-    // Echte Neon-Farben aus der App verwenden
-    const _neonColor = NEON_COLORS[pi % NEON_COLORS.length];
+    // Jedes Partikel hat eigene pseudo-zufällige Parameter (seed-basiert, nicht frameweise)
+    const seed = pi * 137.508 + 42;
+    const baseAngle = seed * 2.39996; // goldener Winkel → gleichmäßige Verteilung ohne Muster
+    const speed = 0.06 + ((seed * 7.3) % 1) * 0.08;
+    const dist = ((_now * speed * 0.005 + seed * 13) % _wmMaxDist);
+    // Wabern: zwei überlagerte Sinuswellen (langsam + schnell) → organisch
+    const wSlow = Math.sin(_now * 0.0008 + seed * 3.7) * (6 + dist * 0.15);
+    const wFast = Math.sin(_now * 0.003 + seed * 1.1) * (2 + dist * 0.05);
+    const perpA = baseAngle + Math.PI / 2;
+    const waber = wSlow + wFast;
+    const px = orbCx + Math.cos(baseAngle) * dist + Math.cos(perpA) * waber;
+    const py = orbCy + Math.sin(baseAngle) * dist + Math.sin(perpA) * waber;
+    const pLife = Math.pow(1 - dist / _wmMaxDist, 0.7); // langsamerer Fade
+    if (pLife <= 0.05) continue;
+    const _neonColor = NEON_COLORS[Math.floor((seed * 3.1) % NEON_COLORS.length)];
     const sprite = particleSpriteMap.get(_neonColor);
-    const pSize = (2 + (pi % 3)) * (0.5 + pLife * 0.5);
+    const pSize = (1.5 + ((seed * 5.7) % 2.5)) * (0.4 + pLife * 0.6);
     const glowR = pSize * 2.5;
-    // Glow-Sprite (wie in drawParticles)
-    ctx.globalAlpha = pLife * 0.3 * _glowMob;
+    ctx.globalAlpha = pLife * 0.35 * _glowMob;
     if (sprite) ctx.drawImage(sprite, px - glowR, py - glowR, glowR * 2, glowR * 2);
-    // Kern
     const [_pr, _pg, _pb] = hexToRgb(_neonColor);
-    ctx.globalAlpha = pLife * 0.7 * _glowMob;
+    ctx.globalAlpha = pLife * 0.65 * _glowMob;
     ctx.beginPath(); ctx.arc(px, py, pSize, 0, Math.PI * 2);
     ctx.fillStyle = `rgb(${_pr},${_pg},${_pb})`; ctx.fill();
-    // Spawn-Blitz bei frischen Partikeln (dist < 10%)
-    if (dist < _wmMaxDist * 0.1) {
-      ctx.globalAlpha = (1 - dist / (_wmMaxDist * 0.1)) * 0.4 * _glowMob;
-      ctx.beginPath(); ctx.arc(px, py, pSize * 1.5, 0, Math.PI * 2);
-      ctx.fillStyle = '#fff'; ctx.fill();
-    }
   }
   ctx.globalAlpha = 1;
 
