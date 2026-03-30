@@ -2872,40 +2872,42 @@ function drawMenu() {
   ctx.fillText(titlePost, _postX, curY);
   ctx.shadowOffsetY = 0;
 
-  // --- Glasskugel (Orb) mit leuchtendem Rand ---
+  // --- Glasskugel (Orb) — J-Thrust Style mit leuchtendem Gold-Rand ---
   ctx.save();
   const _orbR = orbSize / 2;
-  // Äußerer Glow (gold + teal)
-  ctx.shadowColor = `rgba(237,212,87,${0.4 * _glowMob})`;
-  ctx.shadowBlur = 25 * _glowMob;
-  // Glasskugel-Body
-  const orbGrad = ctx.createRadialGradient(orbCx - _orbR * 0.3, orbCy - _orbR * 0.3, 0, orbCx, orbCy, _orbR);
-  orbGrad.addColorStop(0, 'rgba(255,255,255,0.2)');
-  orbGrad.addColorStop(0.3, 'rgba(237,212,87,0.06)');
-  orbGrad.addColorStop(0.6, 'rgba(37,162,162,0.04)');
-  orbGrad.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.beginPath();
-  ctx.arc(orbCx, orbCy, _orbR, 0, Math.PI * 2);
-  ctx.fillStyle = orbGrad;
-  ctx.fill();
-  // Leuchtender Rand — doppelter Ring
-  ctx.shadowBlur = 12 * _glowMob;
-  ctx.shadowColor = `rgba(37,162,162,${0.5 * _glowMob})`;
-  ctx.strokeStyle = `rgba(37,162,162,${0.5 * _glowMob})`;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  ctx.shadowColor = `rgba(237,212,87,${0.3 * _glowMob})`;
-  ctx.shadowBlur = 8 * _glowMob;
-  ctx.strokeStyle = `rgba(237,212,87,${0.25 * _glowMob})`;
-  ctx.lineWidth = 0.5;
-  ctx.beginPath();
-  ctx.arc(orbCx, orbCy, _orbR * 0.92, 0, Math.PI * 2);
-  ctx.stroke();
+  const _orbGlow = _glowMob;
+
+  // 1. Äußerer Glow (goldener Schein nach außen, wie J-Thrust)
+  const glowOuter = _orbR * 1.6;
+  const gg = ctx.createRadialGradient(orbCx, orbCy, _orbR * 0.5, orbCx, orbCy, glowOuter);
+  gg.addColorStop(0, `rgba(253,210,80,${0.35 * _orbGlow})`);
+  gg.addColorStop(0.4, `rgba(253,190,60,${0.2 * _orbGlow})`);
+  gg.addColorStop(0.7, `rgba(253,170,40,${0.08 * _orbGlow})`);
+  gg.addColorStop(1, 'rgba(253,170,40,0)');
+  ctx.beginPath(); ctx.arc(orbCx, orbCy, glowOuter, 0, Math.PI * 2);
+  ctx.fillStyle = gg; ctx.fill();
+
+  // 2. Ball-Body (3D-Gradient: dunkel innen oben-links → gold am Rand)
+  const ballG = ctx.createRadialGradient(orbCx - _orbR * 0.3, orbCy - _orbR * 0.3, _orbR * 0.1, orbCx, orbCy, _orbR);
+  ballG.addColorStop(0, 'rgba(80,56,16,0.5)');
+  ballG.addColorStop(0.5, 'rgba(140,100,30,0.4)');
+  ballG.addColorStop(0.8, 'rgba(200,160,50,0.5)');
+  ballG.addColorStop(1, `rgba(253,210,80,${0.4 + 0.3 * _orbGlow})`);
+  ctx.beginPath(); ctx.arc(orbCx, orbCy, _orbR, 0, Math.PI * 2);
+  ctx.fillStyle = ballG; ctx.fill();
+
+  // 3. Leuchtender Rim-Ring (der Signature-Effekt aus J-Thrust)
+  ctx.shadowColor = `rgba(253,230,140,${0.6 * _orbGlow})`;
+  ctx.shadowBlur = 15 * _orbGlow;
+  ctx.strokeStyle = `rgba(253,230,140,${0.8 * _orbGlow})`;
+  ctx.lineWidth = 1.5 + _orbGlow;
+  ctx.beginPath(); ctx.arc(orbCx, orbCy, _orbR + 1, 0, Math.PI * 2); ctx.stroke();
   ctx.shadowBlur = 0;
-  // Highlight-Reflex
+
+  // 4. Specular Highlight (weißer Glanzpunkt oben-links)
   ctx.beginPath();
   ctx.ellipse(orbCx - _orbR * 0.25, orbCy - _orbR * 0.25, _orbR * 0.2, _orbR * 0.12, -0.3, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.fillStyle = 'rgba(255,240,200,0.5)';
   ctx.fill();
   ctx.restore();
 
@@ -3750,20 +3752,7 @@ function drawMenu() {
     const iconY = H - burgerPad - iconSize;
     const credY = iconY + iconSize / 2; // vertikal zentriert mit Icons
     ctx.font = `${credFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
-    const credBase = isMobilePortrait ? 0.8 : 0.7;
-    if (hoverLink) {
-      ctx.shadowColor = 'rgba(37, 162, 162, 0.6)';
-      ctx.shadowBlur = 12;
-      ctx.fillStyle = 'rgba(37, 162, 162, 0.9)';
-    } else {
-      ctx.fillStyle = `rgba(250, 230, 230, ${credBase})`;
-    }
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('jochenhornung.de', cx, credY);
-    ctx.shadowBlur = 0;
-    const linkW = ctx.measureText('jochenhornung.de').width;
-    menuButtons.link = { x: cx - linkW / 2, y: credY - credFont / 2, w: linkW, h: credFont * 1.5 };
+    menuButtons.link = null; // kein Footer-Link mehr
 
     // Footer-Icons: Favicon links, Lotusblüte rechts (bündig mit Titel)
     const iconAlpha = isMobilePortrait ? 0.5 : 0.35;
@@ -3791,8 +3780,8 @@ function drawMenu() {
     if (gkHintOpen && isMobilePortrait) {
       const ghFont = Math.max(14, unit * 0.032);
       const ghText = lang === 'de'
-        ? 'Nochmal tippen um zum Gefühlskompass 5D zu wechseln'
-        : 'Tap again to switch to Gefühlskompass 5D';
+        ? 'Nochmal tippen um Spüra zu öffnen'
+        : 'Tap again to open Spüra';
       ctx.font = `400 ${ghFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
       const ghMaxW = W * 0.7;
       const ghWords = ghText.split(' ');
@@ -3830,7 +3819,7 @@ function drawMenu() {
     // Desktop: GK Hover-Tooltip ÜBER dem Icon
     if (hoverGk && !isMobilePortrait) {
       const tipFont = Math.max(13, unit * 0.018);
-      const tipText = lang === 'de' ? 'Wenn du hier klickst, wechselst du zum Gefühlskompass 5D' : 'Click here to switch to Gefühlskompass 5D';
+      const tipText = lang === 'de' ? 'Klicke hier um Spüra zu öffnen' : 'Click here to open Spüra';
       ctx.font = `400 ${tipFont}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
       const maxTipW = Math.min(280, W * 0.35);
       const words = tipText.split(' ');
@@ -4818,7 +4807,7 @@ canvas.addEventListener('click', (e) => {
         return;
       }
       gkHintOpen = false;
-      window.open('https://gefuehlskompass.vercel.app/' + (lang === 'de' ? 'de' : 'en'), '_blank');
+      window.open('https://apps.apple.com/app/spüra/id6742204046', '_blank');
       return;
     }
     if (_hitC(menuButtons.link)) {
@@ -5073,7 +5062,7 @@ canvas.addEventListener('touchend', (e) => {
         return;
       }
       gkHintOpen = false;
-      window.open('https://gefuehlskompass.vercel.app/' + (lang === 'de' ? 'de' : 'en'), '_blank');
+      window.open('https://apps.apple.com/app/spüra/id6742204046', '_blank');
       return;
     }
     if (_hitS(_lnk)) {
