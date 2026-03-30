@@ -2795,7 +2795,7 @@ function drawMenu() {
   } else {
     sectionGap = unit * 0.025 * 0.7 * vScale;
     layoutGap = sectionGap;
-    curY = Math.max(H * 0.1 * vScale, safeTop + unit * 0.03);
+    curY = Math.max(H * 0.06 * vScale, safeTop + unit * 0.03);
   }
 
   // Native Scrolling: Gesamten Menü-Inhalt um scrollY nach oben verschieben
@@ -4621,9 +4621,9 @@ function handleMenuClick(x, y) {
       return true;
     }
   }
-  // Sound-Toggle
+  // Sound-Toggle (Screen-Space, nicht scroll-adjusted → y statt sy)
   const tt = menuButtons.timerToggle;
-  if (tt && x >= tt.x && x <= tt.x + tt.w && sy >= tt.y && sy <= tt.y + tt.h) {
+  if (tt && x >= tt.x && x <= tt.x + tt.w && y >= tt.y && y <= tt.y + tt.h) {
     soundEnabled = !soundEnabled;
     localStorage.setItem('msphere_sound', soundEnabled);
     if (soundEnabled) { try { playTingsha(); } catch(err) {} }
