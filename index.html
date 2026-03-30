@@ -2824,7 +2824,10 @@ function drawMenu() {
   const totalW = preW + orbSpacing + orbSize + orbSpacing + postW;
   const _wmStartX = cx - totalW / 2;
   const orbCx = _wmStartX + preW + orbSpacing + orbSize / 2;
-  const orbCy = curY + titleSize * 0.38; // visuelles Zentrum der Caps — etwas höher für optische Mitte
+  // Kugel vertikal exakt auf Caps-Mitte: actualBoundingBoxAscent = Oberkante der Großbuchstaben
+  const _capMetrics = ctx.measureText('M');
+  const _capAscent = _capMetrics.actualBoundingBoxAscent || titleSize * 0.72;
+  const orbCy = curY + _capAscent / 2;
 
   const _glowMob = isMobilePortrait ? 0.5 : 1.0;
   const _bloomI = 0.83; // Bloom-Intensität (Kalibrierung 2: 25/30)
@@ -6528,10 +6531,10 @@ function postToNative(action, data) {
 }
 
 function _ms() { return window.__msphere || {}; }
-function isSubscribed() { return !window.__nativeApp || _ms().subscribed; }
-function isDeinIchUnlocked() { return !window.__nativeApp || _ms().deinIchUnlocked; }
-function deinIchRemaining() { return window.__nativeApp ? (_ms().deinIchRemaining || 0) : 999; }
-function maxTimerSeconds() { return window.__nativeApp ? (_ms().maxTimer || 600) : 9999; }
+function isSubscribed() { return !window.__nativeApp || _ms().subscribed || easterModelActive === 'jochen'; }
+function isDeinIchUnlocked() { return !window.__nativeApp || _ms().deinIchUnlocked || easterModelActive === 'jochen'; }
+function deinIchRemaining() { return (easterModelActive === 'jochen') ? 999 : (window.__nativeApp ? (_ms().deinIchRemaining || 0) : 999); }
+function maxTimerSeconds() { return (easterModelActive === 'jochen') ? 9999 : (window.__nativeApp ? (_ms().maxTimer || 600) : 9999); }
 
 // Swift→JS Callbacks
 let _purchaseResolve = null;
