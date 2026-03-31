@@ -2881,6 +2881,9 @@ function drawMenu() {
   ctx.fillText(titlePost, _postX, curY);
   ctx.shadowOffsetY = 0;
 
+  // Dev-Panel Werte (muss VOR Orb und Partikel stehen)
+  const _dp = window._devParticles || {};
+
   // --- Glasskugel (Orb) — durchsichtig mit leuchtendem Gold-Rand ---
   ctx.save();
   const _orbR = orbSize / 2;
@@ -2910,7 +2913,6 @@ function drawMenu() {
   // Schwerelosigkeit: jeder Gedanke driftet in seine eigene Richtung, langsam, ziellos.
   // Farbe bleibt, Alpha geht — sie werden durchsichtig, nicht grau.
   const _now = Date.now();
-  const _dp = window._devParticles || {};
   const _pCount = isMobilePortrait ? 6 : (_dp.count || 12);
   const _wmMaxDist = orbSize * (_dp.reach || 3.0);
   const _pSpeedBase = _dp.speed || 0.15;
