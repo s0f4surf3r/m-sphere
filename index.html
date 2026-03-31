@@ -2839,7 +2839,7 @@ function drawMenu() {
   const orbCy = curY + titleSize * 0.65;
 
   const _glowMob = isMobilePortrait ? 0.5 : 1.0;
-  const _bloomI = (window._devParticles && window._devParticles.bloomI !== undefined) ? window._devParticles.bloomI : 0.83;
+  const _bloomI = _dp.bloomI !== undefined ? _dp.bloomI : 0.9;
   const _creamRGB = '250,230,230';
 
   const _postX = _wmStartX + preW + orbSpacing * 2 + orbSize;
@@ -2882,7 +2882,9 @@ function drawMenu() {
   ctx.shadowOffsetY = 0;
 
   // Dev-Panel Werte (muss VOR Orb und Partikel stehen)
-  const _dp = window._devParticles || {};
+  // Kalibrierung 3 (Jochen, 2026-03-31)
+  const _dpDefaults = {count:26,speed:1.34,reach:5.5,spread:2.05,waber:4.3,waberSpeed:0.8,size:3.5,alpha:0.55,glowSize:3.4,fadeExp:2.5,dirUp:0.9,orbGlow:27,orbWidth:2.4,orbAlpha:0.75,bloomI:0.9};
+  const _dp = window._devParticles || _dpDefaults;
 
   // --- Glasskugel (Orb) — durchsichtig mit leuchtendem Gold-Rand ---
   ctx.save();
@@ -7821,7 +7823,7 @@ frame();
 <script>
 // Dev-Panel für Partikel-Tuning (nur mit ?dev=1 sichtbar)
 if (new URLSearchParams(location.search).has('dev')) {
-  window._devParticles = { count: 12, speed: 0.15, reach: 3.0, spread: 0.8, waber: 1.5, waberSpeed: 0.6, size: 1.2, alpha: 1.0, glowSize: 3.5, fadeExp: 2.0, dirUp: 0, orbGlow: 22, orbWidth: 2.0, orbAlpha: 0.9, bloomI: 0.83 };
+  window._devParticles = {count:26,speed:1.34,reach:5.5,spread:2.05,waber:4.3,waberSpeed:0.8,size:3.5,alpha:0.55,glowSize:3.4,fadeExp:2.5,dirUp:0.9,orbGlow:27,orbWidth:2.4,orbAlpha:0.75,bloomI:0.9};
   const dp = document.createElement('div');
   dp.style.cssText = 'position:fixed;right:0;top:0;bottom:0;z-index:9999;width:320px;background:rgba(10,14,26,0.95);backdrop-filter:blur(12px);border-left:1px solid #1e3232;overflow-y:auto;font:13px -apple-system,sans-serif;color:#f4f6ff';
   const inner = document.createElement('div');
@@ -7829,25 +7831,25 @@ if (new URLSearchParams(location.search).has('dev')) {
   inner.innerHTML = '<div style="font-size:1rem;font-weight:600;letter-spacing:2px;color:#25a2a2;text-transform:uppercase;margin-bottom:0.5rem">Partikel & Orb Tuning</div>';
   const sections = [
     { title: 'GEDANKEN-PARTIKEL', params: [
-      { key: 'count', label: 'Anzahl', min: 0, max: 40, step: 1, val: 12 },
-      { key: 'speed', label: 'Geschwindigkeit', min: 0.01, max: 3, step: 0.01, val: 0.15 },
-      { key: 'reach', label: 'Reichweite', min: 0.5, max: 8, step: 0.1, val: 3.0 },
-      { key: 'spread', label: 'Streuung (Winkel)', min: 0, max: 3, step: 0.05, val: 0.8 },
-      { key: 'dirUp', label: 'Richtung ↑ (1=oben, 0=alle)', min: 0, max: 1, step: 0.05, val: 0 },
-      { key: 'waber', label: 'Waber-Intensität', min: 0, max: 6, step: 0.1, val: 1.5 },
-      { key: 'waberSpeed', label: 'Waber-Tempo', min: 0.1, max: 5, step: 0.1, val: 0.6 },
-      { key: 'size', label: 'Partikel-Größe', min: 0.1, max: 5, step: 0.1, val: 1.2 },
-      { key: 'glowSize', label: 'Glow-Radius', min: 0.5, max: 8, step: 0.1, val: 3.5 },
-      { key: 'alpha', label: 'Helligkeit', min: 0.05, max: 3, step: 0.05, val: 1.0 },
-      { key: 'fadeExp', label: 'Auflösungs-Kurve', min: 0.3, max: 4, step: 0.1, val: 2.0 },
+      { key: 'count', label: 'Anzahl', min: 0, max: 40, step: 1, val: 26 },
+      { key: 'speed', label: 'Geschwindigkeit', min: 0.01, max: 3, step: 0.01, val: 1.34 },
+      { key: 'reach', label: 'Reichweite', min: 0.5, max: 8, step: 0.1, val: 5.5 },
+      { key: 'spread', label: 'Streuung (Winkel)', min: 0, max: 3, step: 0.05, val: 2.05 },
+      { key: 'dirUp', label: 'Richtung ↑ (1=oben, 0=alle)', min: 0, max: 1, step: 0.05, val: 0.9 },
+      { key: 'waber', label: 'Waber-Intensität', min: 0, max: 6, step: 0.1, val: 4.3 },
+      { key: 'waberSpeed', label: 'Waber-Tempo', min: 0.1, max: 5, step: 0.1, val: 0.8 },
+      { key: 'size', label: 'Partikel-Größe', min: 0.1, max: 5, step: 0.1, val: 3.5 },
+      { key: 'glowSize', label: 'Glow-Radius', min: 0.5, max: 8, step: 0.1, val: 3.4 },
+      { key: 'alpha', label: 'Helligkeit', min: 0.05, max: 3, step: 0.05, val: 0.55 },
+      { key: 'fadeExp', label: 'Auflösungs-Kurve', min: 0.3, max: 4, step: 0.1, val: 2.5 },
     ]},
     { title: 'ORB (KUGEL)', params: [
-      { key: 'orbGlow', label: 'Rand-Glow', min: 0, max: 50, step: 1, val: 22 },
-      { key: 'orbWidth', label: 'Rand-Dicke', min: 0.5, max: 6, step: 0.1, val: 2.0 },
-      { key: 'orbAlpha', label: 'Rand-Helligkeit', min: 0.1, max: 1, step: 0.05, val: 0.9 },
+      { key: 'orbGlow', label: 'Rand-Glow', min: 0, max: 50, step: 1, val: 27 },
+      { key: 'orbWidth', label: 'Rand-Dicke', min: 0.5, max: 6, step: 0.1, val: 2.4 },
+      { key: 'orbAlpha', label: 'Rand-Helligkeit', min: 0.1, max: 1, step: 0.05, val: 0.75 },
     ]},
     { title: 'BLOOM (TEXT)', params: [
-      { key: 'bloomI', label: 'Bloom-Intensität', min: 0, max: 2, step: 0.05, val: 0.83 },
+      { key: 'bloomI', label: 'Bloom-Intensität', min: 0, max: 2, step: 0.05, val: 0.9 },
     ]},
   ];
   sections.forEach(sec => {
