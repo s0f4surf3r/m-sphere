@@ -2838,7 +2838,7 @@ function drawMenu() {
   // Plus kleiner Offset weil textBaseline:'top' den Ascender-Raum einschließt (~10% padding)
   const orbCy = curY + titleSize * 0.65;
 
-  const _glowMob = isMobilePortrait ? 0.5 : 1.0;
+  const _glowMob = 1.0; // Kalibrierung 3: gleiche Intensität auf allen Geräten
   // Dev-Panel Werte — MUSS ganz oben stehen (const hat kein Hoisting!)
   const _dpDefaults = {count:26,speed:1.34,reach:5.5,spread:2.05,waber:4.3,waberSpeed:0.8,size:3.5,alpha:0.55,glowSize:3.4,fadeExp:2.5,dirUp:0.9,orbGlow:27,orbWidth:2.4,orbAlpha:0.75,bloomI:0.9};
   const _dp = window._devParticles || _dpDefaults;
@@ -2879,7 +2879,7 @@ function drawMenu() {
   ctx.shadowColor = 'rgba(0,0,0,0.4)';
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 2;
-  ctx.fillStyle = isMobilePortrait ? 'rgba(250,230,230,0.75)' : '#fae6e6';
+  ctx.fillStyle = '#fae6e6';
   ctx.fillText(titlePre, _wmStartX, curY);
   ctx.fillText(titlePost, _postX, curY);
   ctx.shadowOffsetY = 0;
