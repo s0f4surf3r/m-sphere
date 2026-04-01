@@ -2913,7 +2913,7 @@ function drawMenu() {
   // Schwerelosigkeit: jeder Gedanke driftet in seine eigene Richtung, langsam, ziellos.
   // Farbe bleibt, Alpha geht — sie werden durchsichtig, nicht grau.
   const _now = Date.now();
-  const _pCount = isMobilePortrait ? 6 : (_dp.count || 12);
+  const _pCount = _dp.count || 26;
   const _wmMaxDist = orbSize * (_dp.reach || 3.0);
   const _pSpeedBase = _dp.speed || 0.15;
   const _pWaber = _dp.waber || 1.5;
