@@ -3717,7 +3717,9 @@ function drawMenu() {
     const iconLeftX = isMobilePortrait ? 20 : titleLeftX;
     const iconRightX = isMobilePortrait ? W - 20 - iconSize : titleRightX - iconSize;
 
-    // Links: Gefühlskompass Check-in Button (Link)
+    // Links: Spüra-Verweis — nicht in nativer App (M-Sphere ist Werkzeug-App ohne Links nach außen)
+    if (!window.__nativeApp) {
+    // Gefühlskompass Check-in Button (Link)
     if (gkIconReady) {
       const gkScale = hoverGk ? 1.25 : 1;
       const gkS = iconSize * gkScale;
@@ -3810,6 +3812,7 @@ function drawMenu() {
       }
       ctx.textAlign = 'start';
       ctx.textBaseline = 'alphabetic';
+    }
     }
 
     // Hit-Areas ZUERST setzen (bevor Rendering fehlschlagen könnte)
@@ -4125,7 +4128,8 @@ function drawLegalOverlay() {
     const items = [
       { label: t('ueberMSphere'), target: 'about' },
       { label: t('literatur'), target: 'literatur' },
-      { label: t('moreTools'), target: '_moreTools' },
+      // "Mehr Werkzeuge" nicht in nativer App (M-Sphere ist Werkzeug-App ohne Links nach außen)
+      ...(window.__nativeApp ? [] : [{ label: t('moreTools'), target: '_moreTools' }]),
       { label: t('impressum'), target: 'impressum' },
       { label: t('datenschutz'), target: 'datenschutz' }
     ];
