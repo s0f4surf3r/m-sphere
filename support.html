@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M-Sphere — Support</title>
+<style>
+  body { font-family: -apple-system, 'Helvetica Neue', sans-serif; max-width: 680px; margin: 0 auto; padding: 2rem 1.5rem; background: #06090f; color: #c2cee8; line-height: 1.75; }
+  h1 { color: #f4f6ff; font-size: 1.6rem; margin-bottom: 0.3rem; }
+  h2 { color: #25a2a2; font-size: 1.1rem; margin-top: 2rem; }
+  a { color: #25a2a2; }
+  .lang-toggle { text-align: right; margin-bottom: 2rem; }
+  .lang-toggle button { background: none; border: 1px solid #3e5080; color: #c2cee8; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  .lang-toggle button.active { background: #25a2a2; color: #06090f; border-color: #25a2a2; }
+  .de, .en { display: none; }
+  .show { display: block; }
+  small { color: #8098b8; }
+</style>
+</head>
+<body>
+<div class="lang-toggle">
+  <button id="btnDE" class="active" onclick="showLang('de')">Deutsch</button>
+  <button id="btnEN" onclick="showLang('en')">English</button>
+</div>
+
+<div class="de show">
+<h1>M-Sphere — Support</h1>
+
+<p>M-Sphere ist eine interaktive Schneekugel-Meditation für iPhone und iPad. Die App ist komplett kostenlos, ohne In-App-Käufe, ohne Abo und ohne Login.</p>
+
+<h2>Frage oder Problem?</h2>
+<p>Schreib mir direkt: <a href="mailto:jochen.hornung@me.com">jochen.hornung@me.com</a></p>
+
+<h2>Bekannte Hinweise</h2>
+<ul>
+  <li>M-Sphere braucht Zugriff auf den Bewegungssensor, um das Schütteln der Kugel zu erkennen. Ohne diese Freigabe funktioniert das Schütteln per Handbewegung nicht — Schütteln mit gedrückter Maus/Finger auf dem Bildschirm funktioniert trotzdem.</li>
+  <li>Für die beste Erfahrung: Ton einschalten (Klingelschalter) für Klangkulissen und den Meditations-Gong.</li>
+</ul>
+
+<h2>Mehr über die App</h2>
+<p>Die Geschichte hinter M-Sphere und der Schneekugel-Metapher: siehe „Die Geschichte dahinter" im Menü der App, oder <a href="https://msphere.jochenhornung.de/privacy.html">Datenschutzerklärung</a>.</p>
+</div>
+
+<div class="en">
+<h1>M-Sphere — Support</h1>
+
+<p>M-Sphere is an interactive snow globe meditation for iPhone and iPad. The app is completely free, with no in-app purchases, no subscription, and no login.</p>
+
+<h2>Question or issue?</h2>
+<p>Write to me directly: <a href="mailto:jochen.hornung@me.com">jochen.hornung@me.com</a></p>
+
+<h2>Known notes</h2>
+<ul>
+  <li>M-Sphere needs access to the motion sensor to detect shaking the globe. Without this permission, shaking by moving the phone won't work — shaking by holding down the mouse/finger on screen still works.</li>
+  <li>For the best experience: turn sound on (ringer switch) for soundscapes and the meditation gong.</li>
+</ul>
+
+<h2>More about the app</h2>
+<p>The story behind M-Sphere and the snow globe metaphor: see "The Story Behind It" in the app's menu, or the <a href="https://msphere.jochenhornung.de/privacy.html">Privacy Policy</a>.</p>
+</div>
+
+<script>
+function showLang(lang) {
+  document.querySelector('.de').classList.toggle('show', lang === 'de');
+  document.querySelector('.en').classList.toggle('show', lang === 'en');
+  document.getElementById('btnDE').classList.toggle('active', lang === 'de');
+  document.getElementById('btnEN').classList.toggle('active', lang === 'en');
+}
+const userLang = (navigator.language || 'de').toLowerCase().startsWith('de') ? 'de' : 'en';
+showLang(userLang);
+</script>
+</body>
+</html>
