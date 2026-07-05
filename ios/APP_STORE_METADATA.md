@@ -15,7 +15,11 @@ Secondary: Lifestyle
 
 M-Sphere verwandelt dein Smartphone in eine Schneekugel der Achtsamkeit.
 
-Schüttle die Kugel — beobachte, wie die leuchtenden Partikel aufwirbeln und sich langsam legen. Wenn Stille einkehrt, beginnt deine Meditation.
+DER URSPRUNG
+Alles begann mit einem Gespräch zwischen dem Philosophen Thomas Metzinger und Gert Scobel. Metzinger beschrieb darin einen Zustand nicht-dualen Bewusstseins mit einem Bild: eine Schneekugel, in deren Mitte ein Meditierender sitzt. Schüttelt man sie, herrscht Chaos — der Sturm unserer Gedanken. Lässt man sie radikal in Ruhe, legt sich der Sturm von selbst. M-Sphere macht dieses Gedankenexperiment erfahrbar.
+
+DAS PRINZIP
+Schüttle die Kugel — beobachte, wie die leuchtenden Partikel aufwirbeln. Dann tu nichts mehr. Die goldene Figur in der Mitte steht für das Ich, fest und stolz auf die eigene Form. Die Partikel sind nicht einfach Schnee, sondern unsere Gedanken — unruhig, süchtig machend, sich selbst antreibend. Erst wenn du aufhörst einzugreifen, lösen sich Figur und Sturm gemeinsam auf. Das Loslassen ist hier keine Nebenwirkung, sondern die eigentliche Übung.
 
 FEATURES
 • Interaktives Schütteln — Partikel reagieren auf deine Bewegungen
@@ -24,7 +28,7 @@ FEATURES
 • Gedankenmodus — Gedanken kommen und gehen wie Schneeflocken
 • Flexible Timer — 5 bis 60 Minuten
 
-Inspiriert von Thomas Metzingers Schneekugel-Metapher: Du bist nicht die Figur in der Kugel — du bist das Wasser.
+Du bist nicht die Figur in der Kugel. Du bist auch nicht der Sturm der Gedanken. Du bist das Wasser.
 
 Komplett kostenlos, keine In-App-Käufe, kein Abo.
 
@@ -32,7 +36,11 @@ Komplett kostenlos, keine In-App-Käufe, kein Abo.
 
 M-Sphere turns your phone into a mindfulness snow globe.
 
-Shake the globe — watch the glowing particles swirl and slowly settle. When stillness arrives, your meditation begins.
+THE ORIGIN
+It began with a conversation between philosopher Thomas Metzinger and Gert Scobel. Metzinger described a state of non-dual consciousness through an image: a snow globe with a meditating figure at its center. Shake it, and chaos reigns — the storm of our thoughts. Let it rest completely, and the storm settles on its own. M-Sphere turns this thought experiment into an experience.
+
+THE PRINCIPLE
+Shake the globe — watch the glowing particles swirl. Then do nothing more. The golden figure at the center represents the self, rigid and proud of its own form. The particles aren't just snow — they're our thoughts, restless, addictive, self-perpetuating. Only once you stop intervening do the figure and the storm dissolve together. Letting go isn't a side effect here — it's the actual practice.
 
 FEATURES
 • Interactive shaking — particles respond to your movements
@@ -41,7 +49,7 @@ FEATURES
 • Thought mode — thoughts come and go like snowflakes
 • Flexible timer — 5 to 60 minutes
 
-Inspired by Thomas Metzinger's snow globe metaphor: You are not the figure inside the globe — you are the water.
+You are not the figure inside the globe. You are not the storm of thoughts either. You are the water.
 
 Completely free, no in-app purchases, no subscription.
 
@@ -50,12 +58,20 @@ DE: Meditation,Achtsamkeit,Schneekugel,Atmen,Entspannung,Timer,Mindfulness,Ruhe,
 EN: Meditation,Mindfulness,SnowGlobe,Breathing,Relaxation,Timer,Calm,Stillness,Focus,Free
 
 ## Promotional Text (max 170 Zeichen)
-DE: Schüttle die Kugel, finde die Stille. Komplett kostenlos.
-EN: Shake the globe, find the stillness. Completely free.
+DE: Schüttle die Kugel, finde die Stille. Inspiriert von Thomas Metzinger. Komplett kostenlos.
+EN: Shake the globe, find the stillness. Inspired by Thomas Metzinger. Completely free.
 
 ## App Review Notes
 
-M-Sphere is a free meditation app with an interactive snow globe metaphor. No in-app purchases, no subscriptions, no login/accounts.
+M-Sphere is a free meditation app built around a philosophical thought experiment, not a generic wellness app.
+
+ORIGIN: The core metaphor comes from a conversation between philosopher Thomas Metzinger (University of Mainz) and Gert Scobel on the German TV show "scobel" (ZDF/3sat). Metzinger described non-dual consciousness through the image of a snow globe: a meditating figure sits at its center. Shake it, and chaos reigns — the storm of our thoughts, concepts and feelings. Let it rest completely (wu wei), and the storm settles. He wished this could be built as a physical object. We built it as an interactive digital experience instead.
+
+CONCEPT: The app is an allegory of the constructed self. The golden figure represents the ego, often rigid and infatuated with its own "meditator" status. The neon particles are not just snowflakes but our thoughts — restless, addictive, self-perpetuating. Users shake the globe (hold the mouse / physically shake the phone) to stir up the storm, then must do nothing at all. Letting go is the mechanic, not a side effect: as the user stops interacting, the figure and the particles dissolve together into transparency. What remains is the intended insight: "You are not the figure in the globe. You are not the storm of thoughts either. You are the water."
+
+TESTING NOTE: This is intentional design, not a bug — the app rewards non-interaction. When testing the shake gesture, let go and wait for stillness rather than continuing to interact, to see the full meditation cycle (shake → storm → stillness → dissolution) play out.
+
+Free app: no login/accounts, no in-app purchases, no subscriptions, no ads, no tracking, no analytics. All settings are stored locally on-device only.
 
 DEMO ACCOUNT: Not required. The app has no login.
 
