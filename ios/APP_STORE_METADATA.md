@@ -13,7 +13,7 @@ Secondary: Lifestyle
 
 ## Description (DE)
 
-M-Sphere verwandelt dein Smartphone in eine Schneekugel der Achtsamkeit.
+M-Sphere verwandelt dein Smartphone in eine Sphäre der Achtsamkeit.
 
 DER URSPRUNG
 Alles begann mit einem Gespräch zwischen dem Philosophen Thomas Metzinger und Gert Scobel. Metzinger beschrieb darin einen Zustand nicht-dualen Bewusstseins mit einem Bild: eine Schneekugel, in deren Mitte ein Meditierender sitzt. Schüttelt man sie, herrscht Chaos — der Sturm unserer Gedanken. Lässt man sie radikal in Ruhe, legt sich der Sturm von selbst. M-Sphere macht dieses Gedankenexperiment erfahrbar.
@@ -23,12 +23,12 @@ Schüttle die Kugel — beobachte, wie die leuchtenden Partikel aufwirbeln. Dann
 
 FEATURES
 • Interaktives Schütteln — Partikel reagieren auf deine Bewegungen
-• Geführte Atemübungen — Kohärenzatmung, beruhigende 4:6-Atmung
+• Geführte Atemübungen — Kohärenzatmung, beruhigende 4:6-Atmung u.a.
 • Klanglandschaften — Ambient Sounds für tiefe Meditation
-• Gedankenmodus — Gedanken kommen und gehen wie Schneeflocken
+• Gedankenmodus — Gedanken kommen und gehen wie Schneeflocken auf unterschiedliche Art und Weise
 • Flexible Timer — 5 bis 60 Minuten
 
-Du bist nicht die Figur in der Kugel. Du bist auch nicht der Sturm der Gedanken. Du bist das Wasser.
+Du bist nicht die Figur in der Kugel. Du bist auch nicht der Sturm der Gedanken. Du bist ... finde es heraus!
 
 Komplett kostenlos, keine In-App-Käufe, kein Abo.
 
