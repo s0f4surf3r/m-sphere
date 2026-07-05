@@ -235,18 +235,8 @@ const TR = {
     deinIchLoeschen: 'Löschen',
     deinIchLoeschenFrage: 'Dein Modell wird unwiderruflich gelöscht. Bist du sicher?',
     deinIchLoeschenJa: 'Ja, löschen',
-    deinIchCreditHinweis: 'Die Erstellung dauert ca. 5 Minuten und verbraucht 1 Generierung.',
     deinIchLaden: 'Dein Modell wird geladen',
     deinIchFehler: 'Fehler beim Erstellen',
-    deinIchKaufen: 'Dein Ich freischalten (2,99 €)',
-    deinIchKaufenDesc: 'Erstelle dein persönliches 3D-Meditationsmodell aus deinen Fotos. Einmaliger Kauf, bis zu 5 Generierungen.',
-    deinIchCredits: 'Noch {n} Generierung(en) übrig',
-    deinIchKeineCredits: 'Du hast alle 5 Generierungen aufgebraucht.',
-    deinIchWiederherstellen: 'Bereits gekauft? Wiederherstellen',
-    deinIchWiederhergestellt: 'Kauf wiederhergestellt!',
-    deinIchNichtGefunden: 'Kein Kauf gefunden',
-    aboUpgradeDesc: 'Für Meditationen über 10 Minuten brauchst du M-Sphere Standard.\n\n2,99 €/Monat. Verlängert sich automatisch. Jederzeit kündbar in den iPhone-Einstellungen unter Abonnements.',
-    aboUpgradeBtn: 'Standard abonnieren',
     aboLinks: 'Nutzungsbedingungen · Datenschutz',
     dsgvoTitel: 'DEIN ICH',
     dsgvoText: 'FÜR BESTE ERGEBNISSE\n\n• 2 Fotos: 1× frontal, 1× seitlich\n• Gutes Licht, ganzes Gesicht sichtbar\n• Neutraler Hintergrund wenn möglich\n• Kein starkes Gegenlicht\n\nDATENSCHUTZ\n\nDeine Fotos werden zur Erstellung eines personalisierten 3D-Modells an folgende Dienste übermittelt:\n\n• Google Gemini (USA) — Bilderzeugung\n• Meshy AI (USA) — 3D-Modellierung\n\nDie Fotos werden nur für die Verarbeitung genutzt und danach gelöscht. Das fertige Modell wird ausschließlich lokal auf deinem Gerät gespeichert.',
@@ -324,18 +314,8 @@ const TR = {
     deinIchLoeschen: 'Delete',
     deinIchLoeschenFrage: 'Your model will be permanently deleted. Are you sure?',
     deinIchLoeschenJa: 'Yes, delete',
-    deinIchCreditHinweis: 'Generation takes about 5 minutes and uses 1 credit.',
     deinIchLaden: 'Loading your model',
     deinIchFehler: 'Error creating model',
-    deinIchKaufen: 'Unlock Your Self ($2.99)',
-    deinIchKaufenDesc: 'Create your personal 3D meditation model from your photos. One-time purchase, up to 5 generations.',
-    deinIchCredits: '{n} generation(s) remaining',
-    deinIchKeineCredits: 'You have used all 5 generations.',
-    deinIchWiederherstellen: 'Already purchased? Restore',
-    deinIchWiederhergestellt: 'Purchase restored!',
-    deinIchNichtGefunden: 'No purchase found',
-    aboUpgradeDesc: 'Meditations over 10 minutes require M-Sphere Standard.\n\n$2.99/month. Renews automatically. Cancel anytime in iPhone Settings under Subscriptions.',
-    aboUpgradeBtn: 'Subscribe to Standard',
     aboLinks: 'Terms of Use · Privacy Policy',
     dsgvoTitel: 'YOUR SELF',
     dsgvoText: 'FOR BEST RESULTS\n\n• 2 photos: 1× front, 1× side profile\n• Good lighting, full face visible\n• Neutral background if possible\n• No strong backlight\n\nPRIVACY\n\nYour photos will be sent to the following services to create a personalized 3D model:\n\n• Google Gemini (USA) — Image generation\n• Meshy AI (USA) — 3D modeling\n\nPhotos are only used for processing and deleted afterwards. The finished model is stored exclusively on your device.',
@@ -559,6 +539,7 @@ let toastMsg = '';
 let toastStart = 0;
 
 // --- Dein Ich ---
+const DEIN_ICH_ENABLED = false; // Free-Version: API-Kosten (Gemini+Meshy) ohne Monetarisierung nicht tragbar. Reaktivierbar durch true.
 let deinIchStatus = 'idle'; // 'idle'|'uploading'|'gemini'|'preview'|'meshy3d'|'remesh'|'downloading'|'done'|'error'
 let deinIchProgress = 0;
 let deinIchStep = 0; // 0=Gemini, 1=Meshy3D, 2=Remesh, 3=Download
@@ -934,6 +915,7 @@ loadCustomModel().then(blob => {
 });
 // Beim App-Start: laufenden Dein-Ich-Task resumieren (nach App-Kill)
 (function resumeDeinIchTask() {
+  if (!DEIN_ICH_ENABLED) return;
   try {
     const saved = JSON.parse(localStorage.getItem('msphere_dei_task') || 'null');
     if (!saved || !saved.id || (Date.now() - saved.ts > 30 * 60 * 1000)) return; // >30 min → verworfen
@@ -2763,7 +2745,7 @@ function drawMenu() {
     const _rowCollapsed = rowFont * 2;
     const _rowExpanded = rowFont * 2 + btnGap + btnH * 0.9;
     let _sectionsH = 0;
-    for (const key of ['breathing', 'meditation', 'thoughtMode', 'flowLevel', 'deinIch']) {
+    for (const key of (DEIN_ICH_ENABLED ? ['breathing', 'meditation', 'thoughtMode', 'flowLevel', 'deinIch'] : ['breathing', 'meditation', 'thoughtMode', 'flowLevel'])) {
       _sectionsH += menuExpanded[key] ? _rowExpanded : _rowCollapsed;
     }
     // deinIch expanded adds extra content (hint text, preview image, buttons)
@@ -2778,7 +2760,7 @@ function drawMenu() {
       }
     }
     let _innerGapSum = 0;
-    for (const key of ['breathing', 'meditation', 'thoughtMode', 'flowLevel', 'deinIch']) {
+    for (const key of (DEIN_ICH_ENABLED ? ['breathing', 'meditation', 'thoughtMode', 'flowLevel', 'deinIch'] : ['breathing', 'meditation', 'thoughtMode', 'flowLevel'])) {
       _innerGapSum += sectionGap * (menuExpanded[key] ? 0.6 : 1.0);
     }
     const _titleSubH = titleSize + subtitleSize * 1.2;
@@ -3364,8 +3346,8 @@ function drawMenu() {
   menuButtons.flowLevel = flowRow.btns;
   curY = flowRow.bottomY + sectionGap * (menuExpanded.flowLevel ? 0.6 : 1);
 
-  // --- DEIN ICH ---
-  {
+  // --- DEIN ICH --- (Free-Version: deaktiviert, siehe DEIN_ICH_ENABLED)
+  if (DEIN_ICH_ENABLED) {
     const diHasDone = customModelExists;
     const diLabel = diHasDone && !menuExpanded.deinIch ? t('deinIch') + ' ✓' : t('deinIch');
     const isPipelineActive = deinIchStatus !== 'idle' && deinIchStatus !== 'done' && deinIchStatus !== 'error';
@@ -4602,8 +4584,6 @@ function handleMenuClick(x, y) {
   // Start-Button
   const s = menuButtons.start;
   if (s && !s.disabled && x >= s.x && x <= s.x + s.w && sy >= s.y && sy <= s.y + s.h) {
-    // Timer-Limit prüfen (Free = max 10 Min)
-    if (!checkTimerLimit(meditationDuration)) return true;
     disableMenuScroll();
     // Easter-Modell aktiv → direkt starten (Modell ist schon geladen)
     if (easterModelActive) {
@@ -6247,8 +6227,6 @@ document.getElementById('deiClose').addEventListener('click', () => { cancelDein
 let _deinIchRetry = false;
 function startDeinIch(photoDataUrls) {
   cancelDeinIch();
-  // Generation abziehen (native App) — aber nicht bei Retry
-  if (window.__nativeApp && !_deinIchRetry) postToNative('useGeneration');
   _deinIchRetry = false;
   deinIchStatus = 'uploading';
   deinIchStep = 0;
@@ -6486,105 +6464,6 @@ document.getElementById('consentDecline').addEventListener('click', () => {
   hideDeinIchConsent();
 });
 
-// --- StoreKit IAP Bridge (Subscription + Non-Consumable Dein Ich) ---
-function postToNative(action, data) {
-  if (window.webkit?.messageHandlers?.msphere) {
-    window.webkit.messageHandlers.msphere.postMessage({ action, ...data });
-  }
-}
-
-function _ms() { return window.__msphere || {}; }
-function isSubscribed() { return !window.__nativeApp || _ms().subscribed || easterModelActive === 'jochen'; }
-function isDeinIchUnlocked() { return !window.__nativeApp || _ms().deinIchUnlocked || easterModelActive === 'jochen'; }
-function deinIchRemaining() { return (easterModelActive === 'jochen') ? 999 : (window.__nativeApp ? (_ms().deinIchRemaining || 0) : 999); }
-function maxTimerSeconds() { return (easterModelActive === 'jochen') ? 9999 : (window.__nativeApp ? (_ms().maxTimer || 600) : 9999); }
-
-// Swift→JS Callbacks
-let _purchaseResolve = null;
-window.__handlePurchaseResult = function(success) {
-  if (_purchaseResolve) { _purchaseResolve(success); _purchaseResolve = null; }
-};
-window.__handleRestoreResult = function(restored) {
-  const overlay = document.getElementById('msphereUpgradeOverlay');
-  if (overlay) {
-    const msgEl = overlay.querySelector('.purchase-restore-msg');
-    if (msgEl) {
-      msgEl.textContent = restored ? t('deinIchWiederhergestellt') : t('deinIchNichtGefunden');
-      msgEl.style.color = restored ? '#25a2a2' : '#ed7070';
-      msgEl.style.display = 'block';
-      if (restored) setTimeout(() => { overlay.style.display = 'none'; }, 1200);
-    }
-  }
-};
-
-// Universeller Upgrade-/Kauf-Dialog
-function showUpgradeOverlay(title, desc, btnText, productId, onSuccess) {
-  let overlay = document.getElementById('msphereUpgradeOverlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'msphereUpgradeOverlay';
-    overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,22,40,0.92);align-items:center;justify-content:center;font-family:-apple-system,"SF Pro Display","Helvetica Neue",sans-serif';
-    overlay.innerHTML = `
-      <div style="background:#1e3232;border-radius:16px;padding:28px 24px;max-width:380px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
-        <div class="upgrade-title" style="color:rgba(250,230,230,0.4);font-size:11px;letter-spacing:3px;font-family:'Courier New',monospace;margin-bottom:14px"></div>
-        <p class="upgrade-desc" style="color:#c2cee8;font-size:15px;line-height:1.6;margin:0 0 22px 0"></p>
-        <button class="upgrade-buy-btn" style="width:100%;padding:14px 24px;border-radius:10px;border:none;background:#25a2a2;color:#fff;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:12px"></button>
-        <div class="purchase-restore-msg" style="display:none;font-size:13px;margin-bottom:10px"></div>
-        <button class="upgrade-restore-btn" style="background:none;border:none;color:rgba(250,230,230,0.5);font-size:13px;cursor:pointer;font-family:inherit;text-decoration:underline;margin-bottom:6px"></button>
-        <br>
-        <button class="upgrade-cancel-btn" style="background:none;border:none;color:rgba(250,230,230,0.35);font-size:14px;cursor:pointer;font-family:inherit;margin-top:8px"></button>
-        <div class="upgrade-links" style="margin-top:12px;font-size:11px"><a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" style="color:rgba(250,230,230,0.4)" target="_blank">Terms</a> · <a href="https://msphere.jochenhornung.de/privacy.html" style="color:rgba(250,230,230,0.4)" target="_blank">Privacy</a></div>
-      </div>`;
-    document.body.appendChild(overlay);
-  }
-  overlay.querySelector('.upgrade-title').textContent = title;
-  overlay.querySelector('.upgrade-desc').textContent = desc;
-  overlay.querySelector('.upgrade-buy-btn').textContent = btnText;
-  overlay.querySelector('.upgrade-buy-btn').disabled = false;
-  overlay.querySelector('.upgrade-restore-btn').textContent = t('deinIchWiederherstellen');
-  overlay.querySelector('.purchase-restore-msg').style.display = 'none';
-  overlay.querySelector('.upgrade-cancel-btn').textContent = t('dsgvoDecline');
-
-  // Clone+Replace to remove old listeners
-  for (const cls of ['.upgrade-buy-btn', '.upgrade-restore-btn', '.upgrade-cancel-btn']) {
-    const el = overlay.querySelector(cls);
-    const clone = el.cloneNode(true);
-    el.parentNode.replaceChild(clone, el);
-  }
-  overlay.querySelector('.upgrade-buy-btn').addEventListener('click', () => {
-    overlay.querySelector('.upgrade-buy-btn').disabled = true;
-    overlay.querySelector('.upgrade-buy-btn').textContent = '...';
-    postToNative('purchase', { productId });
-    _purchaseResolve = (success) => {
-      overlay.querySelector('.upgrade-buy-btn').disabled = false;
-      overlay.querySelector('.upgrade-buy-btn').textContent = btnText;
-      if (success) { overlay.style.display = 'none'; if (onSuccess) onSuccess(); }
-    };
-  });
-  overlay.querySelector('.upgrade-restore-btn').addEventListener('click', () => {
-    overlay.querySelector('.purchase-restore-msg').style.display = 'none';
-    postToNative('restorePurchases');
-  });
-  overlay.querySelector('.upgrade-cancel-btn').addEventListener('click', () => {
-    overlay.style.display = 'none';
-  });
-  overlay.style.display = 'flex';
-}
-
-// Timer-Upgrade Prompt (Free → Abo)
-function checkTimerLimit(seconds) {
-  if (!window.__nativeApp) return true;
-  if (seconds <= maxTimerSeconds()) return true;
-  showUpgradeOverlay(
-    'M-SPHERE STANDARD',
-    t('aboUpgradeDesc'),
-    t('aboUpgradeBtn'),
-    'de.jochenhornung.msphere.standard',
-    null
-  );
-  return false;
-}
-
 // Universeller Confirm-Dialog (wiederverwendbar)
 function showDeinIchConfirm(message, okText, cancelText, onOk) {
   let overlay = document.getElementById('deinIchConfirmOverlay');
@@ -6625,34 +6504,11 @@ function _openPickerAfterGate() {
 }
 
 function _showHintThenPicker() {
-  if (_deinIchRetry) { document.getElementById('deinIchInput').click(); return; }
-  if (window.__nativeApp) {
-    const remaining = deinIchRemaining();
-    const hint = t('deinIchCreditHinweis') + '\n\n' + t('deinIchCredits').replace('{n}', remaining);
-    showDeinIchConfirm(hint, t('deinIchFoto'), t('dsgvoDecline'), () => {
-      document.getElementById('deinIchInput').click();
-    });
-  } else {
-    document.getElementById('deinIchInput').click();
-  }
+  document.getElementById('deinIchInput').click();
 }
 
-// Öffnet File-Picker — Dein Ich Gate (Non-Consumable) → Consent → Hinweis → Picker
+// Öffnet File-Picker — Consent → Picker (Free-Version: kein Kauf-Gate)
 function openDeinIchPicker() {
-  if (window.__nativeApp && !isDeinIchUnlocked()) {
-    showUpgradeOverlay(
-      'DEIN ICH',
-      t('deinIchKaufenDesc'),
-      t('deinIchKaufen'),
-      'de.jochenhornung.msphere.deinich',
-      () => _openPickerAfterGate()
-    );
-    return;
-  }
-  if (window.__nativeApp && deinIchRemaining() <= 0) {
-    showDeinIchConfirm(t('deinIchKeineCredits'), 'OK', '', () => {});
-    return;
-  }
   _openPickerAfterGate();
 }
 

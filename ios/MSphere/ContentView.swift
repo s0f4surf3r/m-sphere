@@ -65,10 +65,8 @@ class LocalFileSchemeHandler: NSObject, WKURLSchemeHandler {
 
 // MARK: - WKWebView wrapper
 struct ContentView: UIViewRepresentable {
-    @ObservedObject var storeManager: StoreManager
-
     func makeCoordinator() -> Coordinator {
-        Coordinator(storeManager: storeManager)
+        Coordinator()
     }
 
     func makeUIView(context: Context) -> WKWebView {
@@ -83,24 +81,12 @@ struct ContentView: UIViewRepresentable {
         // Serve local files via app:// scheme
         config.setURLSchemeHandler(LocalFileSchemeHandler(), forURLScheme: "app")
 
-        // Inject native app flag + entitlements
-        let sub = storeManager.isSubscribed
-        let deinIch = storeManager.deinIchUnlocked
-        let genRemaining = storeManager.deinIchGenerationsRemaining
+        // Inject native app flag
         let nativeScript = WKUserScript(source: """
             window.__nativeApp = true;
             window.__stripAffiliateLinks = true;
-            window.__msphere = {
-                subscribed: \(sub),
-                deinIchUnlocked: \(deinIch),
-                deinIchRemaining: \(genRemaining),
-                maxTimer: \(sub ? 9999 : 600)
-            };
             """, injectionTime: .atDocumentStart, forMainFrameOnly: true)
         config.userContentController.addUserScript(nativeScript)
-
-        // Register JS→Swift message handler
-        config.userContentController.add(context.coordinator, name: "msphere")
 
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.isOpaque = true
@@ -124,65 +110,8 @@ struct ContentView: UIViewRepresentable {
     func updateUIView(_ webView: WKWebView, context: Context) {}
 
     // MARK: - Coordinator
-    class Coordinator: NSObject, WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler {
-        let storeManager: StoreManager
+    class Coordinator: NSObject, WKUIDelegate, WKNavigationDelegate {
         weak var webView: WKWebView?
-
-        init(storeManager: StoreManager) {
-            self.storeManager = storeManager
-        }
-
-        // MARK: - JS→Swift Message Handler
-        func userContentController(_ userContentController: WKUserContentController,
-                                   didReceive message: WKScriptMessage) {
-            guard message.name == "msphere",
-                  let body = message.body as? [String: Any],
-                  let action = body["action"] as? String else { return }
-
-            switch action {
-            case "purchase":
-                let productID = body["productId"] as? String ?? ""
-                Task { @MainActor in
-                    let success = await storeManager.purchase(productID)
-                    try? await webView?.evaluateJavaScript(syncStateJS())
-                    let js = "window.__handlePurchaseResult(\(success));"
-                    try? await webView?.evaluateJavaScript(js)
-                }
-            case "useGeneration":
-                Task { @MainActor in
-                    storeManager.useDeinIchGeneration()
-                    try? await webView?.evaluateJavaScript(syncStateJS())
-                }
-            case "restorePurchases":
-                Task { @MainActor in
-                    await storeManager.restorePurchases()
-                    try? await webView?.evaluateJavaScript(syncStateJS())
-                    let restored = storeManager.isSubscribed || storeManager.deinIchUnlocked
-                    let js = "window.__handleRestoreResult(\(restored));"
-                    try? await webView?.evaluateJavaScript(js)
-                }
-            case "syncState":
-                Task { @MainActor in
-                    await storeManager.updateEntitlements()
-                    try? await webView?.evaluateJavaScript(syncStateJS())
-                }
-            default:
-                break
-            }
-        }
-
-        // Sync entitlement state to JS
-        private func syncStateJS() -> String {
-            let s = storeManager
-            return """
-                window.__msphere = {
-                    subscribed: \(s.isSubscribed),
-                    deinIchUnlocked: \(s.deinIchUnlocked),
-                    deinIchRemaining: \(s.deinIchGenerationsRemaining),
-                    maxTimer: \(s.isSubscribed ? 9999 : 600)
-                };
-            """
-        }
 
         // Auto-grant DeviceMotion/Orientation permission (gyro shake)
         func webView(_ webView: WKWebView,

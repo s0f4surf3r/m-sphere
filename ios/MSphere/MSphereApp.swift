@@ -2,11 +2,9 @@ import SwiftUI
 
 @main
 struct MSphereApp: App {
-    @StateObject private var storeManager = StoreManager()
-
     var body: some Scene {
         WindowGroup {
-            ContentView(storeManager: storeManager)
+            ContentView()
                 .ignoresSafeArea(.container, edges: [.leading, .trailing, .bottom])
                 .background(.black)
         }
