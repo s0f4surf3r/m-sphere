@@ -113,12 +113,32 @@ struct ContentView: UIViewRepresentable {
     class Coordinator: NSObject, WKUIDelegate, WKNavigationDelegate {
         weak var webView: WKWebView?
 
-        // Auto-grant DeviceMotion/Orientation permission (gyro shake)
+        // Bewegungssensor-Zugriff (Schütteln) — nur nach expliziter Zustimmung, kein Auto-Grant
         func webView(_ webView: WKWebView,
                      requestDeviceOrientationAndMotionPermissionFor origin: WKSecurityOrigin,
                      initiatedByFrame frame: WKFrameInfo,
                      decisionHandler: @escaping (WKPermissionDecision) -> Void) {
-            decisionHandler(.grant)
+            guard let root = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first?.windows.first?.rootViewController else {
+                decisionHandler(.deny)
+                return
+            }
+            let isGerman = Locale.current.language.languageCode?.identifier == "de"
+            let alert = UIAlertController(
+                title: isGerman ? "Bewegungssensor" : "Motion Sensor",
+                message: isGerman
+                    ? "M-Sphere nutzt die Bewegungssensoren deines Geräts, um das Schütteln der Kugel zu erkennen."
+                    : "M-Sphere uses your device's motion sensors to detect shaking the globe.",
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: isGerman ? "Erlauben" : "Allow", style: .default) { _ in
+                decisionHandler(.grant)
+            })
+            alert.addAction(UIAlertAction(title: isGerman ? "Nicht erlauben" : "Don't Allow", style: .cancel) { _ in
+                decisionHandler(.deny)
+            })
+            root.present(alert, animated: true)
         }
 
         // window.open() — öffnet externe Links in SFSafariViewController

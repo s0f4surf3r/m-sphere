@@ -97,21 +97,6 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 <div id="landscapeBlock"><span>↻</span><p>Bitte drehe dein Gerät ins Hochformat</p></div>
 <canvas id="c" style="-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none;-webkit-user-drag:none"></canvas>
 <div id="menuSpacer" style="width:1px;height:0;pointer-events:none"></div>
-<input type="file" id="deinIchInput" accept="image/*" multiple style="display:none">
-<div id="deinIchConsent" style="display:none;position:fixed;inset:0;z-index:9999;
-  background:rgba(10,22,40,0.92);align-items:center;justify-content:center;
-  font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">
-  <div style="background:#1e3232;border-radius:16px;padding:28px 24px;max-width:380px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
-    <div id="consentTitle" style="color:#fae6e6;font-size:18px;font-weight:700;margin-bottom:12px"></div>
-    <div id="consentText" style="color:rgba(250,230,230,0.7);font-size:13px;line-height:1.6;margin-bottom:20px;text-align:left;white-space:pre-line;max-height:50vh;overflow-y:auto"></div>
-    <button id="consentAccept" style="display:block;width:100%;padding:10px 0;margin-bottom:10px;background:rgba(37,162,162,0.15);
-      border:1px solid rgba(37,162,162,0.5);color:rgba(37,162,162,0.95);border-radius:8px;font-size:15px;cursor:pointer;
-      font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
-    <button id="consentDecline" style="display:block;width:100%;padding:8px 0;background:none;
-      border:1px solid rgba(250,230,230,0.3);color:#fae6e6;border-radius:8px;font-size:14px;cursor:pointer;
-      font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
-  </div>
-</div>
 <div id="customTimeOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,22,40,0.92);
   align-items:center;justify-content:center;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">
   <div style="background:#1e3232;border-radius:16px;padding:32px 28px;max-width:300px;width:85%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
@@ -129,47 +114,6 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
     <button id="customTimeCancel" style="display:block;width:100%;padding:8px 0;background:none;
       border:1px solid rgba(250,230,230,0.2);color:rgba(250,230,230,0.6);border-radius:8px;font-size:14px;cursor:pointer;
       font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">Abbrechen</button>
-  </div>
-</div>
-<div id="deinIchOverlay" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(10,22,40,0.93);
-  align-items:center;justify-content:center;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">
-  <div style="background:#1e3232;border-radius:16px;padding:24px 22px;max-width:360px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
-    <div id="deiOverlayTitle" style="color:rgba(250,230,230,0.4);font-size:11px;letter-spacing:3px;font-family:'Courier New',monospace;margin-bottom:18px"></div>
-    <div id="deiProgress" style="display:none">
-      <div id="deiStepLabel" style="color:#edd457;font-size:14px;margin-bottom:14px;min-height:20px"></div>
-      <div style="height:4px;background:rgba(250,230,230,0.1);border-radius:2px;overflow:hidden;margin-bottom:8px">
-        <div id="deiProgressBar" style="height:100%;background:#25a2a2;border-radius:2px;transition:width 0.4s ease;width:0%"></div>
-      </div>
-      <div id="deiPercent" style="color:rgba(250,230,230,0.45);font-size:12px;font-family:'Courier New',monospace;margin-bottom:18px"></div>
-      <button id="deiAbbrechen" style="background:none;border:1px solid rgba(250,230,230,0.2);color:rgba(250,230,230,0.5);
-        padding:8px 28px;border-radius:8px;font-size:13px;cursor:pointer;
-        font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
-    </div>
-    <div id="deiPreviewSection" style="display:none">
-      <div id="deiPreviewHint" style="color:rgba(250,230,230,0.5);font-size:12px;margin-bottom:12px"></div>
-      <div id="deiPreviewGrid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
-        <img class="dei-variant" data-idx="0" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:2px solid transparent;cursor:pointer;display:block">
-        <img class="dei-variant" data-idx="1" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:2px solid transparent;cursor:pointer;display:block">
-        <img class="dei-variant" data-idx="2" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:2px solid transparent;cursor:pointer;display:block">
-      </div>
-      <div style="display:flex;gap:10px">
-        <button id="deiWeiter" style="flex:1;padding:11px;background:rgba(37,162,162,0.15);border:1.5px solid #25a2a2;
-          color:#25a2a2;border-radius:8px;font-size:15px;cursor:pointer;
-          font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif" disabled></button>
-        <button id="deiNochmal" style="flex:1;padding:11px;background:none;border:1px solid rgba(250,230,230,0.3);
-          color:rgba(250,230,230,0.8);border-radius:8px;font-size:14px;cursor:pointer;
-          font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
-      </div>
-    </div>
-    <div id="deiErrorSection" style="display:none">
-      <div id="deiErrorMsg" style="color:rgba(237,112,112,0.9);font-size:13px;line-height:1.6;margin-bottom:18px"></div>
-      <button id="deiRetry" style="display:block;width:100%;padding:10px;margin-bottom:10px;
-        background:rgba(37,162,162,0.15);border:1px solid rgba(37,162,162,0.5);color:#25a2a2;
-        border-radius:8px;font-size:14px;cursor:pointer;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif"></button>
-      <button id="deiClose" style="display:block;width:100%;padding:8px;background:none;
-        border:1px solid rgba(250,230,230,0.2);color:rgba(250,230,230,0.5);border-radius:8px;
-        font-size:13px;cursor:pointer;font-family:-apple-system,'SF Pro Display','Helvetica Neue',sans-serif">Schließen</button>
-    </div>
   </div>
 </div>
 <noscript><div style="position:fixed;inset:0;background:#000;color:#fae6e6;display:flex;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:2rem"><p>M-Sphere benötigt JavaScript.<br>Bitte aktiviere JavaScript in deinen Browser-Einstellungen.</p></div></noscript>
@@ -220,28 +164,7 @@ const TR = {
     meditationsSound: 'SOUNDS',
     gedankenmodus: 'GEDANKENMODUS',
     gedankenfluss: 'GEDANKENFLUSS',
-    deinIch: 'DEIN ICH',
-    deinIchFoto: 'Fotos hochladen',
-    deinIchHint: '2 Fotos (frontal + seitlich) • ~5 Min',
-    deinIchMinFotos: 'Bitte wähle 2 Fotos (frontal + seitlich)',
-    deinIchStep1: 'Bild wird erstellt',
-    deinIchStep2: '3D-Modell wird gebaut',
-    deinIchStep3: 'Modell wird optimiert',
-    deinIchWaehle: 'Wähle dein Lieblingsbild',
-    deinIchWeiter: 'Weiter',
-    deinIchNochmal: 'Alle neu',
-    deinIchAktiv: 'Aktiv',
-    deinIchNeu: 'Neu',
-    deinIchLoeschen: 'Löschen',
-    deinIchLoeschenFrage: 'Dein Modell wird unwiderruflich gelöscht. Bist du sicher?',
-    deinIchLoeschenJa: 'Ja, löschen',
-    deinIchLaden: 'Dein Modell wird geladen',
-    deinIchFehler: 'Fehler beim Erstellen',
     aboLinks: 'Nutzungsbedingungen · Datenschutz',
-    dsgvoTitel: 'DEIN ICH',
-    dsgvoText: 'FÜR BESTE ERGEBNISSE\n\n• 2 Fotos: 1× frontal, 1× seitlich\n• Gutes Licht, ganzes Gesicht sichtbar\n• Neutraler Hintergrund wenn möglich\n• Kein starkes Gegenlicht\n\nDATENSCHUTZ\n\nDeine Fotos werden zur Erstellung eines personalisierten 3D-Modells an folgende Dienste übermittelt:\n\n• Google Gemini (USA) — Bilderzeugung\n• Meshy AI (USA) — 3D-Modellierung\n\nDie Fotos werden nur für die Verarbeitung genutzt und danach gelöscht. Das fertige Modell wird ausschließlich lokal auf deinem Gerät gespeichert.',
-    dsgvoAccept: 'Zustimmen & fortfahren',
-    dsgvoDecline: 'Abbrechen',
     timerAn: '⏱ An',
     timerAus: '⏱',
     clickStart: 'Meditation starten',
@@ -299,28 +222,7 @@ const TR = {
     meditationsSound: 'SOUNDS',
     gedankenmodus: 'THOUGHT MODE',
     gedankenfluss: 'THOUGHT FLOW',
-    deinIch: 'YOUR SELF',
-    deinIchFoto: 'Upload photos',
-    deinIchHint: '2 photos (front + side) • ~5 min',
-    deinIchMinFotos: 'Please select 2 photos (front + side)',
-    deinIchStep1: 'Creating image',
-    deinIchStep2: 'Building 3D model',
-    deinIchStep3: 'Optimizing model',
-    deinIchWaehle: 'Choose your favorite',
-    deinIchWeiter: 'Continue',
-    deinIchNochmal: 'Regenerate all',
-    deinIchAktiv: 'Active',
-    deinIchNeu: 'New',
-    deinIchLoeschen: 'Delete',
-    deinIchLoeschenFrage: 'Your model will be permanently deleted. Are you sure?',
-    deinIchLoeschenJa: 'Yes, delete',
-    deinIchLaden: 'Loading your model',
-    deinIchFehler: 'Error creating model',
     aboLinks: 'Terms of Use · Privacy Policy',
-    dsgvoTitel: 'YOUR SELF',
-    dsgvoText: 'FOR BEST RESULTS\n\n• 2 photos: 1× front, 1× side profile\n• Good lighting, full face visible\n• Neutral background if possible\n• No strong backlight\n\nPRIVACY\n\nYour photos will be sent to the following services to create a personalized 3D model:\n\n• Google Gemini (USA) — Image generation\n• Meshy AI (USA) — 3D modeling\n\nPhotos are only used for processing and deleted afterwards. The finished model is stored exclusively on your device.',
-    dsgvoAccept: 'Agree & continue',
-    dsgvoDecline: 'Cancel',
     timerAn: '⏱ On',
     timerAus: '⏱',
     clickStart: 'Start meditation',
@@ -538,19 +440,6 @@ let distractionModeIdx = parseInt(localStorage.getItem('msphere_distraction')) |
 let toastMsg = '';
 let toastStart = 0;
 
-// --- Dein Ich ---
-const DEIN_ICH_ENABLED = false; // Free-Version: API-Kosten (Gemini+Meshy) ohne Monetarisierung nicht tragbar. Reaktivierbar durch true.
-let deinIchStatus = 'idle'; // 'idle'|'uploading'|'gemini'|'preview'|'meshy3d'|'remesh'|'downloading'|'done'|'error'
-let deinIchProgress = 0;
-let deinIchStep = 0; // 0=Gemini, 1=Meshy3D, 2=Remesh, 3=Download
-let deinIchError = null;
-let deinIchPreviewImg = null;
-let deinIchPollTimer = null;
-let deinIchTaskId = null;
-let deinIchGeminiBase64 = null; // Gemini-Bild als base64 für 3D-API
-let deinIchVariants = []; // 3 Gemini-Varianten
-let deinIchSelectedVariant = -1;
-
 // Hit-Bereiche für die Menu-Buttons
 let menuButtons = {};
 let menuTouchDist = 0;
@@ -569,7 +458,7 @@ let menuScrollRowAreas = {};  // Key = collapseKey, Value = {x, y, w, h, maxOffs
 // --- Legal Overlay (Impressum/Datenschutz/About/Menu) ---
 let legalOverlay = null; // 'menu' | 'about' | 'impressum' | 'datenschutz' | null
 // Ausklappbare Menü-Sektionen (true = offen)
-const menuExpanded = { breathing: true, meditation: false, thoughtMode: false, flowLevel: false, deinIch: false };
+const menuExpanded = { breathing: true, meditation: false, thoughtMode: false, flowLevel: false };
 let menuToggleAreas = {}; // Hit-Areas für Sektions-Header
 let legalScrollY = 0;
 let legalCloseBtn = null;
@@ -793,9 +682,6 @@ const MODEL_LIST = [
   { key: 'male', file: 'model_male_compressed.glb', label: 'Männlich' },
   { key: 'female', file: 'model_female_compressed.glb', label: 'Weiblich' },
 ];
-let customModelBlob = null;
-let customModelUrl = null;
-let customModelExists = false;
 const EASTER_MODELS = {
   zoe: { key: 'zoe', file: 'meshy_zoe_compressed.glb', label: 'Zoe' },
   jochen: { key: 'jochen', file: 'meshy_jochen_compressed.glb', label: 'Jochen' },
@@ -853,85 +739,6 @@ function loadModel(idx, override) {
   });
 }
 loadModel(currentModelIdx);
-
-// --- IndexedDB für Custom-Modelle ---
-function openModelDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open('jsphere', 1);
-    req.onupgradeneeded = () => { req.result.createObjectStore('models'); };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-function saveCustomModel(blob) {
-  return openModelDB().then(db => new Promise((resolve, reject) => {
-    const tx = db.transaction('models', 'readwrite');
-    tx.objectStore('models').put(blob, 'custom');
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  }));
-}
-function loadCustomModel() {
-  return openModelDB().then(db => new Promise((resolve) => {
-    const tx = db.transaction('models', 'readonly');
-    const req = tx.objectStore('models').get('custom');
-    req.onsuccess = () => {
-      const blob = req.result;
-      if (blob) {
-        customModelBlob = blob;
-        if (customModelUrl) URL.revokeObjectURL(customModelUrl);
-        customModelUrl = URL.createObjectURL(blob);
-        customModelExists = true;
-      } else {
-        customModelBlob = null;
-        customModelUrl = null;
-        customModelExists = false;
-      }
-      resolve(blob || null);
-    };
-    req.onerror = () => { resolve(null); };
-  })).catch(() => null);
-}
-function deleteCustomModel() {
-  if (customModelUrl) URL.revokeObjectURL(customModelUrl);
-  customModelBlob = null;
-  customModelUrl = null;
-  customModelExists = false;
-  return openModelDB().then(db => new Promise((resolve) => {
-    const tx = db.transaction('models', 'readwrite');
-    tx.objectStore('models').delete('custom');
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => resolve();
-  })).catch(() => {});
-}
-// Beim App-Start: Custom-Modell aus IndexedDB laden (non-blocking)
-loadCustomModel().then(blob => {
-  if (blob) {
-    console.log('Custom model loaded from IndexedDB (' + (blob.size / 1024 / 1024).toFixed(1) + ' MB)');
-    // Thumbnail für Custom-Modell generieren
-    _thumbQueue.push({ key: 'custom', file: customModelUrl, label: 'Dein Ich' });
-    _genNextThumb();
-  }
-});
-// Beim App-Start: laufenden Dein-Ich-Task resumieren (nach App-Kill)
-(function resumeDeinIchTask() {
-  if (!DEIN_ICH_ENABLED) return;
-  try {
-    const saved = JSON.parse(localStorage.getItem('msphere_dei_task') || 'null');
-    if (!saved || !saved.id || (Date.now() - saved.ts > 30 * 60 * 1000)) return; // >30 min → verworfen
-    deinIchTaskId = saved.id;
-    deinIchStatus = 'meshy3d';
-    deinIchStep = saved.step === 'remesh' ? 2 : 1;
-    deinIchProgress = 20;
-    updateDeinIchOverlay();
-    if (saved.step === 'remesh') {
-      deinIchPollTimer = setInterval(pollDeinIchRemesh, 5000);
-    } else {
-      deinIchPollTimer = setInterval(pollDeinIch3D, 5000);
-    }
-    console.log('Resuming Dein-Ich task:', saved.id, '(step:', saved.step + ')');
-  } catch(e) {}
-})();
 
 // Thumbnails für Choosing-Screen generieren (nutzt Haupt-Renderer, sequentiell)
 let _thumbQueue = [...MODEL_LIST];
@@ -2714,7 +2521,7 @@ function drawMenu() {
   const _prevLotus = menuButtons.lotus; // Hit-Area beibehalten falls Rendering fehlschlägt
   const _prevGk = menuButtons.gkLink;
   const _prevLink = menuButtons.link;
-  menuButtons = { timer: [], breathing: [], timerToggle: null, customTime: null, shake: [], meditation: [], start: null, deinIch: [], lotus: _prevLotus, lotusHint: null, gkLink: _prevGk, link: _prevLink };
+  menuButtons = { timer: [], breathing: [], timerToggle: null, customTime: null, shake: [], meditation: [], start: null, lotus: _prevLotus, lotusHint: null, gkLink: _prevGk, link: _prevLink };
 
   // Vertikales Layout berechnen — dynamisch an Fensterhöhe angepasst
   const vScale = isMobilePortrait ? 1.0 : Math.max(0.7, Math.min(1.4, H / 800));
@@ -2747,22 +2554,11 @@ function drawMenu() {
     const _rowCollapsed = rowFont * 2;
     const _rowExpanded = rowFont * 2 + btnGap + btnH * 0.9;
     let _sectionsH = 0;
-    for (const key of (DEIN_ICH_ENABLED ? ['breathing', 'meditation', 'thoughtMode', 'flowLevel', 'deinIch'] : ['breathing', 'meditation', 'thoughtMode', 'flowLevel'])) {
+    for (const key of ['breathing', 'meditation', 'thoughtMode', 'flowLevel']) {
       _sectionsH += menuExpanded[key] ? _rowExpanded : _rowCollapsed;
     }
-    // deinIch expanded adds extra content (hint text, preview image, buttons)
-    if (menuExpanded.deinIch) {
-      const isPipelineActive = deinIchStatus !== 'idle' && deinIchStatus !== 'done' && deinIchStatus !== 'error';
-      if (deinIchStatus === 'preview' && deinIchPreviewImg) {
-        _sectionsH += btnH * 2.5 + rowFont * 1.5; // preview image + buttons
-      } else if (isPipelineActive) {
-        _sectionsH += rowFont * 4; // progress steps
-      } else {
-        _sectionsH += rowFont * 0.6; // hint text
-      }
-    }
     let _innerGapSum = 0;
-    for (const key of (DEIN_ICH_ENABLED ? ['breathing', 'meditation', 'thoughtMode', 'flowLevel', 'deinIch'] : ['breathing', 'meditation', 'thoughtMode', 'flowLevel'])) {
+    for (const key of ['breathing', 'meditation', 'thoughtMode', 'flowLevel']) {
       _innerGapSum += sectionGap * (menuExpanded[key] ? 0.6 : 1.0);
     }
     const _titleSubH = titleSize + subtitleSize * 1.2;
@@ -3348,39 +3144,6 @@ function drawMenu() {
   menuButtons.flowLevel = flowRow.btns;
   curY = flowRow.bottomY + sectionGap * (menuExpanded.flowLevel ? 0.6 : 1);
 
-  // --- DEIN ICH --- (Free-Version: deaktiviert, siehe DEIN_ICH_ENABLED)
-  if (DEIN_ICH_ENABLED) {
-    const diHasDone = customModelExists;
-    const diLabel = diHasDone && !menuExpanded.deinIch ? t('deinIch') + ' ✓' : t('deinIch');
-    const isPipelineActive = deinIchStatus !== 'idle' && deinIchStatus !== 'done' && deinIchStatus !== 'error';
-
-    if (isPipelineActive || deinIchStatus === 'preview' || deinIchStatus === 'error') {
-      // Overlay übernimmt die Anzeige — im Menü nur Header zeigen
-      const diRow = drawSettingsRow(diLabel, [], -1, curY, '#edd457', 'deinIch');
-      curY = diRow.bottomY;
-      menuButtons.deinIch = [];
-    } else if (diHasDone) {
-      // Custom-Modell vorhanden: Aktiv / Neu / Löschen
-      const diRow = drawSettingsRow(diLabel, [t('deinIchAktiv'), t('deinIchNeu'), t('deinIchLoeschen')], 0, curY, '#25a2a2', 'deinIch');
-      menuButtons.deinIch = diRow.btns.map((btn, i) => ({ ...btn, action: ['active', 'new', 'delete'][i] }));
-      curY = diRow.bottomY;
-    } else {
-      // Idle: Foto hochladen Button
-      const diRow = drawSettingsRow(diLabel, [t('deinIchFoto')], -1, curY, null, 'deinIch');
-      menuButtons.deinIch = diRow.btns.map(btn => ({ ...btn, action: 'upload' }));
-      curY = diRow.bottomY;
-      // Hint-Text
-      if (menuExpanded.deinIch) {
-        const hintY = curY + rowFont * 0.3;
-        ctx.textAlign = 'center';
-        ctx.font = `400 ${rowFont * 0.7}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
-        ctx.fillStyle = 'rgba(250, 230, 230, 0.5)';
-        ctx.fillText(t('deinIchHint'), cx, hintY);
-        ctx.textAlign = 'start';
-        curY = hintY + rowFont * 0.3;
-      }
-    }
-  }
   // Start-Button: struktureller Abstand zur Settings-Gruppe
   curY += isMobilePortrait ? layoutGap * 0.8 : sectionGap * 2;
 
@@ -4548,30 +4311,6 @@ function handleMenuClick(x, y) {
       return true;
     }
   }
-  // Dein Ich
-  for (const btn of menuButtons.deinIch || []) {
-    if (hitBtn(btn)) {
-      if (btn.action === 'upload' || btn.action === 'new') {
-        openDeinIchPicker();
-      } else if (btn.action === 'confirm') {
-        confirmDeinIchPreview();
-      } else if (btn.action === 'retry') {
-        cancelDeinIch();
-        openDeinIchPicker();
-      } else if (btn.action === 'delete') {
-        showDeinIchConfirm(t('deinIchLoeschenFrage'), t('deinIchLoeschenJa'), t('dsgvoDecline'), () => {
-          cancelDeinIch();
-          deleteCustomModel();
-          delete modelThumbnails['custom'];
-        });
-      }
-      // 'active' = no-op
-      if (btn.action !== 'upload' && btn.action !== 'new') {
-        try { playTingsha(); } catch(err) {}
-      }
-      return true;
-    }
-  }
   // Sound-Toggle (Screen-Space, nicht scroll-adjusted → y statt sy)
   const tt = menuButtons.timerToggle;
   if (tt && x >= tt.x && x <= tt.x + tt.w && y >= tt.y && y <= tt.y + tt.h) {
@@ -4698,11 +4437,7 @@ canvas.addEventListener('click', (e) => {
     if (menuButtons.chooseModel) {
       for (const btn of menuButtons.chooseModel) {
         if (cx >= btn.x && cx <= btn.x + btn.w && cy >= btn.y && cy <= btn.y + btn.h) {
-          if (btn.key === 'custom') {
-            loadModel(0, { key: 'custom', file: customModelUrl, label: 'Dein Ich' });
-          } else {
-            loadModel(btn.idx);
-          }
+          loadModel(btn.idx);
           state = 'ready';
           resize();
           try { playTingsha(); } catch(err) {}
@@ -4845,11 +4580,7 @@ canvas.addEventListener('touchend', (e) => {
       if (menuButtons.chooseModel) {
         for (const btn of menuButtons.chooseModel) {
           if (tx >= btn.x && tx <= btn.x + btn.w && ty >= btn.y && ty <= btn.y + btn.h) {
-            if (btn.key === 'custom') {
-              loadModel(0, { key: 'custom', file: customModelUrl, label: 'Dein Ich' });
-            } else {
-              loadModel(btn.idx);
-            }
+            loadModel(btn.idx);
             state = 'ready';
             resize();
             try { playTingsha(); } catch(err) {}
@@ -6125,420 +5856,6 @@ function drawStatue(cx, cy, r) {
   ctx.restore();
 }
 
-// --- Dein Ich ---
-const DEIN_ICH_API = 'https://mspherevyfiykwu-msphere-api.functions.fnc.fr-par.scw.cloud/api/model';
-
-function resizePhoto(dataUrl, maxSize = 512) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const c = document.createElement('canvas');
-      const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
-      c.width = img.width * scale;
-      c.height = img.height * scale;
-      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      resolve(c.toDataURL('image/jpeg', 0.85));
-    };
-    img.src = dataUrl;
-  });
-}
-
-function cancelDeinIch() {
-  if (deinIchPollTimer) { clearInterval(deinIchPollTimer); deinIchPollTimer = null; }
-  deinIchStatus = 'idle';
-  deinIchProgress = 0;
-  deinIchStep = 0;
-  deinIchError = null;
-  deinIchPreviewImg = null;
-  deinIchTaskId = null;
-  deinIchGeminiBase64 = null;
-  localStorage.removeItem('msphere_dei_task');
-  updateDeinIchOverlay();
-}
-
-function updateDeinIchOverlay() {
-  const overlay = document.getElementById('deinIchOverlay');
-  if (!overlay) return;
-  const isActive = deinIchStatus !== 'idle' && deinIchStatus !== 'done';
-  overlay.style.display = isActive ? 'flex' : 'none';
-  if (!isActive) return;
-
-  document.getElementById('deiOverlayTitle').textContent = t('deinIch');
-  const isProg = deinIchStatus !== 'preview' && deinIchStatus !== 'error';
-  document.getElementById('deiProgress').style.display = isProg ? 'block' : 'none';
-  document.getElementById('deiPreviewSection').style.display = deinIchStatus === 'preview' ? 'block' : 'none';
-  document.getElementById('deiErrorSection').style.display = deinIchStatus === 'error' ? 'block' : 'none';
-
-  if (isProg) {
-    const stepLabels = [t('deinIchStep1'), t('deinIchStep2'), t('deinIchStep3'), t('deinIchStep3')];
-    const stepNum = Math.min(deinIchStep, 2);
-    document.getElementById('deiStepLabel').textContent = (stepNum + 1) + '/3: ' + stepLabels[stepNum];
-    const totalProgress = Math.round((deinIchStep * 100 + deinIchProgress) / 3);
-    document.getElementById('deiProgressBar').style.width = totalProgress + '%';
-    document.getElementById('deiPercent').textContent = totalProgress + '%';
-    document.getElementById('deiAbbrechen').textContent = t('abbrechen');
-  }
-  if (deinIchStatus === 'preview') {
-    document.getElementById('deiPreviewHint').textContent = t('deinIchWaehle');
-    const imgs = document.querySelectorAll('.dei-variant');
-    imgs.forEach((img, i) => {
-      if (i < deinIchVariants.length) {
-        img.src = deinIchVariants[i];
-        img.style.display = 'block';
-        img.style.borderColor = i === deinIchSelectedVariant ? '#25a2a2' : 'transparent';
-        img.style.opacity = deinIchSelectedVariant >= 0 && i !== deinIchSelectedVariant ? '0.5' : '1';
-      } else {
-        img.style.display = 'none';
-      }
-    });
-    // Grid-Spalten an Anzahl anpassen
-    const grid = document.getElementById('deiPreviewGrid');
-    grid.style.gridTemplateColumns = `repeat(${Math.min(deinIchVariants.length, 3)}, 1fr)`;
-    document.getElementById('deiWeiter').textContent = t('deinIchWeiter');
-    document.getElementById('deiWeiter').disabled = deinIchSelectedVariant < 0;
-    document.getElementById('deiNochmal').textContent = t('deinIchNochmal');
-  }
-  if (deinIchStatus === 'error') {
-    document.getElementById('deiErrorMsg').textContent = deinIchError || t('deinIchFehler');
-    document.getElementById('deiRetry').textContent = t('deinIchFoto');
-  }
-}
-
-document.getElementById('deiAbbrechen').addEventListener('click', () => { cancelDeinIch(); });
-// Varianten-Auswahl per Klick
-document.querySelectorAll('.dei-variant').forEach(img => {
-  img.addEventListener('click', () => {
-    deinIchSelectedVariant = parseInt(img.dataset.idx);
-    deinIchGeminiBase64 = deinIchVariants[deinIchSelectedVariant];
-    updateDeinIchOverlay();
-  });
-});
-document.getElementById('deiWeiter').addEventListener('click', () => {
-  if (deinIchSelectedVariant < 0) return;
-  deinIchGeminiBase64 = deinIchVariants[deinIchSelectedVariant];
-  confirmDeinIchPreview();
-});
-document.getElementById('deiNochmal').addEventListener('click', () => {
-  cancelDeinIch();
-  _deinIchRetry = true; // Kein neuer Credit bei Retry
-  document.getElementById('deinIchInput').click();
-});
-document.getElementById('deiRetry').addEventListener('click', () => {
-  cancelDeinIch();
-  _deinIchRetry = true; // Kein neuer Credit bei Retry
-  document.getElementById('deinIchInput').click();
-});
-document.getElementById('deiClose').addEventListener('click', () => { cancelDeinIch(); });
-
-let _deinIchRetry = false;
-function startDeinIch(photoDataUrls) {
-  cancelDeinIch();
-  _deinIchRetry = false;
-  deinIchStatus = 'uploading';
-  deinIchStep = 0;
-  deinIchProgress = 10;
-  menuExpanded.deinIch = true;
-  updateDeinIchOverlay();
-
-  // Fotos resizen
-  Promise.all(photoDataUrls.map(url => resizePhoto(url, 512)))
-    .then(resizedPhotos => {
-      deinIchStatus = 'gemini';
-      deinIchProgress = 10;
-      updateDeinIchOverlay();
-      // 3 parallele Gemini-Calls für Varianten
-      const calls = [0, 1, 2].map(() =>
-        fetch(DEIN_ICH_API + '/generate-image', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ photos: resizedPhotos })
-        }).then(r => r.json())
-      );
-      return Promise.allSettled(calls);
-    })
-    .then(results => {
-      deinIchVariants = [];
-      deinIchSelectedVariant = -1;
-      let firstError = null;
-      for (const r of results) {
-        if (r.status === 'fulfilled' && r.value.image && !r.value.error) {
-          deinIchVariants.push(r.value.image);
-        } else {
-          if (!firstError) firstError = r.status === 'rejected' ? r.reason?.message : r.value?.error;
-        }
-      }
-      if (deinIchVariants.length === 0) throw new Error(firstError || t('deinIchFehler'));
-      deinIchStatus = 'preview';
-      deinIchProgress = 100;
-      updateDeinIchOverlay();
-    })
-    .catch(err => {
-      deinIchStatus = 'error';
-      deinIchError = err.message || t('deinIchFehler');
-      localStorage.removeItem('msphere_dei_task');
-      updateDeinIchOverlay();
-    });
-}
-
-function confirmDeinIchPreview() {
-  deinIchStatus = 'meshy3d';
-  deinIchStep = 1;
-  deinIchProgress = 0;
-  updateDeinIchOverlay();
-
-  fetch(DEIN_ICH_API + '/generate-3d', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image_url: deinIchGeminiBase64 })
-  })
-    .then(res => {
-      if (!res.ok && res.status === 413) throw new Error('Bild zu groß (413)');
-      return res.json().catch(() => { throw new Error('HTTP ' + res.status); });
-    })
-    .then(data => {
-      if (data.error) throw new Error(data.error);
-      deinIchTaskId = data.task_id || data.result;
-      localStorage.setItem('msphere_dei_task', JSON.stringify({ id: deinIchTaskId, step: '3d', ts: Date.now() }));
-      deinIchProgress = 20;
-      // Starte Polling
-      deinIchPollTimer = setInterval(pollDeinIch3D, 5000);
-    })
-    .catch(err => {
-      deinIchStatus = 'error';
-      deinIchError = err.message || t('deinIchFehler');
-      localStorage.removeItem('msphere_dei_task');
-      updateDeinIchOverlay();
-    });
-}
-
-function pollDeinIch3D() {
-  if (!deinIchTaskId) return;
-  fetch(DEIN_ICH_API + '/status?step=3d&id=' + deinIchTaskId)
-    .then(res => res.json())
-    .then(data => {
-      if (data.error) throw new Error(data.error);
-      if (data.status === 'SUCCEEDED' || data.status === 'succeeded') {
-        clearInterval(deinIchPollTimer);
-        deinIchPollTimer = null;
-        deinIchProgress = 100;
-        updateDeinIchOverlay();
-        // Starte Remesh
-        startDeinIchRemesh(deinIchTaskId);
-      } else if (data.status === 'FAILED' || data.status === 'failed') {
-        throw new Error('3D generation failed');
-      } else {
-        // Progress aktualisieren
-        deinIchProgress = Math.min(90, deinIchProgress + 5);
-        updateDeinIchOverlay();
-      }
-    })
-    .catch(err => {
-      clearInterval(deinIchPollTimer);
-      deinIchPollTimer = null;
-      deinIchStatus = 'error';
-      deinIchError = err.message || t('deinIchFehler');
-      updateDeinIchOverlay();
-    });
-}
-
-function startDeinIchRemesh(taskId) {
-  deinIchStatus = 'remesh';
-  deinIchStep = 2;
-  deinIchProgress = 0;
-  updateDeinIchOverlay();
-
-  fetch(DEIN_ICH_API + '/remesh', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ task_id: taskId })
-  })
-    .then(res => res.json())
-    .then(data => {
-      if (data.error) throw new Error(data.error);
-      deinIchTaskId = data.task_id || data.result;
-      localStorage.setItem('msphere_dei_task', JSON.stringify({ id: deinIchTaskId, step: 'remesh', ts: Date.now() }));
-      deinIchProgress = 20;
-      updateDeinIchOverlay();
-      deinIchPollTimer = setInterval(pollDeinIchRemesh, 5000);
-    })
-    .catch(err => {
-      deinIchStatus = 'error';
-      deinIchError = err.message || t('deinIchFehler');
-      localStorage.removeItem('msphere_dei_task');
-      updateDeinIchOverlay();
-    });
-}
-
-function pollDeinIchRemesh() {
-  if (!deinIchTaskId) return;
-  fetch(DEIN_ICH_API + '/remesh?id=' + deinIchTaskId)
-    .then(res => res.json())
-    .then(data => {
-      if (data.error) throw new Error(data.error);
-      if (data.status === 'SUCCEEDED' || data.status === 'succeeded') {
-        clearInterval(deinIchPollTimer);
-        deinIchPollTimer = null;
-        deinIchProgress = 100;
-        updateDeinIchOverlay();
-        // GLB herunterladen
-        const glbUrl = data.model_urls?.glb || data.glb_url;
-        if (!glbUrl) throw new Error('No GLB URL in response');
-        downloadDeinIchModel(glbUrl);
-      } else if (data.status === 'FAILED' || data.status === 'failed') {
-        throw new Error('Remesh failed');
-      } else {
-        deinIchProgress = Math.min(90, deinIchProgress + 5);
-        updateDeinIchOverlay();
-      }
-    })
-    .catch(err => {
-      clearInterval(deinIchPollTimer);
-      deinIchPollTimer = null;
-      deinIchStatus = 'error';
-      deinIchError = err.message || t('deinIchFehler');
-      localStorage.removeItem('msphere_dei_task');
-      updateDeinIchOverlay();
-    });
-}
-
-function downloadDeinIchModel(glbUrl) {
-  deinIchStatus = 'downloading';
-  deinIchStep = 3;
-  deinIchProgress = 50;
-  updateDeinIchOverlay();
-
-  fetch(DEIN_ICH_API + '/download?url=' + encodeURIComponent(glbUrl))
-    .then(res => {
-      if (!res.ok) throw new Error('Download failed: ' + res.status);
-      return res.blob();
-    })
-    .then(blob => {
-      deinIchProgress = 80;
-      updateDeinIchOverlay();
-      return saveCustomModel(blob).then(() => blob);
-    })
-    .then(blob => {
-      // ObjectURL erstellen und Modell laden
-      if (customModelUrl) URL.revokeObjectURL(customModelUrl);
-      customModelBlob = blob;
-      customModelUrl = URL.createObjectURL(blob);
-      customModelExists = true;
-      deinIchProgress = 100;
-      deinIchStatus = 'done';
-      deinIchGeminiBase64 = null;
-      deinIchPreviewImg = null;
-      localStorage.removeItem('msphere_dei_task');
-      updateDeinIchOverlay();
-      // Modell direkt laden
-      loadModel(0, { key: 'custom', file: customModelUrl, label: 'Dein Ich' });
-      // Thumbnail generieren
-      delete modelThumbnails['custom'];
-      _thumbQueue.push({ key: 'custom', file: customModelUrl, label: 'Dein Ich' });
-      _genNextThumb();
-    })
-    .catch(err => {
-      deinIchStatus = 'error';
-      deinIchError = err.message || t('deinIchFehler');
-      localStorage.removeItem('msphere_dei_task');
-      updateDeinIchOverlay();
-    });
-}
-
-// DSGVO-Einwilligungs-Dialog für Dein Ich
-// Wird jetzt VOR dem File-Picker gezeigt (nicht mehr danach)
-let _consentCallback = null;
-function showDeinIchConsent(onAccept) {
-  const overlay = document.getElementById('deinIchConsent');
-  document.getElementById('consentTitle').textContent = t('dsgvoTitel');
-  document.getElementById('consentText').textContent = t('dsgvoText');
-  document.getElementById('consentAccept').textContent = t('dsgvoAccept');
-  document.getElementById('consentDecline').textContent = t('dsgvoDecline');
-  _consentCallback = onAccept;
-  overlay.style.display = 'flex';
-}
-function hideDeinIchConsent() {
-  document.getElementById('deinIchConsent').style.display = 'none';
-  _consentCallback = null;
-}
-document.getElementById('consentAccept').addEventListener('click', () => {
-  const cb = _consentCallback;
-  hideDeinIchConsent();
-  localStorage.setItem('msphere_deiních_consent', 'true');
-  if (cb) cb();
-});
-document.getElementById('consentDecline').addEventListener('click', () => {
-  hideDeinIchConsent();
-});
-
-// Universeller Confirm-Dialog (wiederverwendbar)
-function showDeinIchConfirm(message, okText, cancelText, onOk) {
-  let overlay = document.getElementById('deinIchConfirmOverlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'deinIchConfirmOverlay';
-    overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:10000;background:rgba(10,22,40,0.92);align-items:center;justify-content:center;font-family:-apple-system,"SF Pro Display","Helvetica Neue",sans-serif';
-    overlay.innerHTML = `
-      <div style="background:#1e3232;border-radius:16px;padding:28px 24px;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
-        <p class="confirm-msg" style="color:#c2cee8;font-size:15px;line-height:1.6;margin:0 0 22px 0;white-space:pre-line"></p>
-        <div style="display:flex;gap:10px">
-          <button class="confirm-ok" style="flex:1;padding:12px;border-radius:8px;border:none;background:#25a2a2;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit"></button>
-          <button class="confirm-cancel" style="flex:1;padding:12px;border-radius:8px;border:1px solid rgba(250,230,230,0.3);background:none;color:rgba(250,230,230,0.7);font-size:14px;cursor:pointer;font-family:inherit"></button>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-  }
-  overlay.querySelector('.confirm-msg').textContent = message;
-  overlay.querySelector('.confirm-ok').textContent = okText;
-  overlay.querySelector('.confirm-cancel').textContent = cancelText;
-  const okBtn = overlay.querySelector('.confirm-ok');
-  const newOk = okBtn.cloneNode(true);
-  okBtn.parentNode.replaceChild(newOk, okBtn);
-  const cancelBtn = overlay.querySelector('.confirm-cancel');
-  const newCancel = cancelBtn.cloneNode(true);
-  cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
-  newOk.addEventListener('click', () => { overlay.style.display = 'none'; onOk(); });
-  newCancel.addEventListener('click', () => { overlay.style.display = 'none'; });
-  overlay.style.display = 'flex';
-}
-
-function _openPickerAfterGate() {
-  if (localStorage.getItem('msphere_deiních_consent') === 'true') {
-    _showHintThenPicker();
-  } else {
-    showDeinIchConsent(() => _showHintThenPicker());
-  }
-}
-
-function _showHintThenPicker() {
-  document.getElementById('deinIchInput').click();
-}
-
-// Öffnet File-Picker — Consent → Picker (Free-Version: kein Kauf-Gate)
-function openDeinIchPicker() {
-  _openPickerAfterGate();
-}
-
-// Dein-Ich File-Input Handler
-document.getElementById('deinIchInput').addEventListener('change', (e) => {
-  const files = Array.from(e.target.files);
-  if (files.length === 0) return;
-  if (files.length < 2) {
-    // Mindestens 2 Fotos nötig
-    deinIchStatus = 'error';
-    deinIchError = t('deinIchMinFotos');
-    updateDeinIchOverlay();
-    e.target.value = '';
-    return;
-  }
-  const photoPromises = files.slice(0, 2).map(file => new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (ev) => resolve(ev.target.result);
-    reader.readAsDataURL(file);
-  }));
-  Promise.all(photoPromises).then(dataUrls => startDeinIch(dataUrls));
-  e.target.value = '';
-});
-
 // Custom-Time-Overlay Funktionen
 function showCustomTimeInput() {
   const overlay = document.getElementById('customTimeOverlay');
@@ -7480,7 +6797,7 @@ function frame() {
     ctx.fillText(chTitle, cW / 2, titleY);
 
     // --- Modell-Karten (dynamisch: 2 oder 3 Karten) ---
-    const keys = customModelExists ? ['male', 'female', 'custom'] : ['male', 'female'];
+    const keys = ['male', 'female'];
     const numCards = keys.length;
     const cardW = _sf(numCards === 3 ? 0.3 : 0.36, numCards === 3 ? 0.15 : 0.18);
     const cardH = cardW * 1.2;
@@ -7497,32 +6814,21 @@ function frame() {
     for (let i = 0; i < numCards; i++) {
       const cx2 = cardsStartX + i * (cardW + cardGap);
       const cy2 = cardY;
-      const isCustom = keys[i] === 'custom';
-      const isSelected = isCustom ? false : (currentModelIdx === i && !easterModelActive);
+      const isSelected = currentModelIdx === i && !easterModelActive;
 
       // Glow
       if (isSelected) {
         ctx.shadowColor = 'rgba(37, 162, 162, 0.5)';
-        ctx.shadowBlur = 24;
-      } else if (isCustom) {
-        ctx.shadowColor = 'rgba(237, 212, 87, 0.5)';
         ctx.shadowBlur = 24;
       }
 
       // Karten-Hintergrund
       ctx.beginPath();
       ctx.roundRect(cx2, cy2, cardW, cardH, cardR);
-      if (isCustom) {
-        ctx.fillStyle = 'rgba(237, 212, 87, 0.08)';
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(237, 212, 87, 0.6)';
-        ctx.lineWidth = 2;
-      } else {
-        ctx.fillStyle = isSelected ? 'rgba(37, 162, 162, 0.12)' : '#1e3232';
-        ctx.fill();
-        ctx.strokeStyle = isSelected ? '#25a2a2' : '#1e5a5a';
-        ctx.lineWidth = isSelected ? 2 : 1;
-      }
+      ctx.fillStyle = isSelected ? 'rgba(37, 162, 162, 0.12)' : '#1e3232';
+      ctx.fill();
+      ctx.strokeStyle = isSelected ? '#25a2a2' : '#1e5a5a';
+      ctx.lineWidth = isSelected ? 2 : 1;
       ctx.stroke();
       ctx.shadowBlur = 0;
 
@@ -7533,11 +6839,11 @@ function frame() {
       if (thumb && thumb.complete && thumb.naturalWidth > 0) {
         const ttx = thumbCx - thumbSize / 2;
         const tty = thumbCy - thumbSize / 2;
-        ctx.shadowColor = isCustom ? 'rgba(237, 212, 87, 0.55)' : 'rgba(237, 212, 87, 0.45)';
+        ctx.shadowColor = 'rgba(237, 212, 87, 0.45)';
         ctx.shadowBlur = thumbSize * 0.3;
         ctx.beginPath();
         ctx.arc(thumbCx, thumbCy, thumbSize * 0.3, 0, Math.PI * 2);
-        ctx.fillStyle = isCustom ? 'rgba(237, 212, 87, 0.12)' : 'rgba(237, 212, 87, 0.08)';
+        ctx.fillStyle = 'rgba(237, 212, 87, 0.08)';
         ctx.fill();
         ctx.shadowBlur = 0;
         ctx.drawImage(thumb, ttx, tty, thumbSize, thumbSize);
@@ -7545,17 +6851,9 @@ function frame() {
         // Lade-Ring
         ctx.beginPath();
         ctx.arc(thumbCx, thumbCy, thumbSize * 0.12, -Math.PI / 2, -Math.PI / 2 + (Date.now() % 1200) / 1200 * Math.PI * 2);
-        ctx.strokeStyle = isCustom ? 'rgba(237, 212, 87, 0.5)' : 'rgba(37, 162, 162, 0.5)';
+        ctx.strokeStyle = 'rgba(37, 162, 162, 0.5)';
         ctx.lineWidth = 2;
         ctx.stroke();
-      }
-
-      // Label unter der Karte (nur für Custom)
-      if (isCustom) {
-        ctx.font = `700 ${labelFS}px "SF Mono", "Cascadia Mono", "Consolas", "Courier New", monospace`;
-        ctx.textAlign = 'center';
-        ctx.fillStyle = 'rgba(237, 212, 87, 0.85)';
-        ctx.fillText(t('deinIch'), thumbCx, cy2 + cardH - labelFS * 0.6);
       }
 
       menuButtons.chooseModel.push({ x: cx2, y: cy2, w: cardW, h: cardH, idx: i, key: keys[i] });
@@ -7754,6 +7052,15 @@ if (new URLSearchParams(location.search).has('dev')) {
   document.addEventListener('keydown', e => { if (e.key === 'd' && !e.metaKey && !e.ctrlKey && e.target === document.body) dp.style.display = dp.style.display === 'none' ? 'flex' : 'none'; });
 }
 </script>
-<script data-goatcounter="https://msphere.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+<script>
+// Analytics nur auf der Website, nie in der nativen App (M-Sphere: keine Daten verlassen die native App)
+if (!window.__nativeApp) {
+  var _gc = document.createElement('script');
+  _gc.async = true;
+  _gc.src = '//gc.zgo.at/count.js';
+  _gc.setAttribute('data-goatcounter', 'https://msphere.goatcounter.com/count');
+  document.body.appendChild(_gc);
+}
+</script>
 </body>
 </html>
